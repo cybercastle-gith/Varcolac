@@ -1,0 +1,27 @@
+{
+  "name": "projeto-werewolf",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@10.6.5",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev:lab": "pnpm --filter lab dev",
+    "dev:mobile": "pnpm --filter mobile start",
+    "dev:web": "pnpm --filter mobile web",
+    "dev:android": "pnpm --filter mobile dev:android",
+    "apk": "pnpm --filter mobile apk",
+    "doctor": "pnpm --filter mobile doctor",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.3"
+  }
+}

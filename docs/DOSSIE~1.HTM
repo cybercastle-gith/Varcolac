@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dossiê — Jogo de Lobisomem (pass-and-play)</title>
+<style>
+:root{
+  --bg:#0e0c0a; --bg2:#15120f; --panel:#1b1713; --line:#2e2721;
+  --ink:#e8e0d4; --dim:#a1968a; --gold:#c9a227; --blood:#8c2f2f; --moon:#dcd2bd;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.65 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+#wrap{display:flex;min-height:100vh}
+nav{width:270px;flex:0 0 270px;background:var(--bg2);border-right:1px solid var(--line);
+  padding:26px 18px;position:sticky;top:0;height:100vh;overflow-y:auto}
+nav h1{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 4px}
+nav .sub{font-size:12px;color:var(--dim);margin-bottom:20px;font-style:italic}
+nav a{display:block;color:var(--dim);text-decoration:none;padding:6px 9px;border-radius:4px;
+  font-size:14px;border-left:2px solid transparent}
+nav a:hover{color:var(--ink);background:#221d18}
+nav a.on{color:var(--gold);border-left-color:var(--gold);background:#221d18}
+nav .grp{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#6b6055;margin:18px 0 6px 9px}
+main{flex:1;padding:48px 56px 120px;max-width:1000px}
+h2{font-size:30px;color:var(--moon);margin:56px 0 6px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+h2:first-child{margin-top:0}
+h3{font-size:20px;color:var(--gold);margin:34px 0 10px;font-weight:600}
+h4{font-size:16px;color:var(--ink);margin:22px 0 6px;letter-spacing:.03em}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:22px}
+li{margin:5px 0}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14.5px}
+th{text-align:left;background:#221d18;color:var(--gold);padding:9px 11px;
+  border-bottom:1px solid var(--line);font-weight:600;font-size:12.5px;
+  text-transform:uppercase;letter-spacing:.07em}
+td{padding:9px 11px;border-bottom:1px solid #241f1a;vertical-align:top}
+tr:hover td{background:#171310}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;
+  letter-spacing:.06em;text-transform:uppercase;font-family:system-ui,sans-serif}
+.t-vila{background:#1e2e22;color:#7fc79a;border:1px solid #2c4433}
+.t-lobo{background:#301818;color:#d98080;border:1px solid #4a2424}
+.t-solo{background:#2c2410;color:#d9bb5e;border:1px solid #47391a}
+.t-mod{background:#1d2430;color:#8fb0d9;border:1px solid #2b3a4a}
+.box{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold);
+  padding:14px 18px;margin:20px 0;border-radius:0 4px 4px 0}
+.box.warn{border-left-color:var(--blood)}
+.box.warn strong{color:#d98080}
+.box strong{color:var(--gold)}
+.box .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);
+  display:block;margin-bottom:6px;font-family:system-ui,sans-serif}
+code{background:#241f1a;padding:2px 6px;border-radius:3px;font-size:14px;color:var(--gold)}
+pre{background:#241f1a;padding:16px;border-radius:5px;overflow-x:auto;
+  border:1px solid var(--line);font-size:14px;color:var(--moon)}
+.lede{font-size:18px;color:var(--dim);font-style:italic;margin:0 0 8px}
+.hd{border-bottom:2px solid var(--gold);padding-bottom:20px;margin-bottom:8px}
+.hd h1{font-size:40px;margin:0;color:var(--moon);letter-spacing:-.01em}
+.meta{font-size:13px;color:#6b6055;font-family:system-ui,sans-serif}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--panel);border:1px solid var(--line);padding:14px 16px;border-radius:4px}
+.card h5{margin:0 0 6px;color:var(--gold);font-size:15px}
+.card p{margin:0;font-size:13.5px;color:var(--dim);line-height:1.5}
+.q{font-size:13px;color:var(--dim);font-style:italic}
+.w{font-family:system-ui,sans-serif;font-size:13px;font-weight:600;color:var(--gold)}
+.neg{color:#d98080}
+hr{border:0;border-top:1px solid var(--line);margin:30px 0}
+@media(max-width:860px){#wrap{flex-direction:column}nav{width:100%;height:auto;position:static;flex:none}main{padding:28px 20px 80px}}
+</style>
+</head>
+<body>
+<div id="wrap">
+<nav>
+  <h1>Dossiê de Design</h1>
+  <div class="sub">Jogo de lobisomem — pass&nbsp;and&nbsp;play</div>
+  <div class="grp">Fundamentos</div>
+  <a href="#visao">Visão geral</a>
+  <a href="#concorrentes">1. Concorrentes</a>
+  <a href="#pilares">2. Pilares</a>
+  <div class="grp">Sistemas</div>
+  <a href="#loop">3. Loop de partida</a>
+  <a href="#faccoes">4. Facções e vitória</a>
+  <a href="#roles">5. Catálogo de roles</a>
+  <a href="#variantes">6. Variantes</a>
+  <a href="#fantasmas">7. Fantasmas</a>
+  <a href="#eventos">8. Eventos</a>
+  <div class="grp">Regras</div>
+  <a href="#precedencia">9. Precedência noturna</a>
+  <a href="#peso">10. Calculadora de peso</a>
+  <div class="grp">Conteúdo</div>
+  <a href="#modos">11. Modos de jogo</a>
+  <a href="#estilos">12. Estilos e baralhos</a>
+  <div class="grp">Produto</div>
+  <a href="#telas">13. Telas e UX</a>
+  <a href="#setup">14. Setup configurável</a>
+  <a href="#pendencias">15. Pendências</a>
+</nav>
+
+<main>
+
+<div class="hd">
+  <h1>Dossiê de Design</h1>
+  <p class="lede">Jogo de dedução social presencial, tema lobisomem, para celular</p>
+  <p class="meta">Versão 1.0 — todas as decisões deste documento foram aprovadas item a item.</p>
+</div>
+
+<!-- ============ VISÃO ============ -->
+<h2 id="visao">Visão geral</h2>
+
+<p>Um aplicativo de celular que substitui o baralho de cartas e o narrador humano em partidas presenciais de Lobisomem. O celular circula pela mesa; a discussão acontece entre as pessoas, na vida real. O app é o mestre: distribui, narra, resolve interações, injeta eventos e conta os votos.</p>
+
+<div class="grid">
+  <div class="card"><h5>Formato</h5><p>Pass-and-play local. Um único aparelho, offline. Sem multiplayer online no v1.</p></div>
+  <div class="card"><h5>Jogadores</h5><p>5 a 16, com balanceamento adaptado por faixa de tamanho.</p></div>
+  <div class="card"><h5>Duração</h5><p>Variável, em função do número de jogadores e da composição do baralho.</p></div>
+  <div class="card"><h5>Tom</h5><p>Folclórico e sombrio. Vila de madeira, névoa, vela, medo real.</p></div>
+</div>
+
+<div class="box">
+<span class="lbl">Tese do produto</span>
+Todos os concorrentes tratam o celular como um baralho com cronômetro, e competem entre si pelo número de funções no catálogo. Este projeto compete por outra coisa: <strong>o celular como mestre de jogo</strong> — que sabe o que aconteceu, reage a isso e muda a partida.
+</div>
+
+<!-- ============ CONCORRENTES ============ -->
+<h2 id="concorrentes">1. Análise de concorrentes</h2>
+
+<h3>O espaço pass-and-play</h3>
+<table>
+<tr><th>Produto</th><th>Força</th><th>Defeito</th></tr>
+<tr><td><strong>Wolvesville Classic</strong><br><span class="q">Líder da categoria</span></td><td>30+ roles, marca consolidada, configuração de lobby, fases Noite/Discussão/Votação</td><td>O celular é um baralho passivo. Distribui e conta votos, e nada mais. Zero narrativa, zero evento, zero memória</td></tr>
+<tr><td><strong>Werewolf — Mafia Offline</strong></td><td>Atribuição por QR code, narração por voz, guia de interações complexas</td><td>Werewolf padrão sem mecânica própria</td></tr>
+<tr><td><strong>Mafia Party / Werewolf Master / Mafia Host</strong></td><td>Assistente de narrador, rastreia noites e mortes, ~26 roles</td><td>Competem em quantidade de roles, não em design</td></tr>
+<tr><td><strong>Wolfia</strong><br><span class="q">Concorrente mais recente</span></td><td>Moderador de IA que roda a partida inteira, regras e timers customizáveis, suporte offline</td><td>Sinaliza para onde a categoria está indo. É o piso, não o teto</td></tr>
+<tr><td><strong>One Night Ultimate Werewolf</strong></td><td>Partida de 5 minutos, uma única noite, ninguém fica de fora</td><td>Raso. Cansa em uma hora</td></tr>
+<tr><td><strong>Blood on the Clocktower</strong><br><span class="q">Referência de design, não mobile</span></td><td>O morto continua jogando. Informação envenenada gera dúvida sem exigir que alguém minta bem</td><td>Exige um narrador humano experiente</td></tr>
+</table>
+
+<h3>Referências de arquitetura</h3>
+<p><strong>Town of Salem 2</strong> — 60 roles em três facções (29 Vila, 17 Coven, 14 Neutros), organizadas por <em>função</em>: Investigativa, Protetora, Assassina, Suporte. Prova que o catálogo pode escalar, mas também que a maioria das roles nunca é usada.</p>
+<p><strong>Blood on the Clocktower</strong> — a categoria dos <em>Outsiders</em>: jogadores do bem cuja habilidade atrapalha o próprio time. Gera erro honesto na vila — dúvida sem ninguém precisar mentir.</p>
+
+<h3>Os seis defeitos estruturais da categoria</h3>
+<table>
+<tr><th>#</th><th>Defeito</th><th>Resposta deste projeto</th></tr>
+<tr><td>1</td><td>Morte precoce. Morreu na noite 1, ficou 20 minutos sem jogar</td><td>Pilar B + módulos de fantasma</td></tr>
+<tr><td>2</td><td>Passar o celular é lento e mata o ritmo</td><td>Distribuição embutida na noite 1; votação simultânea</td></tr>
+<tr><td>3</td><td>Novato afunda</td><td>Modo Duplas; presets curados; diretriz de acessibilidade</td></tr>
+<tr><td>4</td><td>Toda partida é igual</td><td>Pilar C + sistema de eventos + geração de baralhos</td></tr>
+<tr><td>5</td><td>Nada persiste entre partidas</td><td>Baralhos salvos e nomeados. Modo Crônica em estudo</td></tr>
+<tr><td>6</td><td>Grupos pequenos ficam de fora</td><td>Multiplicador de balanceamento por faixa de tamanho</td></tr>
+</table>
+
+<!-- ============ PILARES ============ -->
+<h2 id="pilares">2. Pilares de design</h2>
+<p>Três pilares. A função de um pilar é dizer <em>não</em> — com quatro ou mais, eles param de servir para isso.</p>
+
+<div class="grid">
+  <div class="card"><h5>A — A mesa é o jogo</h5><p>A tela nunca prende a atenção por mais de ~10 segundos por jogador. Tudo que o app faz existe para criar assunto na conversa presencial. Mecânica que exige leitura longa é cortada.</p></div>
+  <div class="card"><h5>B — Ninguém sai da mesa</h5><p>Morrer muda o seu jogo, não encerra. Zero jogadores encostados no sofá.</p></div>
+  <div class="card"><h5>C — Nenhuma partida se repete</h5><p>Eventos, baralhos gerados, variantes. O grupo nunca sabe exatamente qual jogo vai jogar hoje.</p></div>
+</div>
+
+<p><strong>Diretriz secundária forte — acessível em 10 minutos.</strong> O app ensina no momento em que a informação é necessária. Não é pilar, mas pesa em toda decisão de interface.</p>
+
+<div class="box warn">
+<span class="lbl">Tensão central do projeto</span>
+Os pilares B e C adicionam interação com o celular, dentro de um jogo que deve rolar entre as pessoas. Toda mecânica precisa passar num teste: <strong>isso aumenta a conversa na mesa, ou rouba tempo dela?</strong>
+</div>
+
+<p><strong>Economia social como pilar foi rejeitada.</strong> Existe apenas como sistemas pontuais (sussurro noturno, ações de role), nunca como princípio geral.</p>
+
+<!-- ============ LOOP ============ -->
+<h2 id="loop">3. Loop de partida</h2>
+
+<h3>Estrutura</h3>
+<ol>
+<li><strong>Noite 1</strong> — o celular dá uma volta na mesa. Cada jogador vê sua role e já age na mesma passagem. Não existe fase separada de distribuição.</li>
+<li><strong>Amanhecer</strong> — narração, mortes, evento da noite.</li>
+<li><strong>Dia</strong> — discussão aberta entre as pessoas. O app cronometra.</li>
+<li><strong>Votação</strong> — simultânea por padrão.</li>
+<li><strong>Execução</strong> — resultado e revelação, se configurada.</li>
+<li><strong>Noites seguintes</strong> — passagem completa do celular, com toques falsos.</li>
+</ol>
+
+<h3>Decisões fechadas</h3>
+<table>
+<tr><th>Item</th><th>Decisão</th><th>Razão</th></tr>
+<tr><td>Fluxo da noite</td><td>Passagem completa, todos recebem o celular, com toques falsos para quem não tem ação</td><td>Mistério acima de velocidade. Sem isso, quem tem poder se revela pela chamada</td></tr>
+<tr><td>Distribuição</td><td>Embutida na noite 1</td><td>Corta uma volta inteira de mesa</td></tr>
+<tr><td>Fim de partida</td><td>Eliminação clássica + objetivos individuais de roles específicas</td><td>Final natural, com camadas de vitória paralelas</td></tr>
+<tr><td>Duração</td><td>Variável, em função do número de jogadores e da composição</td><td>Calibrada por balanceamento, não por relógio</td></tr>
+<tr><td>Votação</td><td>Simultânea por padrão — todos apontam na contagem de três, o host registra. Configurável para secreta</td><td>Elimina uma volta de celular por dia e é mais teatral</td></tr>
+</table>
+
+<div class="box">
+<span class="lbl">Orçamento de tempo — referência com 8 jogadores</span>
+Noite (5 roles ativas, passagem completa) ~90s · Amanhecer ~20s · Discussão ~180s · Votação ~30s com voto simultâneo. <strong>Ciclo ≈ 5 min.</strong> A discussão do dia tem teto prático de 3 minutos.
+</div>
+
+<!-- ============ FACÇÕES ============ -->
+<h2 id="faccoes">4. Facções e condições de vitória</h2>
+
+<table>
+<tr><th>Facção</th><th>Vitória</th></tr>
+<tr><td><span class="tag t-vila">Vila</span></td><td>Eliminar todas as ameaças</td></tr>
+<tr><td><span class="tag t-lobo">Lobos</span></td><td>Igualar ou superar a vila em número</td></tr>
+<tr><td><span class="tag t-solo">Solitários</span></td><td>Objetivo pessoal. Alinhados ao bem vencem com a vila; alinhados ao mal contam como lobos para efeito de paridade</td></tr>
+</table>
+
+<p><strong>Não existe Culto ou terceira facção coletiva.</strong> Facções adormecidas — que só surgem se um evento as acordar — ficam como estudo futuro.</p>
+
+<h3>Alinhamento dos solitários</h3>
+<table>
+<tr><th>Role</th><th>Alinhamento</th><th>Nota</th></tr>
+<tr><td>Bobo</td><td>Puro</td><td>Só vitória própria</td></tr>
+<tr><td>Sobrevivente</td><td>Puro</td><td>Vence com qualquer vencedor, desde que vivo</td></tr>
+<tr><td>Vingador</td><td>Do bem</td><td>Vitória passiva: vence se o alvo escolhido morrer</td></tr>
+<tr><td>Ladrão</td><td>Herda</td><td>Assume o alinhamento da role roubada</td></tr>
+<tr><td>Coringa</td><td>Puro</td><td>Missão sorteada a cada partida</td></tr>
+<tr><td>Bruxa</td><td>Definido pela poção</td><td>Vida = do bem · Morte = do mal. A escolha inicial define secretamente o lado</td></tr>
+<tr><td><em>Amantes</em></td><td>Puro (par)</td><td>Modificador, não role — ver seção 5</td></tr>
+</table>
+
+<p><strong>Lobo Branco:</strong> pode vencer sozinho ou junto com a matilha.</p>
+
+<!-- ============ ROLES ============ -->
+<h2 id="roles">5. Catálogo de roles</h2>
+<p>Roles <strong>fixas</strong>. Sem itens, sem inventário — as roles se expressam por habilidade. Os pesos entre parênteses alimentam a calculadora da seção 10.</p>
+
+<h3><span class="tag t-vila">Vila</span> — 11 roles</h3>
+<table>
+<tr><th>Role</th><th>Peso</th><th>Ação</th></tr>
+<tr><td><strong>Aldeão</strong></td><td class="w">0</td><td>Nenhuma. Só voz e voto</td></tr>
+<tr><td><strong>Vidente</strong></td><td class="w">3</td><td>Vê a facção de um jogador por noite. <strong>Custo:</strong> perde o voto do dia seguinte. Ela não precisa se manifestar — o app simplesmente não conta</td></tr>
+<tr><td><strong>Detetive</strong></td><td class="w">3</td><td>Compara dois jogadores: mesma facção ou não</td></tr>
+<tr><td><strong>Médico</strong></td><td class="w">3</td><td>Protege um jogador por noite</td></tr>
+<tr><td><strong>Guarda-costas</strong></td><td class="w">3</td><td>Morre no lugar do protegido</td></tr>
+<tr><td><strong>Xerife</strong></td><td class="w">3</td><td>Prende um jogador: ele não age, não morre e não fala no dia seguinte</td></tr>
+<tr><td><strong>Necromante</strong></td><td class="w">4</td><td>Ressuscita um morto, uma vez por partida. Apenas mortes de <strong>noites anteriores</strong></td></tr>
+<tr><td><strong>Padre</strong></td><td class="w">2</td><td>Uma vez por partida, anula todas as mortes da noite</td></tr>
+<tr><td><strong>Caçador</strong></td><td class="w">2</td><td>Ao morrer, leva alguém junto</td></tr>
+<tr><td><strong>Taverneiro</strong></td><td class="w">1</td><td>Embebeda um jogador por noite: o poder dele falha, e ele não é avisado. Pode atrapalhar a própria vila</td></tr>
+<tr><td><strong>Anciã</strong></td><td class="w neg">−2</td><td>Se morrer por <strong>qualquer</strong> causa, a vila perde todos os poderes por uma noite. É um passivo que a vila precisa proteger de si mesma</td></tr>
+</table>
+
+<h3><span class="tag t-lobo">Lobos</span> — 7 roles</h3>
+<table>
+<tr><th>Role</th><th>Peso</th><th>Ação</th></tr>
+<tr><td><strong>Lobo</strong></td><td class="w">3</td><td>Mata com a matilha</td></tr>
+<tr><td><strong>Alfa</strong></td><td class="w">4</td><td>Uma vez por partida, converte em vez de matar</td></tr>
+<tr><td><strong>Feiticeiro</strong></td><td class="w">4</td><td>Uma vez por partida, o ataque da matilha <strong>atravessa curas e imunidades</strong>. Não é bloqueador — é perfurador</td></tr>
+<tr><td><strong>Lobo Carniçal</strong></td><td class="w">4</td><td>Ao ser morto, não morre na hora: mata alguém e só expira na noite seguinte</td></tr>
+<tr><td><strong>Lobo Sombra</strong></td><td class="w">3</td><td>Escolhe uma noite para ficar imune a investigação. Na noite seguinte, a matilha não mata. Pode errar o timing e queimar a imunidade à toa</td></tr>
+<tr><td><strong>Uivador</strong></td><td class="w">3</td><td>Revela publicamente um lobo — ou a si mesmo. Em troca, na noite seguinte a matilha mata dois</td></tr>
+<tr><td><strong>Lobo Branco</strong></td><td class="w">2</td><td>Mata lobos também. Pode vencer sozinho ou com a matilha. Vale menos para a matilha porque joga contra ela</td></tr>
+</table>
+
+<h3><span class="tag t-solo">Solitários</span> — 6 roles + 1 modificador</h3>
+<table>
+<tr><th>Role</th><th>Peso</th><th>Vitória</th></tr>
+<tr><td><strong>Bruxa</strong></td><td class="w">3</td><td>Escolhe no início entre poção da vida <em>ou</em> da morte. Um único uso. Vence com quem sobrar</td></tr>
+<tr><td><strong>Ladrão</strong></td><td class="w">2</td><td>Na noite 1 troca de role com outro jogador. Nenhum dos dois é avisado na hora</td></tr>
+<tr><td><strong>Coringa</strong></td><td class="w">2</td><td>Recebe uma missão sorteada e secreta a cada partida. Nunca é a mesma role duas vezes</td></tr>
+<tr><td><strong>Sobrevivente</strong></td><td class="w">1</td><td>Estar vivo no fim. Vence com qualquer vencedor. <strong>Não é imune aos lobos</strong></td></tr>
+<tr><td><strong>Bobo</strong></td><td class="w">1</td><td>Ser linchado pela vila. <strong>Não pode votar em si mesmo</strong></td></tr>
+<tr><td><strong>Vingador</strong></td><td class="w">1</td><td>Escolhe um alvo na noite 1. Vence se ele morrer, por qualquer causa</td></tr>
+<tr><td><strong>Amantes</strong> <span class="tag t-mod">modificador</span></td><td class="w">2</td><td>Vínculo aplicado sobre <strong>duas roles existentes</strong>. Cada amante mantém a própria role. Vencem se forem os dois últimos vivos</td></tr>
+</table>
+
+<div class="box">
+<span class="lbl">Nota de contagem</span>
+Com os Amantes reclassificados como modificador, o catálogo é de <strong>24 roles + 1 modificador</strong>. A meta original era 25 roles. Ver pendências.
+</div>
+
+<h3>Removidas durante o desenvolvimento</h3>
+<p class="q">Vigia, Rastreador, Sineiro, Cartomante, Prefeito, Empata, Recluso, Coveiro, Menino Selvagem, Lobo Sonhador, Filhote, Flautista, Encrenqueiro, Insone, Ferreiro, Bode Expiatório, Advogado, Mudo, Mentiroso, Paranoico, Lobo Órfão, Lobo Ferido, Imitador, Colecionador, Executor, Duelista, e toda a facção Culto. Descritas nas atas de decisão; disponíveis para expansão futura.</p>
+
+<!-- ============ VARIANTES ============ -->
+<h2 id="variantes">6. Variantes</h2>
+<p>Variantes são <strong>selecionáveis e transparentes</strong>: o host escolhe a versão no setup e a mesa sabe qual está em jogo. Cada variante recalcula o peso da role.</p>
+
+<h3>Vidente</h3>
+<table>
+<tr><th>Variante</th><th>Efeito</th><th>Peso</th></tr>
+<tr><td>Vidente dos Ossos</td><td>Só enxerga mortos</td><td class="w">1</td></tr>
+<tr><td>Vidente do Espelho</td><td>Vê a facção, e o alvo é avisado de que alguém o observou</td><td class="w">3</td></tr>
+<tr><td>Vidente dos Sonhos</td><td>A visão chega uma noite depois</td><td class="w">2</td></tr>
+<tr><td>Vidente Confusa</td><td>Recebe duas visões por noite — uma verdadeira, uma falsa. Não sabe qual é qual</td><td class="w">2</td></tr>
+</table>
+
+<h3>Detetive</h3>
+<table>
+<tr><th>Variante</th><th>Efeito</th></tr>
+<tr><td>Obsessivo</td><td>Trava um alvo na noite 1. N1: facção · N2: role · N3: em quem o alvo votou na última votação</td></tr>
+<tr><td>Cansado</td><td>Só age em noites ímpares</td></tr>
+<tr><td>Delegado</td><td>Não investiga em segredo. Ordena uma revista pública: a mesa inteira descobre se o alvo tem poder — mas não a facção</td></tr>
+</table>
+
+<h3>Médico</h3>
+<table>
+<tr><th>Variante</th><th>Efeito</th><th>Peso</th></tr>
+<tr><td>Curandeiro</td><td>Nunca pode repetir alvo</td><td class="w">2</td></tr>
+<tr><td>Médico de Guerra</td><td>Cura duas pessoas, mas amanhece publicamente revelado</td><td class="w">4</td></tr>
+<tr><td>Médico de Plantão</td><td>Só pode curar quem foi atacado na noite anterior</td><td class="w">2</td></tr>
+</table>
+
+<h3>Guarda-costas</h3>
+<table>
+<tr><th>Variante</th><th>Efeito</th></tr>
+<tr><td>Sacrifício</td><td>Morre no lugar do alvo e leva o atacante junto</td></tr>
+<tr><td>Escudo</td><td>Absorve o ataque e morre uma noite depois</td></tr>
+<tr><td>Muralha</td><td>Protege dois jogadores, mas se qualquer um for atacado, ele morre</td></tr>
+</table>
+
+<h3>Caçador</h3>
+<table>
+<tr><th>Variante</th><th>Efeito</th></tr>
+<tr><td>Armadilha</td><td>Declara o alvo à noite, antes de morrer. O tiro só dispara se ele morrer</td></tr>
+<tr><td>Último Uivo</td><td>Em vez de matar, revela publicamente a role de um jogador. Uma vez por partida</td></tr>
+<tr><td>Vingativo</td><td>Só pode atirar em quem votou nele</td></tr>
+</table>
+
+<h3>Padre</h3>
+<table>
+<tr><th>Variante</th><th>Efeito</th></tr>
+<tr><td>Exorcista</td><td>Uma vez por partida, anula todas as mortes da noite</td></tr>
+<tr><td>Sino da Igreja</td><td>Uma vez por partida, cancela a votação do dia seguinte</td></tr>
+<tr><td>Mártir</td><td>Marca um protegido <strong>à noite</strong>. Se essa pessoa for condenada no dia seguinte, ele morre no lugar, automaticamente. Sem passagem de celular, sem revelação</td></tr>
+</table>
+
+<h3>Aldeão</h3>
+<table>
+<tr><th>Variante</th><th>Efeito</th></tr>
+<tr><td>Herdeiro</td><td>Uma vez por partida, herda a role de alguém que morreu</td></tr>
+<tr><td>Teimoso</td><td>Não pode mudar o voto depois de declarado</td></tr>
+<tr><td>Testemunha</td><td>Uma vez por partida, pede ao app que confirme publicamente que ele é aldeão</td></tr>
+</table>
+
+<h3>Amantes</h3>
+<table>
+<tr><th>Variante</th><th>Efeito</th></tr>
+<tr><td>Amor Proibido</td><td>Se um morre, o outro morre de tristeza</td></tr>
+<tr><td>Amor Cego</td><td>Só um dos dois sabe do vínculo</td></tr>
+</table>
+
+<!-- ============ FANTASMAS ============ -->
+<h2 id="fantasmas">7. Sistema de fantasmas</h2>
+
+<div class="box">
+<span class="lbl">A vantagem estrutural do pass-and-play</span>
+No online, quem morre vai embora. Aqui o fantasma está <strong>fisicamente na mesa</strong>, ouvindo tudo e proibido de falar. Essa tensão — saber e não poder dizer — é o combustível do sistema. O app existe para dar a ele um canal silencioso.
+</div>
+
+<p>Os módulos são <strong>ativáveis no setup</strong>. Cada um tem <strong>usos fixos por partida</strong>. Módulos coletivos só entram em operação <strong>a partir da segunda morte</strong>.</p>
+
+<table>
+<tr><th>Módulo</th><th>Tipo</th><th>Efeito</th></tr>
+<tr><td><strong>Peso da Culpa</strong></td><td>Passivo</td><td>Só ganha voto quem foi linchado injustamente. Quem era lobo não ganha nada. Auto-corretivo: pune o erro da vila e reequilibra sozinho</td></tr>
+<tr><td><strong>Assombrar</strong></td><td>Individual</td><td>Marca um vivo; se ele tiver ação noturna, ela falha</td></tr>
+<tr><td><strong>Pesadelo</strong></td><td>Individual</td><td>Envia a um vivo uma informação privada — o fantasma escolhe se ela é verdadeira ou falsa</td></tr>
+<tr><td><strong>Conselho dos Mortos</strong></td><td>Coletivo</td><td>Os mortos votam qual evento atinge a vila na próxima noite, entre cartas sorteadas</td></tr>
+<tr><td><strong>Julgamento do Além</strong></td><td>Coletivo</td><td>Depois de cada linchamento, os mortos votam se foi justo. O app anuncia o sentimento agregado, sem revelar o placar</td></tr>
+</table>
+
+<h3>Sussurro noturno</h3>
+<p>Mecânica independente dos módulos, disponível em qualquer modo. Quando o celular passa pelo jogador à noite, ele pode deixar um <strong>bilhete anônimo de 3 palavras</strong>, entregue a alguém na noite seguinte. Custo de tempo zero, porque a passagem já está acontecendo. Se o destinatário morrer antes, o bilhete se perde.</p>
+
+<div class="box">
+<span class="lbl">Ponto de atenção para playtest</span>
+Nenhum dos módulos aprovados dá ao fantasma algo para fazer <strong>toda noite</strong> — são passivos, coletivos ou raros e caros. Um fantasma que já gastou seu Pesadelo volta a ficar parado. Se a morte voltar a parecer entediante em playtest, esse é o buraco.
+</div>
+
+<!-- ============ EVENTOS ============ -->
+<h2 id="eventos">8. Sistema de eventos</h2>
+<p>Frequência <strong>configurável no setup</strong> (sem eventos · raros · frequentes · caóticos). Visibilidade <strong>depende do evento</strong>: alguns são narrados, outros acontecem em silêncio. Eventos por gatilho <strong>podem vazar informação</strong> — isso é intencional.</p>
+
+<h3>Família 1 — Por sorte</h3>
+<table>
+<tr><th>Evento</th><th>Efeito</th><th>Narrado?</th></tr>
+<tr><td><strong>Névoa Cerrada</strong></td><td>A Vidente não enxerga nada esta noite<br><span class="q">"A névoa subiu do rio e engoliu a vila."</span></td><td>Silencioso</td></tr>
+<tr><td><strong>Lua Cheia</strong></td><td>A matilha mata dois<br><span class="q">"A lua está inteira. Eles não vão se conter."</span></td><td>Narrado</td></tr>
+<tr><td><strong>Noite Sem Lua</strong></td><td>A matilha não mata<br><span class="q">"Nada se moveu. Isso é pior."</span></td><td>Narrado</td></tr>
+<tr><td><strong>Chuva de Sangue</strong></td><td>Todas as proteções falham esta noite</td><td>Narrado</td></tr>
+<tr><td><strong>Sono Pesado</strong></td><td>Nenhum poder funciona. Só a matilha age</td><td>Narrado</td></tr>
+<tr><td><strong>Ossos na Encruzilhada</strong></td><td>O app revela a role de um morto sorteado</td><td>Narrado</td></tr>
+<tr><td><strong>Fogo-fátuo</strong></td><td>Um jogador vivo recebe uma informação falsa como se fosse verdadeira</td><td>Silencioso</td></tr>
+<tr><td><strong>Presságio</strong></td><td>O app diz o nome de um jogador em voz alta. E não explica.<br><span class="q">"A vila sonhou com Ana esta noite."</span></td><td>Narrado</td></tr>
+</table>
+<p class="q">O Presságio não faz nada mecanicamente e provavelmente será o evento mais devastador do jogo.</p>
+
+<h3>Família 2 — Por gatilho</h3>
+<table>
+<tr><th>Gatilho</th><th>Evento</th><th>Efeito</th></tr>
+<tr><td>2 inocentes linchados seguidos</td><td><strong>Caça às Bruxas</strong></td><td>No dia seguinte a vila pode linchar dois</td></tr>
+<tr><td>3 inocentes linchados</td><td><strong>Motim</strong></td><td>Os aldeões perdem o direito de votar por um dia</td></tr>
+<tr><td>Padre ou Guarda-costas morre</td><td><strong>Luto Sagrado</strong></td><td>A vila ganha uma proteção coletiva por uma noite</td></tr>
+<tr><td>Matilha passa 2 noites sem matar</td><td><strong>Sede de Sangue</strong></td><td>É obrigada a matar dois na próxima</td></tr>
+<tr><td>Dois morrem na mesma noite</td><td><strong>Velório</strong></td><td>Não há votação no dia seguinte</td></tr>
+<tr><td>Votação empata</td><td><strong>A Corda Escolhe</strong></td><td>O app sorteia entre os empatados e narra como destino</td></tr>
+<tr><td>Alguém vota em si mesmo</td><td><strong>Delação</strong></td><td>O app revela publicamente a facção dessa pessoa</td></tr>
+<tr><td>Terceiro morto da partida</td><td><strong>Vingança dos Ossos</strong></td><td>Os mortos escolhem o próximo evento</td></tr>
+</table>
+
+<h3>Família 3 — Destravamento <span class="tag t-mod">fora do v1</span></h3>
+<p>Registrada mas não aprovada para o lançamento. Era a família que resolvia o problema de "a mesa está há dez minutos discutindo sem chegar a lugar nenhum" — o app percebendo que a partida travou e agindo.</p>
+<table>
+<tr><th>Condição</th><th>Evento</th></tr>
+<tr><td>2 dias sem linchamento</td><td><strong>A Corda Não Espera</strong> — votação obrigatória, empate proibido</td></tr>
+<tr><td>Partida se arrastando</td><td><strong>Confissão Forçada</strong> — um sorteado revela publicamente se tem poder</td></tr>
+<tr><td>Empates repetidos</td><td><strong>Meia Vila</strong> — só metade dos jogadores, sorteada, pode votar</td></tr>
+<tr><td>Ninguém morre há duas noites</td><td><strong>A Última Vela</strong> — a próxima noite mata dois, sem exceção</td></tr>
+<tr><td>Impasse total</td><td><strong>Julgamento de Deus</strong> — dois sorteados; a mesa só pode votar entre eles</td></tr>
+</table>
+
+<!-- ============ PRECEDÊNCIA ============ -->
+<h2 id="precedencia">9. Precedência de resolução noturna</h2>
+<p>Toda ação da noite entra em uma destas 12 etapas. A ordem nunca muda.</p>
+
+<table>
+<tr><th>#</th><th>Etapa</th><th>Quem age</th><th>Regra</th></tr>
+<tr><td>1</td><td><strong>Estado inicial</strong></td><td>Amantes, Coringa, Ladrão</td><td>Roles são atribuídas na inicialização da partida. Vínculos e trocas já estão resolvidos antes da primeira passagem</td></tr>
+<tr><td>2</td><td><strong>Evento da noite</strong></td><td>App</td><td>Sorteado ou por gatilho. Pode cancelar etapas inteiras</td></tr>
+<tr><td>3</td><td><strong>Bloqueio</strong></td><td>Xerife, Taverneiro</td><td>O alvo não age. A escolha dele é descartada</td></tr>
+<tr><td>4</td><td><strong>Interferência espectral</strong></td><td>Assombrar, Pesadelo</td><td>Fantasmas agem depois dos vivos</td></tr>
+<tr><td>5</td><td><strong>Proteção</strong></td><td>Médico, Guarda-costas, Padre</td><td>Marca quem está protegido</td></tr>
+<tr><td>6</td><td><strong>Perfuração</strong></td><td>Feiticeiro</td><td>Remove proteções e imunidades do alvo da matilha</td></tr>
+<tr><td>7</td><td><strong>Ataques</strong></td><td>Matilha, Lobo Branco, Bruxa</td><td>Declaram alvos</td></tr>
+<tr><td>8</td><td><strong>Resolução de mortes</strong></td><td>App</td><td>Cruza ataques com proteções e perfurações</td></tr>
+<tr><td>9</td><td><strong>Estertores</strong></td><td>Caçador, Carniçal, Anciã</td><td>Dispara para quem morreu na etapa 8</td></tr>
+<tr><td>10</td><td><strong>Ressurreição</strong></td><td>Necromante</td><td>Apenas mortes de noites anteriores</td></tr>
+<tr><td>11</td><td><strong>Informação</strong></td><td>Vidente, Detetive</td><td>Lê o estado do <strong>início</strong> da noite</td></tr>
+<tr><td>12</td><td><strong>Sussurros</strong></td><td>Bilhetes</td><td>Entregues no amanhecer</td></tr>
+</table>
+
+<h3>Regras de conflito</h3>
+<table>
+<tr><th>Conflito</th><th>Resolução</th></tr>
+<tr><td><strong>Padre × Feiticeiro</strong></td><td><strong>O Padre vence.</strong> Ele não protege ninguém — cancela a noite inteira. O Feiticeiro só perfura proteções individuais</td></tr>
+<tr><td><strong>Cadeia de estertores</strong></td><td><strong>Cadeia completa.</strong> O Caçador morre e atira no Carniçal, que ao morrer também mata, e assim por diante até a cadeia se esgotar</td></tr>
+<tr><td><strong>Necromante na noite corrente</strong></td><td>Não pode. Só desfaz mortes de noites anteriores</td></tr>
+<tr><td><strong>Bloqueio mútuo</strong></td><td>Se dois se bloqueiam, ambos falham</td></tr>
+<tr><td><strong>Bloqueado protege?</strong></td><td>Não. Xerife que prende o Médico anula a cura daquela noite</td></tr>
+<tr><td><strong>Preso é imune</strong></td><td>Quem está preso pelo Xerife não morre — mas o Feiticeiro perfura essa imunidade</td></tr>
+<tr><td><strong>Informação lê o passado</strong></td><td>A Vidente que investigou alguém que morreu naquela noite ainda recebe a leitura. Evita que a informação vaze o resultado</td></tr>
+<tr><td><strong>Necromante não desfaz estertores</strong></td><td>Se o Caçador já atirou, o tiro vale mesmo que ele volte</td></tr>
+</table>
+
+<!-- ============ PESO ============ -->
+<h2 id="peso">10. Calculadora de peso</h2>
+<p>Um único motor, dois usos: <strong>avisar</strong> quando o host monta um baralho torto, e <strong>gerar</strong> baralhos válidos para o Baralho Surpresa.</p>
+
+<h3>Fórmula</h3>
+<pre>IE  =  Força da Vila  −  ( Força da Matilha × M )</pre>
+<p>O multiplicador <code>M</code> representa a vantagem estrutural dos lobos: eles se conhecem, agem com certeza e só precisam empatar em número.</p>
+
+<table>
+<tr><th>Jogadores</th><th>Multiplicador M</th><th>Razão</th></tr>
+<tr><td>5 – 7</td><td class="w">1,8</td><td>Mesa pequena: menos gente para esconder informação, lobos proporcionalmente mais fortes</td></tr>
+<tr><td>8 – 11</td><td class="w">1,6</td><td>Faixa de referência</td></tr>
+<tr><td>12 +</td><td class="w">1,4</td><td>Mesa grande: mais ruído, mais dificuldade de coordenação da matilha</td></tr>
+</table>
+
+<h3>Leitura do índice</h3>
+<table>
+<tr><th>IE</th><th>Leitura</th></tr>
+<tr><td>−2 a +2</td><td>Equilibrado</td></tr>
+<tr><td>+3 a +5</td><td>Vila forte — partida longa, lobos sofrem</td></tr>
+<tr><td>acima de +5</td><td><span class="neg">Vila quebrada</span></td></tr>
+<tr><td>−3 a −5</td><td>Matilha forte — partida curta e brutal</td></tr>
+<tr><td>abaixo de −5</td><td><span class="neg">Massacre</span></td></tr>
+</table>
+
+<h3>Restrições estruturais</h3>
+<ul>
+<li>Número de lobos ≈ <strong>jogadores ÷ 3,5</strong>, arredondado</li>
+<li>Solitários ≤ <strong>25%</strong> da mesa</li>
+<li>No máximo <strong>uma role de peso 4+</strong> a cada 4 jogadores</li>
+<li>Variantes recalculam o peso base da role</li>
+</ul>
+
+<h3>Efeito das configurações de setup</h3>
+<table>
+<tr><th>Configuração</th><th>Efeito no IE</th></tr>
+<tr><td>Roles reveladas ao morrer</td><td class="w">+2 vila</td></tr>
+<tr><td>Contagem de lobos pública</td><td class="w">+1 vila</td></tr>
+<tr><td>Módulos de fantasma ligados</td><td class="w">+1 vila</td></tr>
+<tr><td>Votação secreta</td><td>Sem ajuste</td></tr>
+<tr><td>Eventos ligados</td><td>Não muda o IE — <strong>alarga a tolerância</strong></td></tr>
+</table>
+
+<div class="box">
+<span class="lbl">O ponto mais importante do modelo</span>
+Eventos não deixam o jogo mais justo nem mais injusto — deixam mais <strong>imprevisível</strong>. Com eventos em "caótico", um IE de −4 é aceitável. Sem eventos, é um massacre anunciado.
+</div>
+
+<h3>Comportamento do app</h3>
+<p>O app <strong>avisa e sugere a correção</strong> — <em>"Vila muito forte. Sugestão: trocar o Necromante por um Aldeão, ou adicionar um lobo."</em> O host decide. O índice é <strong>visível para toda a mesa antes de começar</strong>.</p>
+
+<!-- ============ MODOS ============ -->
+<h2 id="modos">11. Modos de jogo</h2>
+<p>Modos mudam <em>regras</em>. Quatro no lançamento.</p>
+
+<h3>Clássico</h3>
+<p>A base. Noite, dia, votação, eliminação.</p>
+
+<h3>Traição</h3>
+<p>Todos começam na vila. A cada noite o app converte alguém em segredo. <strong>A matilha é totalmente cega</strong> — nenhum lobo conhece nenhum outro, em momento algum. O convertido <strong>mantém a própria role</strong>: um Médico convertido continua curando.</p>
+<div class="box">
+<span class="lbl">Sinergia</span>
+A matilha cega parece impossível de coordenar — mas o <strong>sussurro noturno</strong> é exatamente a ferramenta que resolve isso. Os lobos vão se encontrar às cegas, trocando bilhetes de três palavras, torcendo para não estarem escrevendo para um aldeão.
+</div>
+
+<h3>Vila Amaldiçoada</h3>
+<p>A vila tem um número fixo de noites. Se não eliminar os lobos até lá, todos morrem. A cada noite que passa, o app sorteia um <strong>agravamento</strong> de uma lista — a vila perde um poder, os lobos ganham um ataque, o tempo de discussão encolhe — e narra em uma frase.</p>
+
+<h3>Duplas</h3>
+<p>Todos jogam em duplas fixas que se conhecem desde o início. As duplas são <strong>mistas</strong>: você pode saber que seu parceiro é lobo, ou ele pode saber que você é. Traição íntima.</p>
+
+<h3>Em estudo</h3>
+<table>
+<tr><th>Modo</th><th>Status</th></tr>
+<tr><td><strong>Crônica</strong></td><td>Partida longa com história e memória entre sessões. Complexo — em estudo</td></tr>
+<tr><td><strong>Solo com bots</strong></td><td>Single-player contra IA. <strong>V2</strong>, depois do lançamento. É o único item do projeto que exige tecnologia de verdade e é a parte mais fácil de fazer mal</td></tr>
+</table>
+
+<!-- ============ ESTILOS ============ -->
+<h2 id="estilos">12. Estilos e geração de baralhos</h2>
+<p>Estilos = mesmas regras, composições diferentes. Em boa parte <strong>gerados aleatoriamente</strong> pela calculadora de peso. O host pode <strong>salvar e nomear</strong> os próprios.</p>
+
+<div class="box">
+<span class="lbl">Baralho Surpresa</span>
+O app monta uma composição válida que ninguém na mesa conhece de antemão. Pilar C sem custo de conteúdo — mas só funciona porque a calculadora de peso existe. Ela deixou de ser um extra e virou infraestrutura.
+</div>
+
+<h3>Sementes de fábrica</h3>
+<table>
+<tr><th>Estilo</th><th>Composição</th></tr>
+<tr><td><strong>Clássico</strong></td><td>Aldeão, Lobo, Vidente, Médico, Caçador. Roles reveladas, contagem pública</td></tr>
+<tr><td><strong>Roleta Russa</strong></td><td>Um lobo, todo o resto Bobo. Todos querem morrer; o lobo precisa impedir</td></tr>
+<tr><td><strong>Mistério</strong></td><td>Roles ocultas, contagem em faixa, zero solitários, variantes de informação suja</td></tr>
+<tr><td><strong>Caos</strong></td><td>Máximo de solitários e variantes esquisitas</td></tr>
+<tr><td><strong>Matilha</strong></td><td>Lobos são quase metade da mesa. Vila com poucos poderes</td></tr>
+<tr><td><strong>Vila Cega</strong></td><td>Nenhuma role de informação. Só leitura social</td></tr>
+<tr><td><strong>Todos Poderosos</strong></td><td>Nenhum aldeão comum. Todo mundo tem habilidade</td></tr>
+<tr><td><strong>Sobrevivência</strong></td><td>Muitos solitários, poucos lobos</td></tr>
+<tr><td><strong>Mesa Pequena</strong></td><td>4-6 jogadores, roles adaptadas</td></tr>
+<tr><td><strong>Noite Longa</strong></td><td>12+ jogadores, catálogo cheio</td></tr>
+</table>
+
+<p class="q">Nota de marketing: "Um lobo, todo o resto quer morrer" é a frase que faz alguém baixar o app. A Roleta Russa vale como estilo-vitrine.</p>
+
+<!-- ============ TELAS ============ -->
+<h2 id="telas">13. Telas e UX</h2>
+
+<h3>Mapa de telas</h3>
+<table>
+<tr><th>Grupo</th><th>Telas</th></tr>
+<tr><td><strong>Entrada</strong></td><td>1. Home — Jogar · Baralhos salvos · Biblioteca de roles · Como jogar · Ajustes</td></tr>
+<tr><td><strong>Setup</strong></td><td>2. Jogadores · 3. Modo · 4. Baralho · 5. Variantes · 6. Sistemas · 7. Revisão com índice de equilíbrio</td></tr>
+<tr><td><strong>Noite</strong></td><td>8. "Passe para [nome]" · 9. Revelação da role (noite 1) · 10. Ação ou toque falso · 11. Bilhete de sussurro</td></tr>
+<tr><td><strong>Dia</strong></td><td>12. Amanhecer · 13. Discussão com cronômetro · 14. Votação · 15. Execução</td></tr>
+<tr><td><strong>Fim</strong></td><td>16. Vencedores (em camadas) · 17. Resumo da partida · 18. Jogar de novo</td></tr>
+</table>
+
+<h3>Decisões de interface</h3>
+<table>
+<tr><th>Problema</th><th>Solução</th></tr>
+<tr><td>Proteger o segredo da role</td><td><strong>Segurar o dedo.</strong> A role só aparece enquanto o dedo está na tela e some ao soltar. O próprio gesto já cobre a tela com a mão</td></tr>
+<tr><td>Tempo morto na distribuição</td><td><strong>Distribuição embutida na noite 1.</strong> Uma volta só: o jogador vê a role e já age</td></tr>
+<tr><td>Gargalo da votação</td><td><strong>Votação simultânea</strong> por padrão — todos apontam na contagem de três. Configurável para secreta</td></tr>
+<tr><td>Identificação dos jogadores</td><td><strong>Nome + cor ou ícone</strong>, salvos por grupo. Digita uma vez, usa sempre</td></tr>
+<tr><td>Narração</td><td><strong>Texto por padrão, voz opcional.</strong> Funciona no silêncio e no barulho</td></tr>
+<tr><td>Brilho da tela à noite</td><td>Modo noite escuro de verdade — uma tela clara ilumina o rosto de quem está agindo</td></tr>
+</table>
+
+<!-- ============ SETUP ============ -->
+<h2 id="setup">14. Setup configurável</h2>
+<div class="box">
+<span class="lbl">O coração do produto</span>
+São sete sistemas independentes ligáveis no setup. É aqui que mora a diferença contra o Wolvesville Classic — o host não escolhe um baralho, ele <strong>monta uma experiência</strong>.
+</div>
+
+<table>
+<tr><th>Sistema</th><th>Opções</th></tr>
+<tr><td>Modo de jogo</td><td>Clássico · Traição · Vila Amaldiçoada · Duplas</td></tr>
+<tr><td>Baralho</td><td>Preset de fábrica · Baralho Surpresa · Salvo pelo grupo · Montado à mão</td></tr>
+<tr><td>Variantes de role</td><td>Qual versão de cada role entra</td></tr>
+<tr><td>Módulos de fantasma</td><td>Peso da Culpa · Assombrar · Pesadelo · Conselho dos Mortos · Julgamento do Além</td></tr>
+<tr><td>Revelação de role ao morrer</td><td>Sim · Não</td></tr>
+<tr><td>Contagem de lobos</td><td>Pública · Oculta · Faixa aproximada</td></tr>
+<tr><td>Eventos</td><td>Desligado · Raro · Frequente · Caótico</td></tr>
+<tr><td>Votação</td><td>Simultânea · Secreta</td></tr>
+</table>
+
+<!-- ============ PENDÊNCIAS ============ -->
+<h2 id="pendencias">15. Pendências</h2>
+
+<h3>Decisões em aberto</h3>
+<table>
+<tr><th>Item</th><th>Situação</th></tr>
+<tr><td><strong>Nome do jogo</strong></td><td>Não definido</td></tr>
+<tr><td><strong>Identidade visual</strong></td><td>Tom definido (folclórico e sombrio). Direção de arte, tipografia e ilustração em aberto</td></tr>
+<tr><td><strong>Monetização</strong></td><td>Não discutida</td></tr>
+<tr><td><strong>Contagem do catálogo</strong></td><td>24 roles + 1 modificador. A meta era 25 roles — falta uma, ou aceita-se a contagem atual</td></tr>
+<tr><td><strong>Noite 1 sem morte?</strong></td><td>A distribuição ocorre na noite 1 e o jogador precisa agir na mesma tela em que descobre a role. Uma noite 1 sem morte tornaria esse primeiro contato inofensivo</td></tr>
+<tr><td><strong>Peso da Anciã</strong></td><td>Registrado como −2. Confirmar se o valor pretendido era negativo ou positivo</td></tr>
+<tr><td><strong>Necromante × Peso da Culpa</strong></td><td>O Necromante torna o módulo parcialmente redundante. Sem impacto crítico</td></tr>
+</table>
+
+<h3>Guardado para depois</h3>
+<ul>
+<li><strong>Família 3 de eventos</strong> — cinco eventos de destravamento, escritos e prontos</li>
+<li><strong>Modo Crônica</strong> — partida longa com história e memória entre sessões</li>
+<li><strong>Modo Solo com bots</strong> — V2</li>
+<li><strong>Facções adormecidas</strong> — uma facção que só existe se um evento a acordar</li>
+<li><strong>Modificadores de role</strong> — arquitetura reaberta pelos Amantes; cartas aplicáveis sobre qualquer role</li>
+<li><strong>26 roles removidas</strong> — descritas nas atas, disponíveis para expansão</li>
+<li><strong>Conceito de "visitar"</strong> — rastro de quem foi até quem à noite. Removido por complexidade; habilitaria Vigia e Rastreador</li>
+</ul>
+
+<hr>
+<p class="meta">Fim do documento. Todas as decisões registradas foram aprovadas individualmente durante o desenvolvimento do dossiê.</p>
+
+</main>
+</div>
+
+<script>
+const secs=[...document.querySelectorAll('main h2[id]')];
+const links=[...document.querySelectorAll('nav a')];
+function sync(){
+  let cur=secs[0];
+  for(const s of secs){ if(s.getBoundingClientRect().top<140) cur=s; }
+  links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur.id));
+}
+document.addEventListener('scroll',sync,{passive:true});
+window.addEventListener('load',sync);
+links.forEach(a=>a.addEventListener('click',e=>{
+  const t=document.querySelector(a.getAttribute('href'));
+  if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});history.replaceState(null,'',a.getAttribute('href'));}
+}));
+</script>
+</body>
+</html>

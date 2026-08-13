@@ -1,0 +1,12 @@
+packages:
+  - 'packages/*'
+  - 'apps/*'
+
+# React Native 0.79.6 exige exatamente React 19.0.0, e uma segunda cópia de
+# React no grafo derruba o app com "Invalid hook call". Fixar aqui impede que
+# qualquer dependência transitiva traga uma versão própria.
+# (No pnpm 10 este é o lugar de `overrides` — o campo "pnpm" do package.json
+# deixou de ser lido.)
+overrides:
+  react: 19.0.0
+  react-dom: 19.0.0

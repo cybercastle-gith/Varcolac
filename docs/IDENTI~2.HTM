@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Documento de Identidade Visual — Luz de Vela</title>
+<style>
+:root{
+  --linho:#D9CDB4; --cera:#E0B75C; --chama:#F0C97A; --fuligem:#14100D;
+  --nogueira:#3A2A1C; --garanca:#A32620; --indigo:#1F3550; --horezu:#2E5545;
+  --ferrugem:#6B4A32; --ouro:#C9A227; --sangue:#6E1F1F;
+  --bg:#0F0C09; --panel:#171310; --line:#2E2721; --ink:#E0D6C4; --dim:#9C9083;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.65 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+#wrap{display:flex;min-height:100vh}
+nav{width:250px;flex:0 0 250px;background:#120F0C;border-right:1px solid var(--line);
+  padding:26px 16px;position:sticky;top:0;height:100vh;overflow-y:auto}
+nav h1{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--ouro);margin:0 0 3px}
+nav .sub{font-size:12px;color:#6B6055;margin-bottom:20px;font-style:italic}
+nav a{display:block;color:var(--dim);text-decoration:none;padding:6px 9px;border-radius:3px;
+  font-size:14px;border-left:2px solid transparent}
+nav a:hover{color:var(--ink);background:#1D1814}
+nav a.on{color:var(--ouro);border-left-color:var(--ouro);background:#1D1814}
+main{flex:1;padding:46px 54px 120px;max-width:1020px}
+h2{font-size:29px;color:var(--linho);margin:54px 0 6px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+h2:first-of-type{margin-top:0}
+h3{font-size:19px;color:var(--ouro);margin:32px 0 10px}
+h4{font-size:15px;color:var(--ink);margin:20px 0 6px;letter-spacing:.04em}
+p{margin:10px 0} ul,ol{margin:10px 0;padding-left:22px} li{margin:5px 0}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14.5px}
+th{text-align:left;background:#211B16;color:var(--ouro);padding:9px 11px;
+  border-bottom:1px solid var(--line);font-weight:600;font-size:12px;
+  text-transform:uppercase;letter-spacing:.08em}
+td{padding:9px 11px;border-bottom:1px solid #241F1A;vertical-align:top}
+.hd{border-bottom:2px solid var(--ouro);padding-bottom:20px;margin-bottom:10px}
+.hd h1{font-size:38px;margin:0;color:var(--linho)}
+.hd p{margin:6px 0 0;color:var(--dim);font-style:italic;font-size:18px}
+.meta{font-size:13px;color:#6B6055;font-family:system-ui,sans-serif;margin-top:8px}
+.box{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--ouro);
+  padding:14px 18px;margin:20px 0}
+.box.no{border-left-color:var(--garanca)}
+.box .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);
+  display:block;margin-bottom:6px;font-family:system-ui,sans-serif}
+.box strong{color:var(--ouro)} .box.no strong{color:#D98080}
+
+/* paleta */
+.pal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:18px 0}
+.sw{border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.sw .chip{height:62px}
+.sw .info{padding:7px 9px;background:var(--panel);font-family:system-ui,sans-serif}
+.sw .nm{font-size:12.5px;color:var(--ink);font-weight:600}
+.sw .hx{font-size:11px;color:var(--dim);letter-spacing:.05em}
+.sw .of{font-size:10.5px;color:#6B6055;font-style:italic;margin-top:2px}
+
+/* amostras */
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px;margin:20px 0}
+.demo{border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--panel)}
+.demo .cap{padding:8px 11px;font:600 11px/1.4 system-ui,sans-serif;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--dim);border-top:1px solid var(--line);background:#120F0C}
+
+/* carta de role */
+.card{aspect-ratio:3/4;position:relative;display:flex;align-items:center;justify-content:center;
+  background:#120C07;overflow:hidden}
+.card .glow{position:absolute;width:170%;height:78%;top:-24%;border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(240,201,122,.26),transparent 64%)}
+.card .lin{position:absolute;inset:9px;border:1px solid #4A3520}
+.card .in{position:relative;text-align:center;padding:12px}
+.card .motif{font-size:15px;color:var(--garanca);letter-spacing:6px}
+.card .ic{font-size:36px;color:var(--cera);margin:8px 0 4px}
+.card .nm{font-size:20px;color:#EDE0C6;font-family:Georgia,serif}
+.card .rl{width:44px;height:1px;background:#7A5A30;margin:9px auto}
+.card .tx{font-size:11px;line-height:1.6;color:#A08A66;font-family:Georgia,serif}
+
+/* tela de operação */
+.op{background:#14100D;padding:16px;min-height:230px;font-family:system-ui,sans-serif}
+.op .t{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#8B7F70;margin-bottom:12px}
+.op .li{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;
+  background:#1D1814;border:1px solid #2E2721;border-radius:4px;margin-bottom:7px;font-size:14px}
+.op .li b{font-weight:500;color:var(--ink)}
+.op .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:9px}
+.op .btn{margin-top:14px;background:var(--garanca);color:#F4E9D6;text-align:center;
+  padding:13px;border-radius:4px;font-size:15px;font-weight:600;letter-spacing:.03em}
+.op .btn2{margin-top:8px;background:transparent;border:1px solid #3E362E;color:#9C9083;
+  text-align:center;padding:12px;border-radius:4px;font-size:14px}
+
+/* passagem */
+.pass{background:#0B0806;min-height:230px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;padding:18px}
+.pass .sm{font:600 10.5px/1 system-ui,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#6B6055}
+.pass .big{font-size:31px;color:#EDE0C6;margin:14px 0 6px;font-family:Georgia,serif}
+.pass .hint{font:12px/1.5 system-ui,sans-serif;color:#5C5248;max-width:170px}
+.pass .hold{margin-top:18px;width:66px;height:66px;border-radius:50%;
+  border:1px solid #4A3520;display:flex;align-items:center;justify-content:center;
+  color:var(--cera);font-size:22px}
+
+/* tipografia */
+.type{background:var(--panel);border:1px solid var(--line);padding:20px;margin:16px 0}
+.type .a{font:600 34px/1.15 Georgia,serif;color:var(--linho)}
+.type .b{font:italic 19px/1.4 Georgia,serif;color:var(--cera);margin-top:6px}
+.type .c{font:15px/1.7 system-ui,sans-serif;color:var(--ink);margin-top:12px}
+.type .d{font:600 11px/1 system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--dim);margin-top:12px}
+.motifs{display:flex;gap:24px;flex-wrap:wrap;margin:16px 0;font-size:30px;color:var(--garanca)}
+.motifs div{text-align:center}
+.motifs span{display:block;font:11px/1.4 system-ui,sans-serif;color:var(--dim);margin-top:6px}
+hr{border:0;border-top:1px solid var(--line);margin:30px 0}
+@media(max-width:860px){#wrap{flex-direction:column}nav{width:100%;height:auto;position:static;flex:none}main{padding:26px 18px 70px}}
+</style>
+</head>
+<body>
+<div id="wrap">
+<nav>
+  <h1>Identidade Visual</h1>
+  <div class="sub">Luz de Vela — versão autêntica</div>
+  <a href="#conceito">1. Conceito</a>
+  <a href="#referencia">2. Referência cultural</a>
+  <a href="#paleta">3. Paleta</a>
+  <a href="#luz">4. Luz e sombra</a>
+  <a href="#ilustracao">5. Ilustração</a>
+  <a href="#tipografia">6. Tipografia</a>
+  <a href="#motivos">7. Motivos e ícones</a>
+  <a href="#interface">8. Interface</a>
+  <a href="#componentes">9. Componentes</a>
+  <a href="#acessibilidade">10. Legibilidade</a>
+  <a href="#naofazer">11. O que não fazer</a>
+  <a href="#producao">12. Produção</a>
+</nav>
+
+<main>
+
+<div class="hd">
+  <h1>Documento de Identidade Visual</h1>
+  <p>Luz de Vela — versão autêntica</p>
+  <p class="meta">Direção aprovada · Referência: Leste europeu e Bálcãs · Ilustração: colagem de material real · Interface: híbrido controlado</p>
+</div>
+
+<h2 id="conceito">1. Conceito</h2>
+
+<div class="box">
+<span class="lbl">Frase-guia</span>
+<strong>Nada aqui foi inventado.</strong> Cada textura, cor e objeto existiu de verdade. A vila não é cenário de fantasia — é um lugar que alguém habitou, fotografado à luz de uma vela.
+</div>
+
+<p>A direção "Luz de Vela" comum ao gênero falha por ser <em>fantasia de taverna</em>: brilho de filtro, madeira genérica, ilustração de RPG. Esta versão troca isso por <strong>cultura material documentada</strong>. A autenticidade não está no tema — está no fato de os materiais serem reais e virem de um lugar específico.</p>
+
+<p>Três consequências práticas dessa escolha:</p>
+<ul>
+<li>A textura é <strong>fotografada</strong>, não desenhada. Linho, lã, cera e madeira entram no app por escaneamento.</li>
+<li>A luz obedece à física de uma chama: <strong>uma fonte só</strong>, queda rápida, sombra quente.</li>
+<li>A paleta é <strong>extraída de materiais</strong>, não escolhida por gosto. Cada cor tem procedência.</li>
+</ul>
+
+<h2 id="referencia">2. Referência cultural</h2>
+
+<p>Leste europeu e Bálcãs — a origem folclórica real do lobisomem. Não é uma escolha estética arbitrária: é de onde a criatura vem.</p>
+
+<table>
+<tr><th>Domínio</th><th>Referência</th></tr>
+<tr><td>Têxtil</td><td>Bordado em ponto-cruz vermelho e preto sobre linho cru. Motivos geométricos: losango, roda solar, árvore da vida, ave</td></tr>
+<tr><td>Madeira</td><td>Portões entalhados romenos, colher de pau, viga de nogueira envelhecida</td></tr>
+<tr><td>Metal</td><td>Ferro forjado, ferradura, chave grande, prata repuxada de ícone</td></tr>
+<tr><td>Cerâmica</td><td>Esmalte de Horezu — verde, ocre, creme</td></tr>
+<tr><td>Papel</td><td>Documento cirílico, tinta ferrogálica desbotada, folhinha de parede</td></tr>
+<tr><td>Sacro</td><td>Ícone ortodoxo, folha de ouro sobre madeira, vela de cera de abelha</td></tr>
+<tr><td>Vestuário</td><td>Casaco de pele de carneiro, lã grossa, feltro, remendo</td></tr>
+</table>
+
+<div class="box">
+<span class="lbl">Bônus de vocabulário</span>
+A região dá nomes reais para a criatura: <strong>vârcolac</strong> (romeno), <strong>vukodlak</strong> (sérvio e croata), <strong>strigoi</strong> (morto que volta). São fontes legítimas para o nome do jogo e para o vocabulário de interface — e nenhuma delas está gasta no mercado mobile.
+</div>
+
+<h2 id="paleta">3. Paleta</h2>
+<p>Onze cores, todas com procedência material. Nenhuma foi escolhida por parecer bonita.</p>
+
+<h3>Base</h3>
+<div class="pal">
+  <div class="sw"><div class="chip" style="background:#14100D"></div><div class="info"><div class="nm">Fuligem</div><div class="hx">#14100D</div><div class="of">preto de fumo de vela</div></div></div>
+  <div class="sw"><div class="chip" style="background:#3A2A1C"></div><div class="info"><div class="nm">Nogueira</div><div class="hx">#3A2A1C</div><div class="of">viga envelhecida</div></div></div>
+  <div class="sw"><div class="chip" style="background:#6B4A32"></div><div class="info"><div class="nm">Ferrugem</div><div class="hx">#6B4A32</div><div class="of">ferro forjado oxidado</div></div></div>
+  <div class="sw"><div class="chip" style="background:#D9CDB4"></div><div class="info"><div class="nm">Linho Cru</div><div class="hx">#D9CDB4</div><div class="of">tecido não tingido</div></div></div>
+</div>
+
+<h3>Luz</h3>
+<div class="pal">
+  <div class="sw"><div class="chip" style="background:#F0C97A"></div><div class="info"><div class="nm">Chama</div><div class="hx">#F0C97A</div><div class="of">centro da vela</div></div></div>
+  <div class="sw"><div class="chip" style="background:#E0B75C"></div><div class="info"><div class="nm">Cera</div><div class="hx">#E0B75C</div><div class="of">cera de abelha</div></div></div>
+  <div class="sw"><div class="chip" style="background:#C9A227"></div><div class="info"><div class="nm">Folha de Ouro</div><div class="hx">#C9A227</div><div class="of">ícone ortodoxo</div></div></div>
+</div>
+
+<h3>Acento</h3>
+<div class="pal">
+  <div class="sw"><div class="chip" style="background:#A32620"></div><div class="info"><div class="nm">Garança</div><div class="hx">#A32620</div><div class="of">linha de bordado</div></div></div>
+  <div class="sw"><div class="chip" style="background:#6E1F1F"></div><div class="info"><div class="nm">Sangue Seco</div><div class="hx">#6E1F1F</div><div class="of">morte, perigo</div></div></div>
+  <div class="sw"><div class="chip" style="background:#1F3550"></div><div class="info"><div class="nm">Índigo</div><div class="hx">#1F3550</div><div class="of">tinta de tingimento</div></div></div>
+  <div class="sw"><div class="chip" style="background:#2E5545"></div><div class="info"><div class="nm">Horezu</div><div class="hx">#2E5545</div><div class="of">esmalte de cerâmica</div></div></div>
+</div>
+
+<h3>Uso semântico</h3>
+<table>
+<tr><th>Cor</th><th>Significado no jogo</th></tr>
+<tr><td>Garança</td><td>Ação principal, acusação, votação</td></tr>
+<tr><td>Sangue Seco</td><td>Morte, eliminação, estado terminal</td></tr>
+<tr><td>Cera / Chama</td><td>Informação revelada, poder ativo, destaque</td></tr>
+<tr><td>Folha de Ouro</td><td>Vitória, título, hierarquia</td></tr>
+<tr><td>Índigo</td><td>Noite, fase noturna, fantasmas</td></tr>
+<tr><td>Horezu</td><td>Proteção, cura, estado seguro</td></tr>
+<tr><td>Linho Cru</td><td>Texto de leitura</td></tr>
+</table>
+
+<h2 id="luz">4. Luz e sombra</h2>
+<p>É a regra que mais separa esta direção da versão genérica. Uma chama de vela tem comportamento específico, e respeitá-lo é o que produz autenticidade.</p>
+
+<table>
+<tr><th>Regra</th><th>Detalhe</th></tr>
+<tr><td><strong>Uma fonte só</strong></td><td>Nunca duas luzes. Se algo está iluminado, existe uma direção única e identificável</td></tr>
+<tr><td><strong>Queda rápida</strong></td><td>A luz cai ao quadrado da distância. O centro é claro e a borda é preta em poucos centímetros. Nada de degradê suave e longo</td></tr>
+<tr><td><strong>Sombra quente</strong></td><td>Sombra nunca é cinza nem azul. É marrom-preta — a chama contamina até o escuro</td></tr>
+<tr><td><strong>Sem contraluz</strong></td><td>Não existe luz de preenchimento vinda de lugar nenhum. Se o outro lado do rosto está escuro, ele fica escuro</td></tr>
+<tr><td><strong>Tremulação discreta</strong></td><td>Nas telas de momento, a luz pode oscilar 2-4% de opacidade. Nunca mais que isso, e nunca em telas de operação</td></tr>
+</table>
+
+<h2 id="ilustracao">5. Ilustração — colagem de material real</h2>
+
+<p>Cada role é montada a partir de um <strong>banco de materiais fotografados</strong>, não desenhada. Recorte, sobreposição, costura, mancha, queimadura.</p>
+
+<h3>Banco de materiais a produzir</h3>
+<table>
+<tr><th>Grupo</th><th>Itens a fotografar ou escanear</th></tr>
+<tr><td>Tecido</td><td>Linho cru, lã grossa, feltro, bordado vermelho e preto, remendo, barbante, fio solto</td></tr>
+<tr><td>Papel</td><td>Papel encardido, borda queimada, dobra, mancha de água, escrita a tinta ferrogálica</td></tr>
+<tr><td>Madeira</td><td>Veio de nogueira, entalhe, ripa, superfície gasta</td></tr>
+<tr><td>Metal</td><td>Ferro forjado, prego, chave, ferradura, prata batida</td></tr>
+<tr><td>Orgânico</td><td>Cera derretida, sebo, osso, pelo, folha seca, terra</td></tr>
+</table>
+
+<h3>Por que colagem é a escolha certa aqui</h3>
+<ul>
+<li><strong>Escala.</strong> Um banco único de ~60 materiais gera 24 roles e todas as variantes. Uma ilustração pintada exigiria 24 peças originais.</li>
+<li><strong>Consistência garantida.</strong> Todas as roles compartilham as mesmas texturas, então nenhuma destoa.</li>
+<li><strong>Difícil de copiar.</strong> Um concorrente pode imitar um estilo de desenho. Não pode imitar o seu banco de materiais.</li>
+<li><strong>Autenticidade literal.</strong> A textura não <em>parece</em> real. Ela é.</li>
+</ul>
+
+<h3>Anatomia da carta de role</h3>
+<div class="row">
+  <div class="demo">
+    <div class="card">
+      <div class="glow"></div><div class="lin"></div>
+      <div class="in">
+        <div class="motif">&#9670;&#9671;&#9670;</div>
+        <div class="ic">&#10022;</div>
+        <div class="nm">O Vidente</div>
+        <div class="rl"></div>
+        <div class="tx">Vê a facção de um<br>por noite. Perde o voto.</div>
+      </div>
+    </div>
+    <div class="cap">Carta de role — tela de momento</div>
+  </div>
+  <div class="demo">
+    <div class="pass">
+      <div class="sm">passe o aparelho para</div>
+      <div class="big">Marina</div>
+      <div class="hint">Ninguém mais deve ver esta tela</div>
+      <div class="hold">&#9673;</div>
+    </div>
+    <div class="cap">Passagem — segure para revelar</div>
+  </div>
+  <div class="demo">
+    <div class="op">
+      <div class="t">Vila — noite 2</div>
+      <div class="li"><span><i class="dot" style="background:#2E5545"></i><b>Marina</b></span><span style="color:#6B6055;font-size:12px">viva</span></div>
+      <div class="li"><span><i class="dot" style="background:#2E5545"></i><b>Otávio</b></span><span style="color:#6B6055;font-size:12px">viva</span></div>
+      <div class="li" style="opacity:.5"><span><i class="dot" style="background:#6E1F1F"></i><b>Helena</b></span><span style="color:#6B6055;font-size:12px">morta</span></div>
+      <div class="btn">Iniciar votação</div>
+      <div class="btn2">Ver funções em jogo</div>
+    </div>
+    <div class="cap">Tela de operação — sem textura</div>
+  </div>
+</div>
+
+<h2 id="tipografia">6. Tipografia</h2>
+
+<p>Duas famílias, ambas gratuitas e com <strong>suporte completo a cirílico</strong> — o que permite usar vocabulário autêntico da região sem substituir fonte.</p>
+
+<table>
+<tr><th>Uso</th><th>Família</th><th>Tratamento</th></tr>
+<tr><td>Títulos e nomes de role</td><td><strong>PT Serif</strong> <span style="color:#6B6055">(alt.: Spectral, Literata)</span></td><td>Regular e itálico. Nomes de role em itálico</td></tr>
+<tr><td>Interface e operação</td><td><strong>PT Sans</strong> <span style="color:#6B6055">(alt.: Inter, Source Sans)</span></td><td>Regular e semibold. Nunca light no escuro</td></tr>
+<tr><td>Rótulos e categorias</td><td>PT Sans</td><td>Caixa alta, 11px, entreletra 0.14em</td></tr>
+<tr><td>Números e contagens</td><td>PT Sans tabular</td><td>Alinhamento por coluna em placares</td></tr>
+</table>
+
+<div class="type">
+  <div class="a">O Necromante</div>
+  <div class="b">Ressuscita um morto, uma vez por partida</div>
+  <div class="c">Apenas mortes de noites anteriores. A ressurreição não desfaz estertores já disparados — se o Caçador atirou, o tiro vale.</div>
+  <div class="d">Vila · Peso 4 · Noites anteriores</div>
+</div>
+
+<div class="box">
+<span class="lbl">Regra dura</span>
+<strong>Nunca use tipografia gótica ou "medieval decorativa".</strong> É o marcador nº1 de fantasia genérica e destrói a autenticidade em uma tela. O documento cirílico real do século XIX usava serifada limpa, não blackletter.
+</div>
+
+<h2 id="motivos">7. Motivos e sistema de ícones</h2>
+<p>Os ícones não são desenhos de objetos — são <strong>motivos de bordado</strong>, geométricos e planos, tirados do repertório da região. Isso mantém o sistema coerente e barato.</p>
+
+<div class="motifs">
+  <div>&#9670;<span>Losango<br>vila</span></div>
+  <div>&#10018;<span>Árvore da vida<br>proteção</span></div>
+  <div>&#9737;<span>Roda solar<br>dia</span></div>
+  <div>&#9789;<span>Lua<br>noite</span></div>
+  <div>&#9660;<span>Dente<br>lobos</span></div>
+  <div>&#9671;<span>Losango vazado<br>solitários</span></div>
+  <div>&#10013;<span>Cruz<br>morte</span></div>
+</div>
+
+<table>
+<tr><th>Facção</th><th>Motivo</th><th>Cor</th></tr>
+<tr><td>Vila</td><td>Árvore da vida</td><td>Horezu</td></tr>
+<tr><td>Lobos</td><td>Dente / losango invertido</td><td>Garança</td></tr>
+<tr><td>Solitários</td><td>Losango vazado</td><td>Cera</td></tr>
+<tr><td>Fantasmas</td><td>Roda solar quebrada</td><td>Índigo</td></tr>
+</table>
+
+<h2 id="interface">8. Interface — híbrido controlado</h2>
+<p>A regra é simples e não admite exceção: <strong>textura em telas de momento, limpeza em telas de operação.</strong></p>
+
+<table>
+<tr><th>Tipo</th><th>Telas</th><th>Tratamento</th></tr>
+<tr><td><strong>Momento</strong><br><span style="color:#6B6055;font-size:13px">emoção, teatro</span></td><td>Revelação de role · Passagem · Amanhecer · Morte · Evento narrado · Fim de partida</td><td>Textura completa, colagem, luz de vela, tremulação sutil, tipografia serifada grande</td></tr>
+<tr><td><strong>Operação</strong><br><span style="color:#6B6055;font-size:13px">função, leitura rápida</span></td><td>Setup · Baralho · Variantes · Lista de jogadores · Votação · Biblioteca de roles · Ajustes</td><td>Fundo Fuligem liso, zero textura, sem serifa, alvos grandes, contraste alto</td></tr>
+</table>
+
+<div class="box">
+<span class="lbl">Por que a separação é rígida</span>
+Durante a partida as pessoas estão no escuro, com pressa, passando o aparelho. Textura em tela de operação custa legibilidade num momento em que ela vale mais que beleza. E poupar a textura para os momentos certos faz ela <strong>pesar mais</strong> quando aparece.
+</div>
+
+<h2 id="componentes">9. Componentes</h2>
+<table>
+<tr><th>Componente</th><th>Especificação</th></tr>
+<tr><td>Botão primário</td><td>Fundo Garança, texto Linho, raio 4px, altura 48px, semibold</td></tr>
+<tr><td>Botão secundário</td><td>Transparente, borda #3E362E, texto Dim, mesma altura</td></tr>
+<tr><td>Botão destrutivo</td><td>Fundo Sangue Seco. Reservado para eliminar e encerrar partida</td></tr>
+<tr><td>Item de lista</td><td>Fundo #1D1814, borda #2E2721, raio 4px, ponto de estado à esquerda</td></tr>
+<tr><td>Estado morto</td><td>Opacidade 50% + ponto Sangue Seco. Nunca remover da lista — pilar B</td></tr>
+<tr><td>Carta de role</td><td>Proporção 3:4, moldura interna a 9px, motivo no topo, nome em serifada itálica</td></tr>
+<tr><td>Segurar para revelar</td><td>Círculo de 66px, borda Nogueira clara, preenche em Cera conforme o toque</td></tr>
+<tr><td>Cronômetro</td><td>Numeral tabular grande, cor Linho; passa a Garança nos últimos 30 segundos</td></tr>
+<tr><td>Índice de equilíbrio</td><td>Barra horizontal com centro marcado; Horezu no equilíbrio, Garança nos extremos</td></tr>
+</table>
+
+<h2 id="acessibilidade">10. Legibilidade no escuro</h2>
+<p>O jogo é usado em ambiente com pouca luz, com o aparelho circulando entre pessoas. Isso não é detalhe de acessibilidade — é condição de uso.</p>
+<ul>
+<li><strong>Sem branco puro.</strong> O texto mais claro é Linho Cru (#D9CDB4). Branco #FFF fere o olho adaptado ao escuro e ilumina o rosto de quem está agindo.</li>
+<li><strong>Contraste mínimo 4.5:1</strong> em toda tela de operação. Telas de momento podem descer a 3:1 se o texto for grande.</li>
+<li><strong>Alvos de toque ≥ 48px</strong> em todas as telas. Ninguém acerta um botão pequeno no escuro, com pressa e com outra pessoa olhando.</li>
+<li><strong>Brilho reduzido automático</strong> nas fases noturnas.</li>
+<li><strong>Nunca cor sozinha.</strong> Estado sempre acompanha ícone ou texto — daltônicos representam ~8% dos homens, e vila/lobos usa verde e vermelho.</li>
+<li><strong>Sem animação longa.</strong> Transição máxima de 250ms. Ninguém quer esperar animação com sete pessoas olhando.</li>
+</ul>
+
+<h2 id="naofazer">11. O que não fazer</h2>
+<div class="box no">
+<span class="lbl">Marcadores de fantasia genérica</span>
+Cada item abaixo destrói a autenticidade em uma tela.
+</div>
+<ul>
+<li><strong>Tipografia gótica ou blackletter.</strong> O marcador nº1. Nunca.</li>
+<li><strong>Textura de pergaminho comprada.</strong> O papel tem que ser fotografado, não baixado de banco de imagem.</li>
+<li><strong>Brilho de <em>glow</em> uniforme.</strong> Vela não faz halo perfeito. Faz queda dura e irregular.</li>
+<li><strong>Lua cheia enorme atrás de um lobo uivando.</strong> É a capa de todo concorrente do gênero.</li>
+<li><strong>Sombra cinza ou azul.</strong> Contradiz a fonte de luz única e quente.</li>
+<li><strong>Ilustração de fantasy art.</strong> Personagem heroico, armadura, pose. Estas são pessoas de uma vila, não aventureiros.</li>
+<li><strong>Vermelho neon e roxo.</strong> Fora da paleta e fora do período.</li>
+<li><strong>Símbolos ocultistas genéricos.</strong> Pentagrama, runa nórdica aleatória. A região tem símbolos próprios e verificáveis.</li>
+<li><strong>Textura em tela de operação.</strong> Já dito, mas é a violação mais provável.</li>
+</ul>
+
+<h2 id="producao">12. Ordem de produção</h2>
+<table>
+<tr><th>#</th><th>Etapa</th><th>Nota</th></tr>
+<tr><td>1</td><td>Banco de materiais</td><td>~60 fotografias e escaneamentos. É o alicerce de tudo — nada começa antes disso</td></tr>
+<tr><td>2</td><td>Carta de role de referência</td><td>Uma role montada até o fim, aprovada, virando o gabarito das outras 23</td></tr>
+<tr><td>3</td><td>Sistema de motivos</td><td>Sete ícones geométricos, vetor, um único peso de traço</td></tr>
+<tr><td>4</td><td>Kit de operação</td><td>Botões, listas, campos, cronômetro. Sem textura, rápido de fazer</td></tr>
+<tr><td>5</td><td>Telas de momento</td><td>Revelação, passagem, amanhecer, morte, fim</td></tr>
+<tr><td>6</td><td>As 23 roles restantes</td><td>Com o gabarito pronto, viram trabalho de montagem e não de criação</td></tr>
+<tr><td>7</td><td>Ícone do app e vitrine da loja</td><td>Precisa funcionar a 48px. Um motivo de bordado em Garança sobre Fuligem resolve</td></tr>
+</table>
+
+<hr>
+<p class="meta">Documento derivado das decisões aprovadas no dossiê de design. Direção: Luz de Vela autêntica · Leste europeu e Bálcãs · colagem de material real · híbrido controlado de interface.</p>
+
+</main>
+</div>
+<script>
+const secs=[...document.querySelectorAll('main h2[id]')],links=[...document.querySelectorAll('nav a')];
+function sync(){let c=secs[0];for(const s of secs){if(s.getBoundingClientRect().top<140)c=s;}
+links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+c.id));}
+document.addEventListener('scroll',sync,{passive:true});window.addEventListener('load',sync);
+links.forEach(a=>a.addEventListener('click',e=>{const t=document.querySelector(a.getAttribute('href'));
+if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}}));
+</script>
+</body>
+</html>

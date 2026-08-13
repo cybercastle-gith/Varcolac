@@ -1,0 +1,31 @@
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# expo
+.expo/
+.expo-shared/
+android/
+ios/
+*.jks
+*.keystore
+
+# ambiente
+.env
+.env.*
+!.env.example
+
+# sistema / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+
+# gerado pelo expo prebuild
+apps/mobile/android/
+apps/mobile/ios/

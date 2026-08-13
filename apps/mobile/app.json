@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Werewolf",
+    "slug": "projeto-werewolf",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "scheme": "werewolf",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#14100D",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#14100D"
+    },
+    "android": {
+      "package": "com.projeto.werewolf",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#14100D"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.projeto.werewolf",
+      "supportsTablet": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
