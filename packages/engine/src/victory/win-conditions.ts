@@ -3,6 +3,7 @@ import { vivos } from '../types/game-state';
 import type { Player, PlayerId } from '../types/player';
 import { countsAsWolf, countsAsVillage, type ResolvedAlignment } from '../types/faction';
 import { role } from '../data/roles/index';
+import { MISSOES_POR_ID } from '../data/missions';
 
 /** Vitórias são em camadas: a vila pode vencer e o Bobo também. */
 export type VictoryLayer = 'vila' | 'lobos' | 'solitario' | 'amantes';
@@ -20,13 +21,85 @@ export interface VictoryResult {
 
 /**
  * Alinhamento já resolvido de um jogador.
- * TODO: `herda` (Ladrão) e `definido-em-jogo` (Bruxa) precisam do estado real;
- * até lá caem em `puro`, que é o neutro seguro — não contam para nenhum lado.
+ *
+ * `herda` (Ladrão) e `definido-em-jogo` (Bruxa) só existem até a partida
+ * começar: a troca do Ladrão acontece na criação e ele passa a ter a role
+ * roubada, e a poção da Bruxa fica em `objetivosSecretos`. O que sobra aqui é
+ * o caso da Bruxa, resolvido pela poção.
  */
-function alinhamento(p: Player): ResolvedAlignment | undefined {
+function alinhamento(estado: GameState, p: Player): ResolvedAlignment | undefined {
   const a = role(p.roleId).alinhamento;
   if (a === 'bem' || a === 'mal' || a === 'puro') return a;
+  if (a === 'definido-em-jogo') {
+    return estado.objetivosSecretos[p.id] === 'pocao-morte' ? 'mal' : 'bem';
+  }
   return a === undefined ? undefined : 'puro';
+}
+
+function lado(estado: GameState, p: Player): 'vila' | 'lobos' | 'neutro' {
+  const r = role(p.roleId);
+  const a = alinhamento(estado, p);
+  if (countsAsWolf(r.faccao, a)) return 'lobos';
+  if (countsAsVillage(r.faccao, a)) return 'vila';
+  return 'neutro';
+}
+
+/** Camadas paralelas: valem quando a partida termina, junto de quem venceu. */
+function camadasDeSolitarios(estado: GameState, vivosAgora: readonly Player[]): VictoryClaim[] {
+  const claims: VictoryClaim[] = [];
+
+  const sobreviventes = vivosAgora.filter((p) => p.roleId === 'sobrevivente');
+  if (sobreviventes.length > 0) {
+    claims.push({
+      camada: 'solitario',
+      vencedores: sobreviventes.map((p) => p.id),
+      motivo: 'Sobrevivente vivo no fim: vence com qualquer vencedor.',
+    });
+  }
+
+  // Vingador: vence se o alvo escolhido na noite 1 morreu, por qualquer causa.
+  for (const p of estado.players.filter((x) => x.roleId === 'vingador')) {
+    const alvoId = estado.objetivosSecretos[p.id];
+    const alvo = alvoId ? estado.players.find((x) => x.id === alvoId) : undefined;
+    if (alvo?.status === 'morto') {
+      claims.push({
+        camada: 'solitario',
+        vencedores: [p.id],
+        motivo: `Vingador: ${alvo.nome} morreu. Vitória passiva.`,
+      });
+    }
+  }
+
+  // Coringa: missão sorteada, verificável quando o engine consegue julgar.
+  for (const p of estado.players.filter((x) => x.roleId === 'coringa')) {
+    const missao = MISSOES_POR_ID.get(estado.objetivosSecretos[p.id] ?? '');
+    if (!missao) continue;
+
+    const cumpriu =
+      missao.verificacao === 'sobreviver'
+        ? p.status === 'vivo'
+        : missao.verificacao === 'morrer-de-noite'
+          ? p.status === 'morto' && p.causaMorte !== 'linchamento'
+          : missao.verificacao === 'nunca-votar'
+            ? estado.historicoVotos.every((v) => !v.votos[p.id])
+            : null;
+
+    if (cumpriu === true) {
+      claims.push({
+        camada: 'solitario',
+        vencedores: [p.id],
+        motivo: `Coringa cumpriu a missão: ${missao.texto}`,
+      });
+    } else if (cumpriu === null) {
+      claims.push({
+        camada: 'solitario',
+        vencedores: [],
+        motivo: `Coringa: a missão "${missao.texto}" é julgada na mesa, pelo host.`,
+      });
+    }
+  }
+
+  return claims;
 }
 
 /**
@@ -34,33 +107,35 @@ function alinhamento(p: Player): ResolvedAlignment | undefined {
  * - Vila vence eliminando todas as ameaças.
  * - Lobos vencem ao igualar ou superar a vila em número.
  * - Solitários do mal contam como lobos na paridade.
- * - Bobo vence ao ser linchado — encerra a partida na hora.
- * - Vingador vence se o alvo morrer, por qualquer causa.
- * - Sobrevivente vence com qualquer vencedor, desde que vivo.
  * - Amantes vencem se forem os dois últimos vivos.
  * - Lobo Branco pode vencer sozinho ou junto com a matilha.
+ * - Bobo vence ao ser linchado, e isso encerra a partida na votação, não aqui.
  */
 export function verificarVitoria(estado: GameState): VictoryResult {
+  // Uma vitória já declarada (o Bobo) não é reavaliada.
+  if (estado.vencedores) {
+    return {
+      encerrada: true,
+      camadas: [
+        { camada: 'solitario', vencedores: estado.vencedores, motivo: 'Vitória já declarada.' },
+      ],
+    };
+  }
+
   const vivosAgora = vivos(estado);
   const camadas: VictoryClaim[] = [];
 
-  const lado = (p: Player) => {
-    const r = role(p.roleId);
-    const a = alinhamento(p);
-    if (countsAsWolf(r.faccao, a)) return 'lobos' as const;
-    if (countsAsVillage(r.faccao, a)) return 'vila' as const;
-    return 'neutro' as const;
-  };
+  const lobosVivos = vivosAgora.filter((p) => lado(estado, p) === 'lobos');
+  const vilaViva = vivosAgora.filter((p) => lado(estado, p) === 'vila');
 
-  const lobosVivos = vivosAgora.filter((p) => lado(p) === 'lobos');
-  const vilaViva = vivosAgora.filter((p) => lado(p) === 'vila');
-
-  // Amantes: os dois últimos vivos, e são um par.
   const [a, b] = vivosAgora;
-  if (vivosAgora.length === 2 && a && b && a.amanteDe === b.id && b.amanteDe === a.id) {
+  const casalSozinho =
+    vivosAgora.length === 2 && !!a && !!b && a.amanteDe === b.id && b.amanteDe === a.id;
+
+  if (casalSozinho) {
     camadas.push({
       camada: 'amantes',
-      vencedores: [a.id, b.id],
+      vencedores: [a!.id, b!.id],
       motivo: 'Os dois amantes são os últimos vivos.',
     });
   } else if (lobosVivos.length === 0) {
@@ -70,30 +145,31 @@ export function verificarVitoria(estado: GameState): VictoryResult {
       motivo: 'Nenhuma ameaça restante.',
     });
   } else if (lobosVivos.length >= vilaViva.length) {
+    // O Lobo Branco joga contra a própria matilha: se sobrou só ele, vence só.
+    const soLoboBranco =
+      lobosVivos.length === 1 && lobosVivos[0]!.roleId === 'lobo-branco';
     camadas.push({
       camada: 'lobos',
       vencedores: lobosVivos.map((p) => p.id),
-      motivo: `Matilha igualou ou superou a vila: ${lobosVivos.length} × ${vilaViva.length}.`,
+      motivo: soLoboBranco
+        ? 'O Lobo Branco sobrou sozinho: vence sem a matilha.'
+        : `Matilha igualou ou superou a vila: ${lobosVivos.length} × ${vilaViva.length}.`,
     });
   }
 
   const encerrada = camadas.length > 0;
-
-  if (encerrada) {
-    // Sobrevivente vence junto com quem vencer, desde que vivo.
-    const sobreviventes = vivosAgora
-      .filter((p) => p.roleId === 'sobrevivente')
-      .map((p) => p.id);
-    if (sobreviventes.length > 0) {
-      camadas.push({
-        camada: 'solitario',
-        vencedores: sobreviventes,
-        motivo: 'Sobrevivente vivo no fim.',
-      });
-    }
-    // TODO: Vingador (alvo morto), Coringa (missão sorteada), Bobo (linchamento,
-    // que encerra a partida fora daqui, na resolução da votação).
-  }
+  if (encerrada) camadas.push(...camadasDeSolitarios(estado, vivosAgora));
 
   return { encerrada, camadas };
+}
+
+/** Aplica o resultado ao estado, para o app e o laboratório lerem um só campo. */
+export function encerrarSeAcabou(estado: GameState): GameState {
+  const r = verificarVitoria(estado);
+  if (!r.encerrada) return estado;
+  return {
+    ...estado,
+    fase: 'fim',
+    vencedores: [...new Set(r.camadas.flatMap((c) => c.vencedores))],
+  };
 }

@@ -1,3 +1,4 @@
 export { cores, semantico } from './colors';
-export { tipografia } from './typography';
-export { espaco, raio, alvoMinimo } from './spacing';
+export { tipografia, fonte } from './typography';
+export { espaco, raio, alvoMinimo, duracaoMaximaMs } from './spacing';
+export { motivos, motivoDaFaccao } from './motifs';

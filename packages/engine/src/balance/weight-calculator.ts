@@ -123,17 +123,26 @@ function sugerir(ie: number, leitura: BalanceReading, roles: readonly Role[]): s
   ];
 }
 
+/**
+ * Pesos sobrescritos por role, para o editor de pesos do laboratório.
+ * Existe para que a calibragem possa ser experimentada sem editar o catálogo:
+ * mexe-se no valor, o IE recalcula na hora, e só o que sobreviver à simulação
+ * em massa vira mudança de verdade em `data/roles`.
+ */
+export type PesosCustomizados = Readonly<Record<string, number>>;
+
 export function calcularEquilibrio(
   deck: Deck,
   config: GameConfig,
   jogadores: number,
+  pesos: PesosCustomizados = {},
 ): BalanceResult {
   const roles = deck.roleIds.map(role);
 
   let forcaVila = 0;
   let forcaMatilha = 0;
   for (const r of roles) {
-    const peso = pesoEfetivo(r, config.variantes[r.id]);
+    const peso = pesos[r.id] ?? pesoEfetivo(r, config.variantes[r.id]);
     if (r.faccao === 'lobos') forcaMatilha += peso;
     else if (r.faccao === 'vila') forcaVila += peso;
     else {

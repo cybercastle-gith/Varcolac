@@ -1,9 +1,10 @@
 import type { GameConfig, Deck } from '../types/config';
-import type { GameState } from '../types/game-state';
+import { CONTADORES_ZERADOS, type GameState } from '../types/game-state';
 import type { Player, PlayerFlags } from '../types/player';
 import { usosIniciais } from '../types/role';
 import { role } from '../data/roles/index';
-import { criarRng } from '../utils/rng';
+import { MISSOES_DO_CORINGA } from '../data/missions';
+import { criarRng, type Rng } from '../utils/rng';
 
 export interface JogadorInicial {
   readonly nome: string;
@@ -22,14 +23,71 @@ export const FLAGS_LIMPAS: PlayerFlags = {
 };
 
 /**
+ * Vínculos e trocas que o dossiê manda resolver ANTES da primeira passagem do
+ * celular (etapa 1: "roles são atribuídas na inicialização").
+ *
+ * Fica aqui, e não numa etapa da noite, porque quando o aparelho começa a
+ * circular tudo isto já precisa estar decidido — o Ladrão que trocou já mostra
+ * a role nova, e nenhum dos dois é avisado.
+ */
+function aplicarVinculos(
+  players: Player[],
+  deck: Deck,
+  rng: Rng,
+): { players: Player[]; objetivos: Record<string, string> } {
+  const objetivos: Record<string, string> = {};
+  let lista = [...players];
+
+  // Ladrão: troca de role com outro jogador, em silêncio.
+  const ladrao = lista.find((p) => p.roleId === 'ladrao');
+  if (ladrao) {
+    const outros = lista.filter((p) => p.id !== ladrao.id);
+    if (outros.length > 0) {
+      const alvo = rng.pick(outros);
+      lista = lista.map((p) => {
+        if (p.id === ladrao.id) return { ...p, roleId: alvo.roleId };
+        if (p.id === alvo.id) return { ...p, roleId: 'ladrao' };
+        return p;
+      });
+      objetivos[ladrao.id] = `roubou a role de ${alvo.nome}`;
+    }
+  }
+
+  // Vingador: escolhe um alvo na noite 1 e vence se ele morrer, por qualquer causa.
+  const vingador = lista.find((p) => p.roleId === 'vingador');
+  if (vingador) {
+    const outros = lista.filter((p) => p.id !== vingador.id);
+    if (outros.length > 0) objetivos[vingador.id] = rng.pick(outros).id;
+  }
+
+  // Coringa: missão sorteada, nunca a mesma role duas vezes.
+  const coringa = lista.find((p) => p.roleId === 'coringa');
+  if (coringa) objetivos[coringa.id] = rng.pick(MISSOES_DO_CORINGA).id;
+
+  // Bruxa: a poção define secretamente o lado (vida = bem, morte = mal).
+  const bruxa = lista.find((p) => p.roleId === 'bruxa');
+  if (bruxa) objetivos[bruxa.id] = rng.next() < 0.5 ? 'pocao-vida' : 'pocao-morte';
+
+  // Amantes: modificador sobre duas roles existentes; cada um mantém a sua.
+  if (deck.modificadores.includes('amantes') && lista.length >= 2) {
+    const [a, b] = rng.sample(lista, 2);
+    if (a && b) {
+      lista = lista.map((p) => {
+        if (p.id === a.id) return { ...p, amanteDe: b.id };
+        if (p.id === b.id) return { ...p, amanteDe: a.id };
+        return p;
+      });
+    }
+  }
+
+  return { players: lista, objetivos };
+}
+
+/**
  * Cria o estado inicial da partida.
  *
- * A atribuição de roles acontece AQUI, não na etapa 1 da noite: quando a
- * primeira passagem do celular começa, vínculos de Amantes e a troca do Ladrão
- * já estão resolvidos. A etapa 1 apenas registra isso no log.
- *
  * Todo sorteio passa pelo RNG semeado — a mesma semente com os mesmos jogadores
- * e o mesmo baralho reproduz a partida inteira.
+ * e o mesmo baralho reproduz a partida inteira, inclusive os vínculos.
  */
 export function criarPartida(
   deck: Deck,
@@ -45,9 +103,8 @@ export function criarPartida(
   const rng = criarRng(config.semente);
   const roleIds = rng.shuffle(deck.roleIds);
 
-  const players: Player[] = jogadores.map((j, i) => {
+  const iniciais: Player[] = jogadores.map((j, i) => {
     const roleId = roleIds[i]!;
-    const r = role(roleId);
     const varianteId = config.variantes[roleId];
     return {
       id: `p${i + 1}`,
@@ -56,27 +113,35 @@ export function criarPartida(
       roleId,
       ...(varianteId === undefined ? {} : { varianteId }),
       status: 'vivo',
-      usosRestantes: usosIniciais(r.usoLimitado),
+      usosRestantes: usosIniciais(role(roleId).usoLimitado),
       flags: FLAGS_LIMPAS,
       semVoto: false,
       silenciado: false,
     };
   });
 
-  // TODO etapa `estado-inicial`: aplicar o modificador Amantes (deck.modificadores),
-  // a troca do Ladrão e o alvo do Vingador — todos com o mesmo `rng`.
+  const { players, objetivos } = aplicarVinculos(iniciais, deck, rng);
 
   return {
     config,
     deck,
-    players,
+    // A troca do Ladrão pode ter mudado a role: os usos precisam acompanhar.
+    players: players.map((p) => ({
+      ...p,
+      usosRestantes: usosIniciais(role(p.roleId).usoLimitado),
+    })),
     rodada: 1,
     fase: 'noite',
     eventoDaNoite: null,
+    eventosUsados: [],
     sussurrosPendentes: [],
     historicoVotos: [],
+    informacoes: [],
+    anuncios: [],
+    efeitos: [],
+    contadores: CONTADORES_ZERADOS,
     rng: rng.state(),
-    objetivosSecretos: {},
+    objetivosSecretos: objetivos,
     vencedores: null,
   };
 }

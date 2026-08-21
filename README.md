@@ -97,12 +97,28 @@ O coração é a **resolução noturna em 12 etapas de precedência**, em ordem 
  6 perfuracao               12 sussurros
 ```
 
-Duas invariantes que o resto depende:
+O que está implementado, com testes:
+
+| Sistema | Onde |
+|---|---|
+| 24 roles + Amantes, com variantes | `data/roles/` |
+| 16 eventos (sorte e gatilho), com efeitos declarativos | `data/events/` |
+| 5 módulos de fantasma | `data/ghosts.ts` |
+| 4 modos de jogo | `data/modes/` |
+| 10 sementes de fábrica + Baralho Surpresa | `balance/deck-generator.ts` |
+| Calculadora de peso e índice de equilíbrio | `balance/weight-calculator.ts` |
+| As 12 etapas da noite | `resolution/steps/` |
+| Cadeia de estertores (noite e linchamento) | `resolution/estertor-chain.ts` |
+| Votação, empate, execução, gatilhos | `day/voting.ts` |
+| Vitória em camadas | `victory/win-conditions.ts` |
+| Partida completa e simulação em massa | `simulation/` |
+
+Quatro invariantes que o resto depende:
 
 - **A etapa 11 lê o estado do início da noite**, nunca o resultado — senão a informação vazaria quem morreu.
-- **Todo sorteio passa pelo RNG semeado** (`utils/rng.ts`). A mesma semente reproduz a partida inteira, o que é o que torna a simulação em massa confiável.
-
-Estado atual: catálogo completo das 24 roles + modificador, calculadora de peso, criação de partida, pipeline e as etapas 1, 3, 5, 6, 7, 8 e 12 implementadas com testes. As demais registram no log o que ainda falta, em vez de sumir em silêncio.
+- **Todo sorteio passa pelo RNG semeado** (`utils/rng.ts`). A mesma semente reproduz a partida inteira, não só o setup.
+- **Estertor dispara com morte por qualquer causa**, e por isso a cadeia mora fora do pipeline noturno: o Caçador linchado atira igual.
+- **Efeitos de "na próxima noite" vivem numa fila tipada** (`types/effect.ts`), em vez de um campo por mecânica.
 
 ```bash
 pnpm test
@@ -110,11 +126,47 @@ pnpm test
 
 ---
 
+## O laboratório
+
+`pnpm dev:lab`, seis painéis, um store de zustand que **não tem regra de jogo** — só chama o engine na ordem certa.
+
+| Painel | O que faz |
+|---|---|
+| **Setup** | mesa, baralho, os sete sistemas do setup, índice de equilíbrio ao vivo |
+| **Estado** | tudo que no app é invisível: marcas, usos, efeitos engatilhados, informação privada (com a marca de falsa), contadores de gatilho, anúncios |
+| **Resolução** | avança etapa por etapa pelas 12 fases; cada linha traz mensagem **e** motivo |
+| **Cenário** | os conflitos do dossiê viram baralhos de um clique (Padre × Feiticeiro, cadeia de estertores, preso perfurável…) |
+| **Simulação** | N partidas, previsto × medido lado a lado, distribuição de duração |
+| **Pesos** | mexe no peso e o índice recalcula na hora; a alteração fica só na memória |
+
+---
+
+## O aplicativo
+
+18 telas, o loop completo de mesa: Home → jogadores → modo e baralho → sistemas →
+revisão com índice → **passagem do celular** (entregar · segurar para revelar ·
+agir ou toque falso · sussurro) → amanhecer → discussão com cronômetro → votação
+→ execução → fim em camadas. Mais biblioteca de funções e como jogar.
+
+O design segue a identidade "Luz de Vela", com a separação rígida do documento:
+**textura em telas de momento, limpeza em telas de operação**. A regra que mais
+aparece na prática: alvos de 48px, nada de branco puro, transições de 250ms.
+
+O que cada jogador é perguntado na passagem **não está nas telas** — sai de
+`packages/engine/src/turn/roteiro.ts`. Isso é regra, não interface, e é por isso
+que uma role nova não exige tela nova.
+
+```bash
+pnpm dev:web       # jogar no navegador, sem celular
+pnpm dev:android   # jogar no aparelho, por cabo
+```
+
 ## Documentos
 
 - [docs/dossie.htm](docs/) — dossiê de design: pilares, facções, catálogo, precedência, calculadora de peso, modos.
 - [docs/identidade.htm](docs/) — identidade visual "Luz de Vela": paleta com procedência, luz de vela, colagem de material real.
 - [docs/stack.md](docs/stack.md) — decisões de stack e fluxo de desenvolvimento.
+- [docs/CONTEUDO_DO_JOGO.md](docs/CONTEUDO_DO_JOGO.md) — **todo o conteúdo e contexto do jogo num arquivo só**, escrito para ser entregue a uma IA junto de um pedido de conteúdo novo (roles, modos, eventos, mecânicas).
 
 ---
 

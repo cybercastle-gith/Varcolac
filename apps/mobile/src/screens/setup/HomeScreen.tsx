@@ -1,101 +1,44 @@
-import { useMemo } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
-import {
-  DEFAULT_CONFIG,
-  baralhoDeFabrica,
-  calcularEquilibrio,
-  criarPartida,
-  formatarLog,
-  resolverNoite,
-  ROLES,
-  sementeAleatoria,
-  type NightSubmission,
-} from '@jogo/engine';
-import { cores } from '../../theme/colors';
-import { espaco, raio, alvoMinimo } from '../../theme/spacing';
+import { View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { ROLES } from '@jogo/engine';
+import type { RootStackParamList } from '../../navigation/types';
+import { TelaMomento, Botao, Titulo, Rotulo, Pequeno } from '../../components/ui';
+import { cores, espaco, motivos } from '../../theme';
+import { Text } from 'react-native';
 
-const NOMES = ['Ana', 'Bruno', 'Célia', 'Davi', 'Elza', 'Fábio', 'Gil', 'Hilda'];
+type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 /**
- * Tela 1 — Home. Ainda é um andaime: existe para provar, no aparelho, que o
- * engine do monorepo roda dentro do app. Tela de OPERAÇÃO — fundo Fuligem liso,
- * zero textura, alvos ≥ 48px.
+ * Tela 1 — Home.
  *
- * TODO: substituir pelo menu real — Jogar · Baralhos salvos · Biblioteca de
- * roles · Como jogar · Ajustes.
+ * É tela de MOMENTO, e é a única de entrada que pode se dar a esse luxo: aqui
+ * ninguém tem pressa nem está no escuro com sete pessoas olhando.
  */
-export function HomeScreen() {
-  const { equilibrio, log } = useMemo(() => {
-    const config = { ...DEFAULT_CONFIG, semente: sementeAleatoria() };
-    const deck = baralhoDeFabrica('classico', NOMES.length);
-    const jogadores = NOMES.map((nome) => ({ nome, cor: cores.linhoCru }));
-
-    const estado = criarPartida(deck, config, jogadores);
-    const lobo = estado.players.find((p) => p.roleId === 'lobo');
-    const alvo = estado.players.find((p) => p.roleId !== 'lobo');
-
-    const submissao: NightSubmission = {
-      rodada: 1,
-      acoes:
-        lobo && alvo
-          ? [
-              {
-                actorId: lobo.id,
-                kind: 'atacar' as const,
-                etapa: 'ataque' as const,
-                alvos: [alvo.id],
-                falsa: false,
-              },
-            ]
-          : [],
-    };
-
-    return {
-      equilibrio: calcularEquilibrio(deck, config, NOMES.length),
-      log: formatarLog(resolverNoite(estado, submissao).log),
-    };
-  }, []);
-
+export function HomeScreen({ navigation }: Props) {
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: cores.fuligem }}
-      contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}
-    >
-      <Text style={{ color: cores.folhaDeOuro, fontSize: 11, letterSpacing: 1.5 }}>
-        LABORATÓRIO NO APARELHO
+    <TelaMomento>
+      <Text style={{ fontSize: 40, color: cores.garanca, marginBottom: espaco.md }}>
+        {motivos.losango}
       </Text>
-      <Text style={{ color: cores.linhoCru, fontSize: 26 }}>Werewolf</Text>
-      <Text style={{ color: cores.ferrugem }}>
-        {ROLES.length} roles no catálogo · índice de equilíbrio {equilibrio.ie} (
-        {equilibrio.leitura})
-      </Text>
+      <Titulo>Vârcolac</Titulo>
+      <Pequeno cor={cores.ferrugem}>
+        Um aparelho. A mesa inteira. Ninguém sai antes do fim.
+      </Pequeno>
 
-      <Pressable
-        style={{
-          minHeight: alvoMinimo,
-          borderRadius: raio.padrao,
-          backgroundColor: cores.garanca,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Text style={{ color: cores.linhoCru, fontWeight: '600' }}>Jogar</Text>
-      </Pressable>
+      <View style={{ height: espaco.xl }} />
 
-      <View
-        style={{
-          backgroundColor: '#1D1814',
-          borderColor: '#2E2721',
-          borderWidth: 1,
-          borderRadius: raio.padrao,
-          padding: espaco.md,
-        }}
-      >
-        <Text style={{ color: cores.cera, fontSize: 11, marginBottom: espaco.sm }}>
-          RESOLUÇÃO DA NOITE 1
-        </Text>
-        <Text style={{ color: cores.linhoCru, fontSize: 12, lineHeight: 18 }}>{log}</Text>
+      <View style={{ gap: espaco.sm, width: 260 }}>
+        <Botao onPress={() => navigation.navigate('Jogadores')}>Jogar</Botao>
+        <Botao tom="secundario" onPress={() => navigation.navigate('Biblioteca')}>
+          Biblioteca de funções
+        </Botao>
+        <Botao tom="secundario" onPress={() => navigation.navigate('ComoJogar')}>
+          Como jogar
+        </Botao>
       </View>
-    </ScrollView>
+
+      <View style={{ height: espaco.xl }} />
+      <Rotulo>{ROLES.length} funções · 5 a 16 jogadores</Rotulo>
+    </TelaMomento>
   );
 }
