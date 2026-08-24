@@ -11,7 +11,6 @@ import { resolucaoMortes } from './08-resolucao-mortes';
 import { estertores } from './09-estertores';
 import { ressurreicao } from './10-ressurreicao';
 import { informacao } from './11-informacao';
-import { sussurros } from './12-sussurros';
 
 /** Uma função por etapa. O pipeline percorre este mapa na ordem de NIGHT_STEPS. */
 export const ETAPAS: Readonly<Record<NightStepId, StepFn>> = {
@@ -26,7 +25,6 @@ export const ETAPAS: Readonly<Record<NightStepId, StepFn>> = {
   estertores,
   ressurreicao,
   informacao,
-  sussurros,
 };
 
 export {
@@ -41,5 +39,4 @@ export {
   estertores,
   ressurreicao,
   informacao,
-  sussurros,
 };

@@ -105,17 +105,55 @@ export function decidirNoite(estado: GameState, rng: Rng): NightSubmission {
   return { rodada: estado.rodada, acoes };
 }
 
-/** Votos do dia. Única assimetria: a matilha sabe quem é matilha. */
+/**
+ * Votos do dia.
+ *
+ * A mesa CONVERGE. Este é o ponto em que o bot precisa parecer com gente, e o
+ * único em que ele parece: numa mesa real a vila conversa e se junta em cima de
+ * um suspeito, enquanto a matilha empurra o alvo dela em bloco.
+ *
+ * A versão anterior fazia cada aldeão votar ao acaso, e o resultado media outra
+ * coisa: com a vila dispersa e a matilha unida, os lobos decidiam o linchamento
+ * quase sempre, e a vila ganhava ~13% mesmo em composições que a calculadora
+ * lia como quebradas a favor dela. Isso não é força estrutural do baralho — é
+ * ausência de coordenação, e nenhuma mesa real joga assim.
+ *
+ * O modelo, então:
+ * - a vila usa a informação que TEM (leitura verdadeira da Vidente vira acusação);
+ * - sem informação, ela converge num suspeito só, sorteado;
+ * - a matilha vota em bloco num não-lobo.
+ *
+ * O que continua deliberadamente burro: ninguém mente, ninguém lê comportamento,
+ * ninguém deduz por ausência. A medição segue sendo um PISO da vila.
+ */
 export function decidirVotos(estado: GameState, rng: Rng): Record<PlayerId, PlayerId | null> {
   const { podem } = elegiveisParaVotar(estado);
   const votos: Record<PlayerId, PlayerId | null> = {};
+  const vivosAgora = vivos(estado);
+
+  const souLobo = (id: PlayerId) => {
+    const p = estado.players.find((x) => x.id === id);
+    return !!p && role(p.roleId).faccao === 'lobos';
+  };
+
+  // A vila acusa quem uma leitura verdadeira apontou como lobo e ainda está vivo.
+  const acusado = estado.informacoes
+    .filter((i) => i.verdadeira && i.origem === 'vidente' && i.texto.includes('lobo'))
+    .flatMap((i) => i.sobre)
+    .find((id) => vivosAgora.some((p) => p.id === id && role(p.roleId).faccao === 'lobos'));
+
+  const presas = vivosAgora.filter((p) => role(p.roleId).faccao !== 'lobos');
+  const alvoDaMatilha = presas.length > 0 ? rng.pick(presas).id : null;
+
+  // Suspeito da vila: um só, para a mesa inteira. É a convergência.
+  const suspeito = acusado ?? (vivosAgora.length > 0 ? rng.pick(vivosAgora).id : null);
 
   for (const id of podem) {
-    const eu = estado.players.find((p) => p.id === id);
-    if (!eu) continue;
-    const souLobo = role(eu.roleId).faccao === 'lobos';
-    const alvos = souLobo ? naoLobos(estado).filter((p) => p.id !== id) : outros(estado, id);
-    votos[id] = alvos.length > 0 ? rng.pick(alvos).id : null;
+    if (souLobo(id)) {
+      votos[id] = alvoDaMatilha && alvoDaMatilha !== id ? alvoDaMatilha : null;
+      continue;
+    }
+    votos[id] = suspeito && suspeito !== id ? suspeito : null;
   }
 
   return votos;

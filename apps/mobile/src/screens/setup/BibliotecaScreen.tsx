@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { ROLES_VILA, ROLES_LOBOS, ROLES_SOLITARIOS, MODIFICADORES, type Role } from '@jogo/engine';
-import { TelaOperacao, Rotulo, Titulo, Pequeno } from '../../components/ui';
-import { cores, espaco, raio, tipografia, motivoDaFaccao } from '../../theme';
+import { Rotulo, Titulo, Pequeno } from '../../components/ui';
+import { Ambiente } from '../../components/Ambiente';
+import { Motivo, corDaFaccao } from '../../components/Motivo';
+import { Aparicao } from '../../components/animacoes';
+import { cores, espaco, raio, tipografia } from '../../theme';
 
 /**
  * Biblioteca de funções. Tela de OPERAÇÃO: é consulta, não teatro.
@@ -12,14 +15,14 @@ import { cores, espaco, raio, tipografia, motivoDaFaccao } from '../../theme';
  */
 function Carta({ r }: { r: Role }) {
   const [aberta, setAberta] = useState(false);
-  const m = motivoDaFaccao(r.faccao);
+  const cor = corDaFaccao(r.id);
 
   return (
     <Pressable
       onPress={() => setAberta((a) => !a)}
       style={{
         backgroundColor: '#1D1814',
-        borderColor: aberta ? m.cor : '#2E2721',
+        borderColor: aberta ? cor : '#2E2721',
         borderWidth: 1,
         borderRadius: raio.padrao,
         padding: espaco.md,
@@ -27,7 +30,7 @@ function Carta({ r }: { r: Role }) {
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.sm }}>
-        <Text style={{ color: m.cor, fontSize: 14 }}>{m.simbolo}</Text>
+        <Motivo roleId={r.id} tamanho={28} cor={cor} />
         <Text style={[tipografia.nomeDeRole, { color: cores.linhoCru, fontSize: 19, flex: 1 }]}>
           {r.nome}
         </Text>
@@ -52,12 +55,19 @@ function Carta({ r }: { r: Role }) {
           {r.variantes.length > 0 && (
             <>
               <Rotulo cor={cores.cera}>Variantes</Rotulo>
+              {/* O ícone da variante é o da role base MAIS o complemento. */}
               {r.variantes.map((v) => (
-                <View key={v.id} style={{ gap: 2 }}>
-                  <Text style={[tipografia.interface, { color: cores.linhoCru, fontSize: 14 }]}>
-                    {v.nome} <Text style={{ color: cores.ferrugem }}>· peso {v.peso}</Text>
-                  </Text>
-                  <Pequeno>{v.descricao}</Pequeno>
+                <View
+                  key={v.id}
+                  style={{ flexDirection: 'row', gap: espaco.sm, alignItems: 'center' }}
+                >
+                  <Motivo roleId={r.id} varianteId={v.id} tamanho={26} cor={cores.cera} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={[tipografia.interface, { color: cores.linhoCru, fontSize: 14 }]}>
+                      {v.nome} <Text style={{ color: cores.ferrugem }}>· peso {v.peso}</Text>
+                    </Text>
+                    <Pequeno>{v.descricao}</Pequeno>
+                  </View>
                 </View>
               ))}
             </>
@@ -76,7 +86,7 @@ export function BibliotecaScreen() {
   ];
 
   return (
-    <TelaOperacao>
+    <Ambiente clima="neutro" tremula={false}>
       <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
         <Titulo>Biblioteca</Titulo>
         <Pequeno>Toque numa função para abrir a regra inteira.</Pequeno>
@@ -86,8 +96,10 @@ export function BibliotecaScreen() {
             <Rotulo>
               {g.titulo} · {g.roles.length}
             </Rotulo>
-            {g.roles.map((r) => (
-              <Carta key={r.id} r={r} />
+            {g.roles.map((r, i) => (
+              <Aparicao key={r.id} atraso={i * 18}>
+                <Carta r={r} />
+              </Aparicao>
             ))}
           </View>
         ))}
@@ -117,6 +129,6 @@ export function BibliotecaScreen() {
           ))}
         </View>
       </ScrollView>
-    </TelaOperacao>
+    </Ambiente>
   );
 }

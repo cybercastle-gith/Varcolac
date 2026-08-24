@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTelaAcesa } from '../../hooks/useTelaAcesa';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { role, contagemDeLobosVisivel } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
-import { TelaOperacao, Botao, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
+import { Botao, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
+import { Ambiente } from '../../components/Ambiente';
+import { Motivo, corDaFaccao } from '../../components/Motivo';
+import { Aparicao } from '../../components/animacoes';
 import { cores, espaco, tipografia } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Discussao'>;
@@ -44,7 +47,7 @@ export function DiscussaoScreen({ navigation }: Props) {
     return () => clearInterval(id);
   }, [rodando]);
 
-  if (!estado) return <TelaOperacao />;
+  if (!estado) return <Ambiente clima="dia" />;
 
   const vivos = estado.players.filter((p) => p.status === 'vivo');
   const mortos = estado.players.filter((p) => p.status === 'morto');
@@ -53,7 +56,8 @@ export function DiscussaoScreen({ navigation }: Props) {
   const acabando = restante <= 30;
 
   return (
-    <TelaOperacao>
+    // O dia é a única fase em que a luz não vem de vela: a ambientação abre.
+    <Ambiente clima="dia" tremula={false}>
       <View style={{ alignItems: 'center', paddingTop: espaco.xl, paddingBottom: espaco.md }}>
         <Rotulo>Dia {estado.rodada}</Rotulo>
         <Text
@@ -67,34 +71,41 @@ export function DiscussaoScreen({ navigation }: Props) {
         <Pequeno>{contagemDeLobosVisivel(estado)}</Pequeno>
       </View>
 
-      <View style={{ flex: 1, paddingHorizontal: espaco.lg, gap: espaco.xs }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: espaco.lg, gap: espaco.xs, paddingBottom: espaco.md }}>
         <Rotulo>Vivos · {vivos.length}</Rotulo>
-        {vivos.map((p) => (
-          <ItemJogador
-            key={p.id}
-            nome={p.nome}
-            detalhe={p.silenciado ? 'preso: não fala hoje' : undefined}
-            corDoPonto={p.cor}
-          />
+        {vivos.map((p, i) => (
+          <Aparicao key={p.id} atraso={i * 25}>
+            <ItemJogador
+              nome={p.nome}
+              detalhe={p.silenciado ? 'preso: não fala hoje' : undefined}
+              corDoPonto={p.cor}
+            />
+          </Aparicao>
         ))}
 
         {mortos.length > 0 && (
           <>
             <View style={{ height: espaco.md }} />
             <Rotulo>Mortos · {mortos.length}</Rotulo>
-            {mortos.map((p) => (
-              <ItemJogador
-                key={p.id}
-                nome={p.nome}
-                morto
-                detalhe={
-                  estado.config.revelarRoleAoMorrer ? `era ${role(p.roleId).nome}` : undefined
-                }
-              />
+            {mortos.map((p, i) => (
+              <Aparicao key={p.id} atraso={i * 25}>
+                <ItemJogador
+                  nome={p.nome}
+                  morto
+                  detalhe={
+                    estado.config.revelarRoleAoMorrer ? `era ${role(p.roleId).nome}` : undefined
+                  }
+                  direita={
+                    estado.config.revelarRoleAoMorrer ? (
+                      <Motivo roleId={p.roleId} tamanho={22} cor={corDaFaccao(p.roleId)} />
+                    ) : undefined
+                  }
+                />
+              </Aparicao>
             ))}
           </>
         )}
-      </View>
+      </ScrollView>
 
       <View style={{ padding: espaco.lg, gap: espaco.sm }}>
         <Botao tom="secundario" onPress={() => setRodando((r) => !r)}>
@@ -102,6 +113,6 @@ export function DiscussaoScreen({ navigation }: Props) {
         </Botao>
         <Botao onPress={() => navigation.navigate('Votacao')}>Ir para a votação</Botao>
       </View>
-    </TelaOperacao>
+    </Ambiente>
   );
 }

@@ -49,8 +49,6 @@ export interface Passagem {
   readonly pergunta: Pergunta;
   /** Bilhetes e leituras que chegaram para ele desde a última passagem. */
   readonly recebido: readonly InfoEntry[];
-  /** Todo jogador pode deixar um bilhete anônimo de 3 palavras. */
-  readonly podeSussurrar: boolean;
 }
 
 /** Um jogador ainda tem uso disponível para a habilidade nesta noite? */
@@ -279,7 +277,6 @@ export function roteiroDaNoite(estado: GameState): readonly Passagem[] {
         recebido: estado.informacoes.filter(
           (i) => i.paraId === p.id && i.rodada === estado.rodada - 1,
         ),
-        podeSussurrar: !morto,
       };
     });
 }

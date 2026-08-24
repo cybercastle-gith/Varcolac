@@ -1,6 +1,12 @@
 import type { PlayerId } from './player';
 
-/** As 12 etapas da resolução noturna, na ordem exata. A ordem nunca muda. */
+/**
+ * As 11 etapas da resolução noturna, na ordem exata. A ordem nunca muda.
+ *
+ * O dossiê original tinha uma 12ª — `sussurros`, os bilhetes anônimos de três
+ * palavras. A mecânica foi cortada do jogo, então a etapa saiu junto: manter uma
+ * etapa que nunca faz nada só ensinaria a ignorar linhas do log.
+ */
 export const NIGHT_STEPS = [
   'estado-inicial',
   'evento',
@@ -13,7 +19,6 @@ export const NIGHT_STEPS = [
   'estertores',
   'ressurreicao',
   'informacao',
-  'sussurros',
 ] as const;
 
 export type NightStepId = (typeof NIGHT_STEPS)[number];
@@ -32,7 +37,6 @@ export type ActionKind =
   | 'ressuscitar'
   | 'assombrar'
   | 'pesadelo'
-  | 'sussurro'
   | 'marcar'
   | 'nenhuma';
 
@@ -42,7 +46,7 @@ export interface NightAction {
   readonly kind: ActionKind;
   readonly etapa: NightStepId;
   readonly alvos: readonly PlayerId[];
-  /** Bilhete de sussurro: no máximo 3 palavras, anônimo. */
+  /** Texto livre de uma ação que precise dele. */
   readonly texto?: string;
   /** Escolha binária (poção da Bruxa, verdadeiro/falso do Pesadelo). */
   readonly escolha?: string;

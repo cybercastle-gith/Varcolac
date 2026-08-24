@@ -6,6 +6,7 @@ export type RootStackParamList = {
   // Setup
   Jogadores: undefined;
   Modo: undefined;
+  Baralho: undefined;
   Sistemas: undefined;
   Revisao: undefined;
   // Noite

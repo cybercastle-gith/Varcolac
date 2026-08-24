@@ -5,7 +5,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { elegiveisParaVotar, temEfeito, type PlayerId } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
-import { TelaOperacao, TelaMomento, Botao, Titulo, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
+import { Botao, Titulo, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
+import { Ambiente } from '../../components/Ambiente';
+import { Aparicao, Revelacao } from '../../components/animacoes';
 import { cores, espaco, tipografia } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Votacao'>;
@@ -27,7 +29,7 @@ export function VotacaoScreen({ navigation }: Props) {
     [estado],
   );
 
-  if (!estado) return <TelaOperacao />;
+  if (!estado) return <Ambiente clima="dia" />;
 
   const semVotacao = temEfeito(estado.efeitos, estado.rodada, 'sem-votacao');
   const vivos = estado.players.filter((p) => p.status === 'vivo');
@@ -41,14 +43,19 @@ export function VotacaoScreen({ navigation }: Props) {
 
   if (semVotacao) {
     return (
-      <TelaMomento>
-        <Titulo>Não há julgamento hoje.</Titulo>
-        <Pequeno cor={cores.ferrugem}>Ninguém tem estômago para isso.</Pequeno>
-        <View style={{ height: espaco.xl }} />
-        <View style={{ width: 260 }}>
+      <Ambiente clima="dia">
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: espaco.md }}>
+          <Revelacao>
+            <View style={{ alignItems: 'center', gap: espaco.sm }}>
+              <Titulo>Não há julgamento hoje.</Titulo>
+              <Pequeno cor={cores.ferrugem}>Ninguém tem estômago para isso.</Pequeno>
+            </View>
+          </Revelacao>
+        </View>
+        <View style={{ padding: espaco.lg }}>
           <Botao onPress={encerrar}>Seguir para a noite</Botao>
         </View>
-      </TelaMomento>
+      </Ambiente>
     );
   }
 
@@ -57,33 +64,39 @@ export function VotacaoScreen({ navigation }: Props) {
     const votanteId = elegiveis.podem[indiceSecreto];
     if (!votanteId) {
       return (
-        <TelaMomento>
-          <Titulo>Todos votaram.</Titulo>
-          <View style={{ height: espaco.xl }} />
-          <View style={{ width: 260 }}>
+        <Ambiente clima="dia">
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Revelacao><Titulo>Todos votaram.</Titulo></Revelacao>
+          </View>
+          <View style={{ padding: espaco.lg }}>
             <Botao onPress={encerrar}>Revelar o resultado</Botao>
           </View>
-        </TelaMomento>
+        </Ambiente>
       );
     }
 
     if (mostrandoEntrega) {
       return (
         <Pressable style={{ flex: 1 }} onPress={() => setMostrandoEntrega(false)}>
-          <TelaMomento luz={cores.cera}>
-            <Rotulo>Voto secreto · passe para</Rotulo>
-            <Titulo>{nomeDe(votanteId)}</Titulo>
-            <View style={{ height: espaco.xl }} />
-            <Text style={{ color: cores.ferrugem, fontSize: 11, letterSpacing: 1.5 }}>
-              TOQUE PARA VOTAR
-            </Text>
-          </TelaMomento>
+          <Ambiente clima="noite">
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: espaco.md }}>
+              <Revelacao>
+                <View style={{ alignItems: 'center', gap: espaco.sm }}>
+                  <Rotulo>Voto secreto · passe para</Rotulo>
+                  <Titulo>{nomeDe(votanteId)}</Titulo>
+                </View>
+              </Revelacao>
+              <Text style={[tipografia.rotulo, { color: cores.ferrugem, marginTop: espaco.lg }]}>
+                Toque para votar
+              </Text>
+            </View>
+          </Ambiente>
         </Pressable>
       );
     }
 
     return (
-      <TelaOperacao>
+      <Ambiente clima="dia" tremula={false}>
         <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
           <Rotulo>{nomeDe(votanteId)} vota</Rotulo>
           <Titulo>Em quem?</Titulo>
@@ -120,7 +133,7 @@ export function VotacaoScreen({ navigation }: Props) {
             Confirmar e passar
           </Botao>
         </View>
-      </TelaOperacao>
+      </Ambiente>
     );
   }
 
@@ -128,7 +141,7 @@ export function VotacaoScreen({ navigation }: Props) {
   const registrados = Object.keys(votos).length;
 
   return (
-    <TelaOperacao>
+    <Ambiente clima="dia" tremula={false}>
       <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
         <Rotulo>Dia {estado.rodada} · votação simultânea</Rotulo>
         <Titulo>Todos apontam na contagem de três.</Titulo>
@@ -196,6 +209,6 @@ export function VotacaoScreen({ navigation }: Props) {
           Encerrar a votação
         </Botao>
       </View>
-    </TelaOperacao>
+    </Ambiente>
   );
 }

@@ -23,7 +23,7 @@ export function JogadoresScreen({ navigation }: Props) {
   return (
     <TelaOperacao>
       <Rolagem>
-        <Rotulo>Passo 1 de 4</Rotulo>
+        <Rotulo>Passo 1 de 5</Rotulo>
         <Titulo>Quem está na mesa?</Titulo>
         <Pequeno>
           {jogadores.length} de 16 · mínimo 5. O celular vai circular nesta ordem.

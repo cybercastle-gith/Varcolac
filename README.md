@@ -86,7 +86,7 @@ scripts/           Utilitários (geração dos ícones de placeholder).
 
 ## O engine
 
-O coração é a **resolução noturna em 12 etapas de precedência**, em ordem fixa (`packages/engine/src/resolution/`). Uma função por etapa, cada uma registrando no log **o que fez e por quê** — é assim que se depura "o Feiticeiro perfurou, mas o Padre cancelou".
+O coração é a **resolução noturna em 11 etapas de precedência**, em ordem fixa (`packages/engine/src/resolution/`). Uma função por etapa, cada uma registrando no log **o que fez e por quê** — é assim que se depura "o Feiticeiro perfurou, mas o Padre cancelou".
 
 ```
  1 estado-inicial            7 ataque
@@ -94,7 +94,7 @@ O coração é a **resolução noturna em 12 etapas de precedência**, em ordem 
  3 bloqueio                  9 estertores
  4 interferencia-espectral  10 ressurreicao
  5 protecao                 11 informacao
- 6 perfuracao               12 sussurros
+ 6 perfuracao
 ```
 
 O que está implementado, com testes:
@@ -107,7 +107,9 @@ O que está implementado, com testes:
 | 4 modos de jogo | `data/modes/` |
 | 10 sementes de fábrica + Baralho Surpresa | `balance/deck-generator.ts` |
 | Calculadora de peso e índice de equilíbrio | `balance/weight-calculator.ts` |
-| As 12 etapas da noite | `resolution/steps/` |
+| As 11 etapas da noite | `resolution/steps/` |
+| Motivos de bordado (ícones) de cada role e variante | `data/motivos.ts` |
+| Calibragem do balanceamento por medição | `simulation/calibragem.ts` |
 | Cadeia de estertores (noite e linchamento) | `resolution/estertor-chain.ts` |
 | Votação, empate, execução, gatilhos | `day/voting.ts` |
 | Vitória em camadas | `victory/win-conditions.ts` |
@@ -134,7 +136,7 @@ pnpm test
 |---|---|
 | **Setup** | mesa, baralho, os sete sistemas do setup, índice de equilíbrio ao vivo |
 | **Estado** | tudo que no app é invisível: marcas, usos, efeitos engatilhados, informação privada (com a marca de falsa), contadores de gatilho, anúncios |
-| **Resolução** | avança etapa por etapa pelas 12 fases; cada linha traz mensagem **e** motivo |
+| **Resolução** | avança etapa por etapa pelas 11 fases; cada linha traz mensagem **e** motivo |
 | **Cenário** | os conflitos do dossiê viram baralhos de um clique (Padre × Feiticeiro, cadeia de estertores, preso perfurável…) |
 | **Simulação** | N partidas, previsto × medido lado a lado, distribuição de duração |
 | **Pesos** | mexe no peso e o índice recalcula na hora; a alteração fica só na memória |
@@ -143,10 +145,17 @@ pnpm test
 
 ## O aplicativo
 
-18 telas, o loop completo de mesa: Home → jogadores → modo e baralho → sistemas →
+O loop completo de mesa: Home → jogadores → modo → **baralho** → sistemas →
 revisão com índice → **passagem do celular** (entregar · segurar para revelar ·
-agir ou toque falso · sussurro) → amanhecer → discussão com cronômetro → votação
-→ execução → fim em camadas. Mais biblioteca de funções e como jogar.
+agir ou toque falso) → amanhecer → discussão com cronômetro → votação → execução
+→ fim em camadas. Mais biblioteca de funções e como jogar.
+
+O baralho tem tela própria, e **montar o seu é a primeira opção**: contador por
+função, escolha de variante, e o índice de equilíbrio recalculando a cada carta.
+
+Cada função tem um **motivo de bordado** desenhado por composição geométrica —
+sem arquivo de imagem. A variante não troca o ícone: ela acrescenta um
+complemento ao motivo da função base.
 
 O design segue a identidade "Luz de Vela", com a separação rígida do documento:
 **textura em telas de momento, limpeza em telas de operação**. A regra que mais

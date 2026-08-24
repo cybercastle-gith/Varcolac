@@ -72,8 +72,8 @@ morrem.
 
 ### Rejeitado explicitamente
 
-- **Economia social como pilar.** Existe apenas como sistemas pontuais (sussurro
-  noturno, ações de role), nunca como princípio geral.
+- **Economia social como pilar.** Existe apenas como sistemas pontuais (ações de
+  role), nunca como princípio geral.
 - **Culto / terceira facção coletiva.** Não existe e não deve ser proposto.
   Facções adormecidas — que só surgem se um evento as acordar — ficam como
   estudo futuro, não como v1.
@@ -205,7 +205,7 @@ Lobo Ferido, Imitador, Colecionador, Executor, Duelista, e toda a facção Culto
 
 ---
 
-## 6. As 12 etapas da resolução noturna
+## 6. As 11 etapas da resolução noturna
 
 Toda ação da noite entra numa destas etapas. **A ordem nunca muda.**
 
@@ -222,7 +222,6 @@ Toda ação da noite entra numa destas etapas. **A ordem nunca muda.**
 | 9 | `estertores` | Caçador, Carniçal, Anciã | Dispara para quem morreu — **em cadeia completa** |
 | 10 | `ressurreicao` | Necromante | Apenas mortes de noites **anteriores** |
 | 11 | `informacao` | Vidente, Detetive | Lê o estado do **início** da noite |
-| 12 | `sussurros` | Bilhetes | Entregues no amanhecer |
 
 ### Regras de conflito (já implementadas e sob teste)
 
@@ -237,6 +236,9 @@ Toda ação da noite entra numa destas etapas. **A ordem nunca muda.**
 | Informação lê o passado | A Vidente que investigou alguém que morreu naquela noite ainda recebe a leitura. |
 | Necromante não desfaz estertores | Se o Caçador já atirou, o tiro vale mesmo que ele volte. |
 | Matilha mata junta | Vários lobos declaram; os votos viram **um** alvo (ou `cota`). Empate é sorteado. |
+
+**A matilha mata JUNTA.** Vários lobos declaram alvos na passagem; os votos
+viram um alvo só (ou `cota`), e o empate é sorteado.
 
 **Estertor dispara com morte por QUALQUER causa** — inclusive linchamento. O
 Caçador linchado atira; a Anciã linchada derruba os poderes da vila.
@@ -276,14 +278,25 @@ pública +1 vila · módulos de fantasma +1 vila · votação secreta 0.
 a tolerância. Com eventos em "caótico", um IE de −4 é aceitável; sem eventos, é
 um massacre anunciado.
 
-> ⚠️ **Estado real da calibragem.** A simulação em massa (10.000 partidas com
-> bots) mostra que o modelo está **descalibrado**: baralhos que o IE lê como
-> "equilibrado" entregam ~80% de vitória aos lobos. Parte disso é artefato dos
-> bots, que votam ao acaso e nunca coordenam — é um piso da vila, não um
-> veredito. Mas "Todos Poderosos" com IE +12,4 dando 17% à vila indica que a
-> fórmula subestima o custo de coordenação. **Uma proposta de role nova deve
-> trazer um peso sugerido, mas sem confiança excessiva: os pesos ainda vão
-> mudar em bloco.**
+### Estado da calibragem (medido, não estimado)
+
+O IE é uma previsão; a simulação em massa é a medição. Elas foram confrontadas
+sobre milhares de composições, e o resultado mudou o modelo:
+
+- **M passou de 1,4–1,8 para 2,6**, porque a versão estimada superavaliava a
+  vila de forma sistemática.
+- **A dependência de tamanho de mesa saiu.** Duas amostras independentes deram
+  ordenações opostas — a medição não enxerga esse efeito.
+
+**O limite, que importa para quem propõe conteúdo:** mesmo calibrado, o modelo
+prevê mal o lado da VILA. "Todos Poderosos" soma 22 de força e mede 39% de
+vitória; "Vila Cega" soma 13 e mede 27%. A causa é o oponente de referência —
+o bot protege ao acaso, não deduz e não lembra, então poder de vila quase não
+converte em vitória para ele.
+
+Na prática: **o peso de uma role de lobo é confiável; o de uma role de vila é um
+palpite informado.** Traga um peso sugerido, mas não construa uma ideia em cima
+da precisão dele.
 
 ---
 
@@ -313,9 +326,9 @@ experiência**.
 | **Vila Amaldiçoada** | Prazo fixo de noites. Se a vila não eliminar os lobos, todos morrem. A cada noite, um **agravamento** sorteado. |
 | **Duplas** | Duplas fixas que se conhecem desde o início. As duplas são **mistas**: seu parceiro pode ser lobo. |
 
-> **Sinergia documentada:** a matilha cega da Traição parece impossível de
-> coordenar — mas o **sussurro noturno** é exatamente a ferramenta que resolve
-> isso. Os lobos se encontram às cegas, trocando bilhetes de três palavras.
+> **Buraco aberto:** a matilha cega da Traição parece impossível de coordenar. O
+> dossiê resolvia isso com o sussurro noturno, que foi cortado. Hoje o modo está
+> sem essa ferramenta — é um dos melhores lugares para propor mecânica nova.
 
 **Em estudo, fora do v1:** Crônica (partida longa com memória entre sessões),
 Solo com bots (V2 — único item que exige tecnologia de verdade).
@@ -335,12 +348,17 @@ Solo com bots (V2 — único item que exige tecnologia de verdade).
 > a morte voltar a parecer entediante em playtest, é aqui. **Boa área para
 > propostas novas.**
 
-### Sussurro noturno
+### Sussurro noturno — REMOVIDO
 
-Mecânica independente dos módulos, disponível em qualquer modo. Na passagem, o
-jogador pode deixar um **bilhete anônimo de 3 palavras**, entregue a alguém no
-amanhecer seguinte. Custo de tempo zero, porque a passagem já está acontecendo.
-Se o destinatário morrer antes, o bilhete se perde.
+O dossiê previa bilhetes anônimos de três palavras trocados durante a passagem.
+**A mecânica foi cortada do jogo.** Duas consequências que quem propõe conteúdo
+novo precisa saber:
+
+- A resolução noturna tem **11 etapas**, não 12 — a etapa `sussurros` saiu junto.
+- **A matilha cega do modo Traição ficou sem ferramenta de coordenação.** O
+  dossiê apontava o sussurro como a resposta exata para esse problema. Sem ele,
+  os lobos da Traição dependem só do que der para dizer em voz alta no dia. É um
+  buraco aberto, e um bom lugar para propor mecânica nova.
 
 ### Eventos
 
@@ -393,6 +411,27 @@ lobo antes da noite 3 (julgada na mesa) · Ser acusado e sobreviver ao dia.
 ## 9. O que o motor consegue expressar hoje
 
 **Esta é a seção que determina se uma proposta é barata ou cara.**
+
+### Toda role tem um motivo (ícone)
+
+Os ícones não são desenhos de objetos: são **motivos de bordado**, geométricos e
+planos, compostos de primitivas (`losango`, `circulo`, `barra`, `triangulo`,
+`ponto`) em `data/motivos.ts`. Uma role sem motivo é uma role pela metade.
+
+**A variante não tem ícone próprio.** Ela acrescenta um COMPLEMENTO ao motivo da
+role base — o mesmo desenho, mais específico. Há um vocabulário de complementos
+com significado fixo, e reutilizá-lo é o que mantém o sistema legível:
+
+| Complemento | Quer dizer |
+|---|---|
+| barra curta embaixo | enfraquecido |
+| cruz pequena embaixo | reforçado |
+| ponto no canto | acontece depois |
+| losango maior por fora | alcança dois |
+| círculo por fora | a mesa toda vê |
+
+Uma proposta de role nova deve vir com o motivo descrito nessas primitivas, e
+uma variante deve dizer qual complemento usa.
 
 ### Uma role é declarada assim
 
@@ -455,6 +494,8 @@ Um modo novo que caiba nesses três ganchos custa um arquivo.
   mas a facção efetiva dele ainda não muda na checagem de vitória.
 - **Informação com atraso arbitrário** — só existe `visao-atrasada` de uma noite.
 - **Ações do dia** (fora votar) — nenhuma role age durante a discussão.
+- **Sussurro / bilhete anônimo** — existiu e foi removido; reintroduzir exige
+  etapa nova na resolução e tela nova na passagem.
 - **Memória entre partidas** — não existe persistência. Modo Crônica depende
   disso.
 - **Votação em mais de um turno / segundo turno** — a votação é uma rodada só.
@@ -512,7 +553,11 @@ fantasy art · vermelho neon e roxo · pentagrama e runa nórdica aleatória.
 
 1. **O fantasma sem nada para fazer toda noite** (seção 8). O buraco mais
    provável de aparecer em playtest.
-2. **Calibragem dos pesos** (seção 7). Descalibrada e admitida como tal.
+1b. **A matilha cega da Traição sem ferramenta de coordenação**, depois que o
+   sussurro saiu (seção 8).
+2. **Os pesos das roles de VILA** (seção 7). O M foi calibrado por medição, mas
+   os pesos da vila não puderam ser — e só serão depois que o bot souber
+   converter poder em vitória.
 3. **Família 3 de eventos** — cinco eventos de destravamento escritos e prontos,
    fora do v1. A família que resolve "a mesa travou".
 4. **Modificadores de role** — a arquitetura foi reaberta pelos Amantes. Cartas

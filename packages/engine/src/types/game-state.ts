@@ -7,13 +7,6 @@ import type { RngState } from '../utils/rng';
 
 export type Phase = 'setup' | 'noite' | 'amanhecer' | 'dia' | 'votacao' | 'execucao' | 'fim';
 
-/** Bilhete anônimo de 3 palavras, entregue no amanhecer seguinte. */
-export interface Whisper {
-  readonly deRodada: number;
-  readonly paraId: PlayerId;
-  readonly texto: string;
-}
-
 export interface VoteRecord {
   readonly rodada: number;
   readonly votos: Readonly<Record<PlayerId, PlayerId | null>>;
@@ -54,7 +47,6 @@ export interface GameState {
   readonly eventoDaNoite: EventId | null;
   /** Eventos já usados — nenhum se repete na mesma partida. */
   readonly eventosUsados: readonly EventId[];
-  readonly sussurrosPendentes: readonly Whisper[];
   readonly historicoVotos: readonly VoteRecord[];
   /** Tudo que foi entregue em privado; o laboratório mostra, a mesa não. */
   readonly informacoes: readonly InfoEntry[];

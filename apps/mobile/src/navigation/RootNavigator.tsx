@@ -8,6 +8,7 @@ import { BibliotecaScreen } from '../screens/setup/BibliotecaScreen';
 import { ComoJogarScreen } from '../screens/setup/ComoJogarScreen';
 import { JogadoresScreen } from '../screens/setup/JogadoresScreen';
 import { ModoScreen } from '../screens/setup/ModoScreen';
+import { BaralhoScreen } from '../screens/setup/BaralhoScreen';
 import { SistemasScreen } from '../screens/setup/SistemasScreen';
 import { RevisaoScreen } from '../screens/setup/RevisaoScreen';
 import { PassagemScreen } from '../screens/night/PassagemScreen';
@@ -54,7 +55,8 @@ export function RootNavigator() {
         <Stack.Screen name="ComoJogar" component={ComoJogarScreen} options={{ title: 'Como jogar' }} />
 
         <Stack.Screen name="Jogadores" component={JogadoresScreen} options={{ title: 'Mesa' }} />
-        <Stack.Screen name="Modo" component={ModoScreen} options={{ title: 'Modo e baralho' }} />
+        <Stack.Screen name="Modo" component={ModoScreen} options={{ title: 'Modo' }} />
+        <Stack.Screen name="Baralho" component={BaralhoScreen} options={{ title: 'Baralho' }} />
         <Stack.Screen name="Sistemas" component={SistemasScreen} options={{ title: 'Sistemas' }} />
         <Stack.Screen name="Revisao" component={RevisaoScreen} options={{ title: 'Revisão' }} />
 

@@ -36,7 +36,7 @@ const acao = (a: Partial<NightAction> & Pick<NightAction, 'actorId' | 'etapa'>):
 const noite = (acoes: NightAction[]): NightSubmission => ({ rodada: 1, acoes });
 
 describe('pipeline noturno', () => {
-  it('registra as 12 etapas, sempre na mesma ordem', () => {
+  it('registra as 11 etapas, sempre na mesma ordem', () => {
     const { estado } = partida();
     const { log } = resolverNoite(estado, noite([]));
     const etapas = [...new Set(log.entradas.map((e) => e.etapa))];

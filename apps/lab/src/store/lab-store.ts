@@ -228,7 +228,7 @@ export const useLabStore = create<LabStore>((set, get) => ({
   noiteInteira: () => {
     const { proximaEtapa, ctx } = get();
     let restantes = ctx
-      ? ORDEM_DAS_ETAPAS.length - ORDEM_DAS_ETAPAS.indexOf(proximaEtapa ?? 'sussurros')
+      ? ORDEM_DAS_ETAPAS.length - ORDEM_DAS_ETAPAS.indexOf(proximaEtapa ?? 'informacao')
       : ORDEM_DAS_ETAPAS.length;
     while (restantes-- > 0 && get().estado) {
       get().passo();

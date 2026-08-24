@@ -47,10 +47,12 @@ const traicao: ModeHooks = {
   descricao:
     'Todos começam na vila. A cada noite o app converte alguém em segredo. A matilha é ' +
     'totalmente cega: nenhum lobo conhece nenhum outro, em momento algum.',
+  // NOTA DE DESIGN: o dossiê resolvia a coordenação da matilha cega com o
+  // sussurro noturno, que foi cortado do jogo. Sem ele, os lobos da Traição
+  // dependem só do que der para dizer em voz alta durante o dia.
   aoAmanhecer: (estado, rng) => {
     // O convertido MANTÉM a própria role: um Médico convertido continua curando.
-    // Por isso a conversão mexe na facção via `roleId`, não na habilidade — e o
-    // sussurro noturno é a única ferramenta que a matilha cega tem para se achar.
+    // Por isso a conversão mexe na facção, não na habilidade.
     const candidatos = vivos(estado).filter((p) => role(p.roleId).faccao === 'vila');
     if (candidatos.length <= 2) return estado;
     const convertido = rng.pick(candidatos);

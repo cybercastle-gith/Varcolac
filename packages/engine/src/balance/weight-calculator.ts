@@ -8,11 +8,44 @@ import { MODIFICADORES_POR_ID } from '../data/roles/index';
  *
  * M representa a vantagem estrutural dos lobos: eles se conhecem, agem com
  * certeza e só precisam empatar em número.
+ *
+ * ── Calibragem (ver `simulation/calibragem.ts`) ──────────────────────────────
+ *
+ * M passou de 1,4–1,8 (estimativa do dossiê) para **2,6, sem depender do
+ * tamanho da mesa**. As duas mudanças têm evidência, e as duas têm limite:
+ *
+ * **Por que subiu.** Medido contra o oponente de referência de `bots.ts`, o
+ * modelo antigo superavaliava a vila de forma sistemática: baralhos lidos como
+ * "equilibrados" entregavam ~17% de vitória à vila. 2,6 é o valor que minimiza
+ * o erro sobre os dez baralhos de fábrica, que são composições curadas e
+ * plausíveis — o tipo de baralho que um host de verdade monta.
+ *
+ * **Por que a dependência de tamanho saiu.** O dossiê supunha que mesa grande
+ * enfraquece a matilha. Duas amostras independentes deram ordenações OPOSTAS
+ * entre si (uma crescente com o tamanho, outra sem ordem estável), o que é o
+ * mesmo que dizer que a medição não enxerga esse efeito. Um M só é a hipótese
+ * honesta até um playtest dizer outra coisa.
+ *
+ * ── O limite do modelo, que precisa ficar dito ───────────────────────────────
+ *
+ * Mesmo no melhor M, o erro residual sobre os presets é grande, e o padrão do
+ * erro é claro: **força da vila quase não converte em vitória na medição**.
+ * "Todos Poderosos" soma 22 de força e mede 40%; "Vila Cega" soma 13 e mede
+ * 27,5%. A causa é o bot, não o jogo — ele protege ao acaso, não deduz e não
+ * lembra, então um Médico a mais quase não muda nada para ele.
+ *
+ * A consequência prática: o IE hoje é confiável para julgar o lado da MATILHA
+ * (número e peso de lobos) e fraco para julgar o lado da VILA. Enquanto isso, o
+ * número erra para o lado seguro — avisa mais do que deveria sobre baralhos
+ * favoráveis aos lobos.
+ *
+ * O próximo passo que destrava a calibragem da vila está escrito em
+ * `simulation/bots.ts`: o bot precisa converter poder em vitória — Médico
+ * protegendo alvo plausível, matilha caçando informação, Detetive somando
+ * leituras. Só depois disso os PESOS das roles da vila poderão ser calibrados.
  */
 export const MULTIPLICADOR_POR_FAIXA = [
-  { min: 5, max: 7, m: 1.8 },
-  { min: 8, max: 11, m: 1.6 },
-  { min: 12, max: Infinity, m: 1.4 },
+  { min: 5, max: Infinity, m: 2.6 },
 ] as const;
 
 export type BalanceReading =

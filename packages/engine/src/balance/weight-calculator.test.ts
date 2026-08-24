@@ -24,11 +24,17 @@ const cru = {
 };
 
 describe('multiplicador', () => {
-  it('endurece nas mesas pequenas e afrouxa nas grandes', () => {
-    expect(multiplicador(6)).toBe(1.8);
-    expect(multiplicador(8)).toBe(1.6);
-    expect(multiplicador(11)).toBe(1.6);
-    expect(multiplicador(16)).toBe(1.4);
+  // Calibrado por medição contra os baralhos de fábrica. A dependência de
+  // tamanho saiu porque duas amostras deram ordenações opostas — ver a nota em
+  // `weight-calculator.ts`.
+  it('é o mesmo para qualquer tamanho de mesa', () => {
+    expect(multiplicador(5)).toBe(2.6);
+    expect(multiplicador(8)).toBe(2.6);
+    expect(multiplicador(16)).toBe(2.6);
+  });
+
+  it('vale mesmo abaixo da mesa mínima', () => {
+    expect(multiplicador(4)).toBe(2.6);
   });
 });
 
@@ -68,15 +74,18 @@ describe('tolerância', () => {
   });
 
   it('IE de −4 é aceitável no caótico e inaceitável sem eventos', () => {
-    // IE = 6 − 6 × 1,6 = −3,6: fora da tolerância sem eventos, dentro no caótico.
+    // Vila 3+2 = 5 · Matilha 3+3 = 6 · M 2,6 → 5 − 15,6 = −10,6? não:
+    // este baralho tem Vidente(3) + Caçador(2) = 5 de vila e um lobo só.
+    // IE = 5 − 2,6 × 3 = −2,8: fora da tolerância sem eventos (±2), dentro no
+    // caótico (±5). É o par de leituras que o teste precisa comparar.
     const d = deck([
       'vidente',
-      'medico',
+      'cacador',
       'aldeao',
       'aldeao',
       'aldeao',
       'aldeao',
-      'lobo',
+      'aldeao',
       'lobo',
     ]);
     const semEventos = calcularEquilibrio(d, { ...cru, frequenciaEventos: 'desligado' }, 8);
@@ -89,7 +98,9 @@ describe('tolerância', () => {
 
 describe('calcularEquilibrio', () => {
   it('aplica a fórmula IE = vila − matilha × M', () => {
-    // Vila 3+3+0+0+0+0 = 6 · Matilha 3+3 = 6 · M(8) = 1,6 → 6 − 9,6 = −3,6
+    // Vila 3+3 = 6 · Matilha 3+3 = 6 · M = 2,6 → 6 − 15,6 = −9,6.
+    // O modelo antigo lia −3,6 ("matilha forte") com M 1,6; a calibragem por
+    // medição endureceu a leitura de baralhos com a vila fraca.
     const d = deck([
       'vidente',
       'medico',
@@ -103,8 +114,8 @@ describe('calcularEquilibrio', () => {
     const r = calcularEquilibrio(d, cru, 8);
     expect(r.forcaVila).toBe(6);
     expect(r.forcaMatilha).toBe(6);
-    expect(r.ie).toBeCloseTo(-3.6, 2);
-    expect(r.leitura).toBe('matilha-forte');
+    expect(r.ie).toBeCloseTo(-9.6, 2);
+    expect(r.leitura).toBe('massacre');
   });
 
   it('a variante substitui o peso base, não soma', () => {

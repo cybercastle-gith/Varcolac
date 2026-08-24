@@ -20,6 +20,7 @@ import {
   type NightAction,
   type Passagem,
   type PlayerId,
+  type RoleId,
   type VictoryResult,
 } from '@jogo/engine';
 
@@ -84,6 +85,12 @@ interface JogoStore {
   setEstilo: (e: DeckStyle) => void;
   setConfig: (patch: Partial<GameConfig>) => void;
   baralhoSurpresa: () => void;
+  /** Construtor manual: quantas cartas de cada role o host escolheu. */
+  contarRole: (roleId: RoleId) => number;
+  ajustarRole: (roleId: RoleId, delta: number) => void;
+  escolherVariante: (roleId: RoleId, varianteId: string | null) => void;
+  limparBaralho: () => void;
+  completarComAldeoes: () => void;
   recalcular: () => void;
 
   // ── Fluxo de partida ──
@@ -120,22 +127,27 @@ export const useJogo = create<JogoStore>((set, get) => ({
   votos: {},
 
   adicionarJogador: (nome) => {
-    const { jogadores } = get();
+    const { jogadores, deck, estilo } = get();
     if (jogadores.length >= 16) return;
     const sugerido = NOMES_SUGERIDOS[jogadores.length] ?? `Jogador ${jogadores.length + 1}`;
+    const n = jogadores.length + 1;
     set({
-      jogadores: [
-        ...jogadores,
-        { nome: nome || sugerido, cor: CORES_DE_JOGADOR[jogadores.length % 16]! },
-      ],
+      jogadores: [...jogadores, { nome: nome || sugerido, cor: CORES_DE_JOGADOR[jogadores.length % 16]! }],
+      ...(deck.id === 'manual' ? {} : { deck: baralhoDeFabrica(estilo, n) }),
     });
     get().recalcular();
   },
 
   removerJogador: (indice) => {
-    const { jogadores } = get();
+    const { jogadores, deck, estilo } = get();
     if (jogadores.length <= 5) return;
-    set({ jogadores: jogadores.filter((_, i) => i !== indice) });
+    const n = jogadores.length - 1;
+    set({
+      jogadores: jogadores.filter((_, i) => i !== indice),
+      ...(deck.id === 'manual'
+        ? { deck: { ...deck, roleIds: deck.roleIds.slice(0, n) } }
+        : { deck: baralhoDeFabrica(estilo, n) }),
+    });
     get().recalcular();
   },
 
@@ -164,13 +176,67 @@ export const useJogo = create<JogoStore>((set, get) => ({
     get().recalcular();
   },
 
-  recalcular: () => {
-    const { deck, config, jogadores, estilo } = get();
-    const certo =
-      deck.roleIds.length === jogadores.length ? deck : baralhoDeFabrica(estilo, jogadores.length);
+  contarRole: (roleId) => get().deck.roleIds.filter((x) => x === roleId).length,
+
+  /**
+   * Acrescenta ou tira uma carta do baralho montado à mão.
+   *
+   * O baralho é uma LISTA, não um mapa de contagens, porque a ordem importa na
+   * hora de sortear — e porque duas cartas da mesma role são duas cartas, não
+   * "role ×2" com um número pendurado.
+   */
+  ajustarRole: (roleId, delta) => {
+    const atual = [...get().deck.roleIds];
+    if (delta > 0) {
+      if (atual.length >= get().jogadores.length) return;
+      atual.push(roleId);
+    } else {
+      const i = atual.lastIndexOf(roleId);
+      if (i < 0) return;
+      atual.splice(i, 1);
+    }
+    set({ deck: { id: 'manual', nome: 'Montado à mão', roleIds: atual, modificadores: get().deck.modificadores } });
+    get().recalcular();
+  },
+
+  escolherVariante: (roleId, varianteId) => {
+    const variantes = { ...get().config.variantes };
+    if (varianteId === null) delete variantes[roleId];
+    else variantes[roleId] = varianteId;
+    set({ config: { ...get().config, variantes } });
+    get().recalcular();
+  },
+
+  limparBaralho: () => {
+    set({ deck: { id: 'manual', nome: 'Montado à mão', roleIds: [], modificadores: [] } });
+    get().recalcular();
+  },
+
+  /** Fecha o baralho com Aldeões: o preenchimento honesto de uma mesa. */
+  completarComAldeoes: () => {
+    const faltam = get().jogadores.length - get().deck.roleIds.length;
+    if (faltam <= 0) return;
     set({
-      deck: certo,
-      equilibrio: calcularEquilibrio(certo, config, jogadores.length),
+      deck: {
+        ...get().deck,
+        id: 'manual',
+        nome: 'Montado à mão',
+        roleIds: [...get().deck.roleIds, ...Array.from({ length: faltam }, () => 'aldeao')],
+      },
+    });
+    get().recalcular();
+  },
+
+  recalcular: () => {
+    const { deck, config, jogadores } = get();
+    // O baralho manual pode estar incompleto no meio da montagem — e deve
+    // continuar assim. Trocá-lo por um preset aqui apagaria o trabalho do host
+    // no exato instante em que ele tirou uma carta para pensar.
+    set({
+      equilibrio:
+        deck.roleIds.length > 0
+          ? calcularEquilibrio(deck, config, jogadores.length)
+          : null,
     });
   },
 

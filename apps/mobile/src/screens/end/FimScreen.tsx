@@ -3,8 +3,11 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { role, MISSOES_POR_ID } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
-import { TelaMomento, TelaOperacao, Botao, Titulo, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
-import { cores, espaco, tipografia, motivoDaFaccao } from '../../theme';
+import { Botao, Titulo, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
+import { Ambiente } from '../../components/Ambiente';
+import { Motivo, corDaFaccao } from '../../components/Motivo';
+import { Aparicao, Revelacao } from '../../components/animacoes';
+import { cores, espaco, tipografia } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Fim'>;
 
@@ -17,7 +20,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Fim'>;
 export function FimScreen({ navigation }: Props) {
   const { estado, vitoria, encerrar } = useJogo();
 
-  if (!estado) return <TelaMomento />;
+  if (!estado) return <Ambiente clima="vitoria" />;
 
   const camadas = vitoria?.camadas ?? [];
   const principal = camadas[0];
@@ -33,19 +36,24 @@ export function FimScreen({ navigation }: Props) {
           : 'A partida acabou.';
 
   return (
-    <TelaOperacao>
-      <View style={{ alignItems: 'center', paddingTop: espaco.xl, paddingHorizontal: espaco.lg }}>
-        <Text style={{ color: cores.folhaDeOuro, fontSize: 28 }}>◆</Text>
-        <Text
-          style={[tipografia.titulo, { color: cores.folhaDeOuro, textAlign: 'center', marginTop: espaco.sm }]}
-        >
-          {titulo}
-        </Text>
-      </View>
+    <Ambiente clima="vitoria">
+      <Revelacao>
+        <View style={{ alignItems: 'center', paddingTop: espaco.xl, paddingHorizontal: espaco.lg }}>
+          <Text style={{ color: cores.folhaDeOuro, fontSize: 28 }}>◆</Text>
+          <Text
+            style={[
+              tipografia.titulo,
+              { color: cores.folhaDeOuro, textAlign: 'center', marginTop: espaco.sm },
+            ]}
+          >
+            {titulo}
+          </Text>
+        </View>
+      </Revelacao>
 
       <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
         {camadas.map((c, i) => (
-          <View key={i} style={{ gap: 4 }}>
+          <Aparicao key={i} atraso={i * 90} style={{ gap: 4 }}>
             <Rotulo cor={cores.folhaDeOuro}>
               {c.camada === 'solitario' ? 'Vitória paralela' : c.camada}
             </Rotulo>
@@ -53,29 +61,34 @@ export function FimScreen({ navigation }: Props) {
               {c.vencedores.length > 0 ? c.vencedores.map(nomeDe).join(' · ') : '—'}
             </Text>
             <Pequeno>{c.motivo}</Pequeno>
-          </View>
+          </Aparicao>
         ))}
 
         <View style={{ height: espaco.md }} />
         <Rotulo>Quem era quem</Rotulo>
         <View style={{ gap: espaco.xs }}>
-          {estado.players.map((p) => {
+          {estado.players.map((p, i) => {
             const r = role(p.roleId);
-            const m = motivoDaFaccao(r.faccao);
+            const cor = corDaFaccao(p.roleId);
             const missao = MISSOES_POR_ID.get(estado.objetivosSecretos[p.id] ?? '');
             return (
-              <ItemJogador
-                key={p.id}
-                nome={p.nome}
-                morto={p.status === 'morto'}
-                corDoPonto={m.cor}
-                detalhe={
-                  `${r.nome}` +
-                  (p.status === 'morto' ? ` · morreu na ${p.mortoNaRodada}ª noite (${p.causaMorte})` : '') +
-                  (missao ? ` · missão: ${missao.texto}` : '')
-                }
-                direita={<Text style={{ color: m.cor, fontSize: 14 }}>{m.simbolo}</Text>}
-              />
+              <Aparicao key={p.id} atraso={200 + i * 45}>
+                <ItemJogador
+                  nome={p.nome}
+                  morto={p.status === 'morto'}
+                  corDoPonto={cor}
+                  detalhe={
+                    `${r.nome}` +
+                    (p.status === 'morto'
+                      ? ` · morreu na ${p.mortoNaRodada}ª noite (${p.causaMorte})`
+                      : '') +
+                    (missao ? ` · missão: ${missao.texto}` : '')
+                  }
+                  direita={
+                    <Motivo roleId={p.roleId} varianteId={p.varianteId} tamanho={24} cor={cor} />
+                  }
+                />
+              </Aparicao>
             );
           })}
         </View>
@@ -111,6 +124,6 @@ export function FimScreen({ navigation }: Props) {
           Voltar ao início
         </Botao>
       </View>
-    </TelaOperacao>
+    </Ambiente>
   );
 }

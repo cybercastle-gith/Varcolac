@@ -5,7 +5,10 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { role } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
-import { TelaMomento, Botao, Titulo, Rotulo, Pequeno } from '../../components/ui';
+import { Botao, Titulo, Rotulo, Pequeno } from '../../components/ui';
+import { Ambiente } from '../../components/Ambiente';
+import { Motivo, corDaFaccao } from '../../components/Motivo';
+import { Revelacao } from '../../components/animacoes';
 import { cores, espaco, tipografia } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Execucao'>;
@@ -22,7 +25,7 @@ export function ExecucaoScreen({ navigation }: Props) {
     if (vitoria?.encerrada) navigation.reset({ index: 0, routes: [{ name: 'Fim' }] });
   }, [vitoria, navigation]);
 
-  if (!estado) return <TelaMomento />;
+  if (!estado) return <Ambiente clima="morte" />;
 
   const votacao = estado.historicoVotos.at(-1);
   const executados = estado.players.filter(
@@ -31,7 +34,8 @@ export function ExecucaoScreen({ navigation }: Props) {
   const anuncios = estado.anuncios.filter((a) => a.rodada === estado.rodada);
 
   return (
-    <TelaMomento luz={cores.sangueSeco}>
+    <Ambiente clima="morte">
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: espaco.lg, gap: espaco.md }}>
       <Rotulo>Dia {estado.rodada}</Rotulo>
 
       {!votacao?.linchadoId ? (
@@ -42,17 +46,27 @@ export function ExecucaoScreen({ navigation }: Props) {
           </Pequeno>
         </>
       ) : (
-        <View style={{ alignItems: 'center', gap: espaco.sm }}>
-          {executados.map((p) => (
-            <View key={p.id} style={{ alignItems: 'center' }}>
-              <Text style={{ color: cores.sangueSeco, fontSize: 26 }}>✝</Text>
-              <Text style={[tipografia.subtitulo, { color: cores.linhoCru }]}>{p.nome}</Text>
-              {estado.config.revelarRoleAoMorrer && (
-                <Text style={[tipografia.nomeDeRole, { color: cores.cera, fontSize: 20 }]}>
-                  {role(p.roleId).nome}
-                </Text>
-              )}
-            </View>
+        <View style={{ alignItems: 'center', gap: espaco.lg }}>
+          {executados.map((p, i) => (
+            <Revelacao key={p.id} atraso={i * 320}>
+              <View style={{ alignItems: 'center', gap: 6 }}>
+                <Text style={{ color: cores.sangueSeco, fontSize: 26 }}>✝</Text>
+                <Text style={[tipografia.titulo, { color: cores.linhoCru }]}>{p.nome}</Text>
+                {estado.config.revelarRoleAoMorrer && (
+                  <>
+                    <Motivo
+                      roleId={p.roleId}
+                      varianteId={p.varianteId}
+                      tamanho={36}
+                      cor={corDaFaccao(p.roleId)}
+                    />
+                    <Text style={[tipografia.nomeDeRole, { color: cores.cera, fontSize: 20 }]}>
+                      {role(p.roleId).nome}
+                    </Text>
+                  </>
+                )}
+              </View>
+            </Revelacao>
           ))}
         </View>
       )}
@@ -73,8 +87,9 @@ export function ExecucaoScreen({ navigation }: Props) {
         </View>
       )}
 
-      <View style={{ height: espaco.xl }} />
-      <View style={{ width: 260 }}>
+      </View>
+
+      <View style={{ padding: espaco.lg }}>
         <Botao
           onPress={() => {
             seguirParaNoite();
@@ -84,6 +99,6 @@ export function ExecucaoScreen({ navigation }: Props) {
           A noite cai
         </Botao>
       </View>
-    </TelaMomento>
+    </Ambiente>
   );
 }

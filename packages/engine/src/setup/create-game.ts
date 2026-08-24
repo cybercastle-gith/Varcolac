@@ -134,7 +134,6 @@ export function criarPartida(
     fase: 'noite',
     eventoDaNoite: null,
     eventosUsados: [],
-    sussurrosPendentes: [],
     historicoVotos: [],
     informacoes: [],
     anuncios: [],

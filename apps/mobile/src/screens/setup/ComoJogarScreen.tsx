@@ -1,5 +1,6 @@
 import { View, ScrollView, Text } from 'react-native';
-import { TelaOperacao, Rotulo, Titulo, Corpo, Pequeno } from '../../components/ui';
+import { Rotulo, Titulo, Corpo, Pequeno } from '../../components/ui';
+import { Ambiente } from '../../components/Ambiente';
 import { cores, espaco, tipografia } from '../../theme';
 
 const PASSOS: readonly { titulo: string; texto: string }[] = [
@@ -38,7 +39,7 @@ const PASSOS: readonly { titulo: string; texto: string }[] = [
 /** "Como jogar" — a diretriz de acessibilidade em 10 minutos, num lugar só. */
 export function ComoJogarScreen() {
   return (
-    <TelaOperacao>
+    <Ambiente clima="neutro" tremula={false}>
       <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
         <Titulo>Como jogar</Titulo>
         <Corpo cor={cores.ferrugem} serif>
@@ -66,6 +67,6 @@ export function ComoJogarScreen() {
           com qualquer lado, ou sozinhos.
         </Pequeno>
       </ScrollView>
-    </TelaOperacao>
+    </Ambiente>
   );
 }

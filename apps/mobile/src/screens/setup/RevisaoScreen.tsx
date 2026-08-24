@@ -32,7 +32,7 @@ export function RevisaoScreen({ navigation }: Props) {
   return (
     <TelaOperacao>
       <Rolagem>
-        <Rotulo>Passo 4 de 4</Rotulo>
+        <Rotulo>Passo 5 de 5</Rotulo>
         <Titulo>A vila desta noite</Titulo>
         <Pequeno>
           {jogadores.length} jogadores · {MODOS[config.modo].nome} · eventos{' '}

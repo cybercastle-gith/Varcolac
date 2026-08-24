@@ -82,7 +82,7 @@ export function SistemasScreen({ navigation }: Props) {
   return (
     <TelaOperacao>
       <Rolagem>
-        <Rotulo>Passo 3 de 4</Rotulo>
+        <Rotulo>Passo 4 de 5</Rotulo>
         <Titulo>Como a mesa joga</Titulo>
 
         <Linha

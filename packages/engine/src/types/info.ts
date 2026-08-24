@@ -11,7 +11,7 @@ import type { PlayerId } from './player';
 export interface InfoEntry {
   readonly rodada: number;
   readonly paraId: PlayerId;
-  readonly origem: 'vidente' | 'detetive' | 'evento' | 'fantasma' | 'sussurro' | 'app';
+  readonly origem: 'vidente' | 'detetive' | 'evento' | 'fantasma' | 'app';
   readonly texto: string;
   readonly verdadeira: boolean;
   /** Quem a leitura menciona, para o painel destacar. */
