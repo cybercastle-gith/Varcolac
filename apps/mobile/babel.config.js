@@ -1,8 +1,10 @@
+// apps/mobile/babel.config.js
 module.exports = function (api) {
   api.cache(true);
   return {
     presets: ['babel-preset-expo'],
-    // react-native-reanimated/plugin precisa ser sempre o ÚLTIMO da lista.
-    plugins: ['react-native-reanimated/plugin'],
+    plugins: [
+      'react-native-worklets/plugin', // era 'react-native-reanimated/plugin'
+    ],
   };
 };

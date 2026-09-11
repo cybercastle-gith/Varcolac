@@ -16,7 +16,7 @@ Na raiz do projeto:
 pnpm run setup
 ```
 
-Um comando, seis etapas: limpa `node_modules` órfãos, instala, confere que existe uma única cópia de React, configura `ANDROID_HOME` e o `PATH`, testa a porta do Metro e valida com `expo-doctor` e os testes. Termina dizendo `Ambiente pronto.` ou listando exatamente o que falta.
+Um comando, seis etapas: limpa `node_modules` órfãos, instala, confere que existe uma única cópia de React **e que ela é a versão que o React Native espera**, configura `ANDROID_HOME` e o `PATH`, testa a porta do Metro e valida com `expo-doctor` e os testes. Termina dizendo `Ambiente pronto.` ou listando exatamente o que falta.
 
 Sem Android Studio ele segue e avisa — o laboratório do engine e o app no navegador funcionam do mesmo jeito.
 

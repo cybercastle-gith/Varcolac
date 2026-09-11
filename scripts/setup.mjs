@@ -7,6 +7,7 @@
  *
  *   - node_modules órfãos com links para um .pnpm que não existe mais
  *   - duas cópias de React no mesmo grafo → "Invalid hook call"
+ *   - React na versão errada para o renderer do RN → "Incompatible React versions"
  *   - outro programa ocupando a porta 8081 → tela azul no Expo Go
  *   - versões nativas fora do SDK → expo-doctor
  *
@@ -96,7 +97,7 @@ ok('dependências instaladas');
 registrar('pnpm install', true);
 
 // ─────────────────────────────────────────────────────────────────────────────
-titulo('3/6  Cópias duplicadas de React');
+titulo('3/6  React: cópia única e na versão que o React Native espera');
 
 /**
  * React Native exige uma cópia única de React. Com node-linker=hoisted, um
@@ -145,6 +146,38 @@ if (versoes.length > 1) {
 } else {
   ok(`React ${versoes[0] ?? '—'}, cópia única`);
   registrar('React único', true, versoes[0]);
+}
+
+/**
+ * A cópia única precisa ser a versão CERTA.
+ *
+ * O `overrides` do pnpm-workspace.yaml fixa o React para impedir cópias
+ * duplicadas — e por isso ele fica desatualizado quando o SDK do Expo sobe. O
+ * sintoma no aparelho é críptico: "Incompatible React versions: react: (vazio),
+ * react-native-renderer: 19.1.0", porque o app recebe um React que o renderer
+ * não reconhece. Comparar com o peer do react-native transforma isso numa linha.
+ */
+try {
+  const rn = JSON.parse(
+    readFileSync(path.join(raiz, 'node_modules/react-native/package.json'), 'utf8'),
+  );
+  const exigido = (rn.peerDependencies?.react ?? '').replace(/^[\^~]/, '');
+  const instalado = versoes[0];
+
+  if (exigido && instalado && exigido.split('.').slice(0, 2).join('.') !==
+      instalado.split('.').slice(0, 2).join('.')) {
+    erro(`React ${instalado} instalado, mas react-native ${rn.version} espera ${exigido}.`);
+    console.log(
+      `\n  Atualize 'overrides.react' em pnpm-workspace.yaml para ${exigido}` +
+        ' e rode este setup de novo.\n',
+    );
+    registrar('React compatível com o RN', false, `${instalado} ≠ ${exigido}`);
+  } else {
+    ok(`compatível com react-native ${rn.version}`);
+    registrar('React compatível com o RN', true);
+  }
+} catch {
+  aviso('react-native não encontrado — checagem de compatibilidade pulada.');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -229,4 +262,11 @@ if (falhas.length === 0) {
   console.log('\n  O laboratório do engine (`pnpm dev:lab`) funciona mesmo assim.\n');
 }
 
-process.exit(falhas.some((f) => f.nome === 'React único' || f.nome === 'testes') ? 1 : 0);
+process.exit(
+  falhas.some(
+    (f) =>
+      f.nome === 'React único' || f.nome === 'React compatível com o RN' || f.nome === 'testes',
+  )
+    ? 1
+    : 0,
+);

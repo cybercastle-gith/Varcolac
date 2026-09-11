@@ -1,16 +1,36 @@
+import { useEffect } from 'react';
 import { Platform } from 'react-native';
-import { useKeepAwake } from 'expo-keep-awake';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+
+const TAG = 'partida';
 
 /**
  * Mantém a tela acesa durante a partida — ninguém quer o aparelho apagando no
  * meio da passagem, no escuro, com sete pessoas esperando.
  *
- * Na web o `useKeepAwake` usa a API WakeLock, que REJEITA quando a aba não está
- * visível e derruba uma promessa não tratada no console. Como a web só existe
- * aqui para desenvolvimento, o gancho é ligado apenas no aparelho.
+ * Usa a API IMPERATIVA em vez do gancho `useKeepAwake`. O gancho precisa ser
+ * chamado sempre, na mesma ordem, e por isso não dá para condicioná-lo por
+ * plataforma; na web ele aciona a API WakeLock, que rejeita quando a aba não
+ * está visível ou sem permissão e derruba uma promessa não tratada no console.
+ * Aqui a condição fica DENTRO do efeito, que é onde ela pode existir.
  */
 export function useTelaAcesa(): void {
-  const naWeb = Platform.OS === 'web';
-  // O gancho precisa ser chamado sempre, na mesma ordem: quem decide é a tag.
-  useKeepAwake(naWeb ? 'desligado-na-web' : 'partida', { suppressDeactivateWarnings: true });
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    let ativo = true;
+    // A promessa é engolida de propósito: manter a tela acesa é conforto, não
+    // requisito — falhar nisso não pode derrubar a tela de jogo.
+    void activateKeepAwakeAsync(TAG).catch(() => {});
+
+    return () => {
+      if (!ativo) return;
+      ativo = false;
+      try {
+        deactivateKeepAwake(TAG);
+      } catch {
+        // Já desativado, ou nunca ativou. Nos dois casos não há o que fazer.
+      }
+    };
+  }, []);
 }

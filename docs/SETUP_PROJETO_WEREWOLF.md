@@ -45,21 +45,39 @@ Procura symlinks pendurados nos `node_modules` dos workspaces e apaga a pasta in
 
 `pnpm install`. Se falhar com `EPERM` ou `ENOENT` no Windows, é quase sempre um Metro ainda rodando segurando arquivos — o script diz isso na mensagem de erro.
 
-### 3. Cópia única de React
+### 3. React: cópia única e na versão certa
 
-Varre `node_modules` e falha se houver mais de uma versão de React.
+Varre `node_modules` e falha se houver mais de uma versão de React — **ou se a
+versão instalada não for a que o `react-native` instalado espera**.
 
-**Por quê:** o React Native exige uma cópia só. Com `node-linker=hoisted`, um pacote que peça outra versão ganha uma cópia aninhada, e o app morre com `Invalid hook call` sem apontar o culpado. Aconteceu porque o lab pedia `^19.2.8` enquanto o RN 0.79.6 exige `19.0.0` exato — o `use-sync-external-store`, que vem com o React Navigation, trouxe a segunda cópia para dentro do app.
+**Por quê, parte 1 — cópia única.** O React Native exige uma cópia só. Com `node-linker=hoisted`, um pacote que peça outra versão ganha uma cópia aninhada, e o app morre com `Invalid hook call` sem apontar o culpado. Aconteceu porque o lab pedia uma versão diferente da do app — o `use-sync-external-store`, que vem com o React Navigation, trouxe a segunda cópia para dentro do bundle.
 
 A trava está em `pnpm-workspace.yaml`:
 
 ```yaml
 overrides:
-  react: 19.0.0
-  react-dom: 19.0.0
+  react: 19.1.0
+  react-dom: 19.1.0
 ```
 
 No pnpm 10 é **ali** que ficam os overrides. O campo `"pnpm"` do `package.json` deixou de ser lido, e é ignorado em silêncio.
+
+**Por quê, parte 2 — a versão certa.** Esse override é o que trava o React, e por isso ele fica para trás quando o SDK do Expo sobe. Foi o que aconteceu na subida para o **SDK 54**: o manifesto passou a pedir React 19.1.0, o override continuava em 19.0.0, e o app quebrou no aparelho com
+
+```text
+Incompatible React versions:
+- react:
+- react-native-renderer: 19.1.0
+```
+
+O `react` vazio na mensagem é o sintoma exato: o renderer do RN 0.81 não reconhece o React que recebeu. O setup agora compara a versão instalada com o `peerDependencies.react` do `react-native` e diz qual valor usar.
+
+| SDK do Expo | React Native | React |
+|---|---|---|
+| 53 | 0.79.x | 19.0.0 |
+| 54 | 0.81.x | 19.1.0 |
+
+**Ao subir de SDK, atualize o override na mesma tacada.**
 
 ### 4. Ambiente Android
 
@@ -106,6 +124,7 @@ pnpm --filter mobile exec node -p "require('react-native/package.json').version"
 | Sintoma | Onde olhar |
 |---|---|
 | `Invalid hook call` | duas cópias de React — rode `pnpm run setup` |
+| `Incompatible React versions` | o override do React ficou para trás do SDK — `pnpm run setup` diz qual versão usar |
 | Tela azul, `failed to construct manifest` | outro programa na porta; `Get-NetTCPConnection -LocalPort 8081 -State Listen` |
 | `Unable to resolve module ./x.js` | import com extensão `.js` em código TypeScript |
 | `TypeError: fetch failed` | falta `EXPO_OFFLINE` — use os scripts do projeto, não `expo` direto |

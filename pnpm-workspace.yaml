@@ -2,11 +2,18 @@ packages:
   - 'packages/*'
   - 'apps/*'
 
-# React Native 0.79.6 exige exatamente React 19.0.0, e uma segunda cópia de
-# React no grafo derruba o app com "Invalid hook call". Fixar aqui impede que
-# qualquer dependência transitiva traga uma versão própria.
-# (No pnpm 10 este é o lugar de `overrides` — o campo "pnpm" do package.json
+# O React Native exige a versão EXATA de React que o renderer dele espera, e uma
+# segunda cópia de React no grafo derruba o app com "Invalid hook call". Fixar
+# aqui impede que qualquer dependência transitiva traga uma versão própria.
+#
+# ⚠️ Este valor acompanha o SDK do Expo e precisa ser atualizado JUNTO com ele.
+# No SDK 54 / RN 0.81 é 19.1.0; no SDK 53 / RN 0.79 era 19.0.0. Um override
+# desatualizado produz o erro mais confuso possível — "Incompatible React
+# versions: react: (vazio), react-native-renderer: 19.1.0" — porque o app
+# recebe um React que o renderer não reconhece.
+#
+# (No pnpm 10 este é o lugar de `overrides`; o campo "pnpm" do package.json
 # deixou de ser lido.)
 overrides:
-  react: 19.0.0
-  react-dom: 19.0.0
+  react: 19.1.0
+  react-dom: 19.1.0
