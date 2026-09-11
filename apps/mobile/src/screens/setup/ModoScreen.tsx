@@ -29,7 +29,7 @@ export function ModoScreen({ navigation }: Props) {
   const { config, setConfig } = useJogo();
 
   return (
-    <Ambiente clima="neutro" tremula={false}>
+    <Ambiente tipo="operacao" clima="neutro" tremula={false}>
       <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
         <Rotulo>Passo 2 de 5</Rotulo>
         <Titulo>Que jogo é hoje?</Titulo>

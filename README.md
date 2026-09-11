@@ -8,7 +8,7 @@ O app é o mestre: distribui, narra, resolve interações, injeta eventos e cont
 
 ## Instalação — um comando só
 
-Pré-requisitos: **Node 20.19+** e **pnpm** (`npm i -g pnpm`). Para rodar no celular ou gerar APK, também **Android Studio**, que traz o SDK e o JDK 17.
+Pré-requisitos: **Node 20.19+** e **pnpm** (`npm i -g pnpm`). Para compilar no celular ou gerar APK, também o **Android SDK** (via Android Studio) e uma **JDK 17** — a JDK que vem com o Android Studio costuma ser nova demais para o Gradle do React Native, então vale instalar a 17 à parte: `winget install EclipseAdoptium.Temurin.17.JDK`.
 
 Na raiz do projeto:
 
@@ -33,6 +33,7 @@ Por que cada etapa existe, e o que fazer quando algo falha: [docs/SETUP_PROJETO_
 | Laboratório do engine no navegador | `pnpm dev:lab` |
 | App no navegador (react-native-web) | `pnpm dev:web` |
 | App no celular por cabo USB | `pnpm dev:android` |
+| Instalar o app no celular (dispensa o Expo Go) | `pnpm dev:build` |
 | Testes do engine | `pnpm test` |
 | Checagem de tipos | `pnpm typecheck` |
 | Gerar o APK | `pnpm apk` |
@@ -53,7 +54,9 @@ Roda `expo prebuild` (gera a pasta `android/`, que é descartável e fica fora d
 apps/mobile/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-A primeira execução baixa o Gradle e leva vários minutos; as seguintes são rápidas. Exige **JDK 17** e o **Android SDK** instalados — o caminho mais curto é instalar o Android Studio uma vez.
+No Windows o build se relança sozinho a partir de um drive virtual (`subst W:`), porque o compilador nativo recusa caminhos com mais de 260 caracteres. É automático e reversível — o mapeamento some ao reiniciar.
+
+A primeira execução baixa o Gradle e leva vários minutos; as seguintes são rápidas. Exige o **Android SDK** e uma **JDK 17** — o script acha a JDK sozinho e, se nenhuma servir, diz qual instalar antes de tentar compilar.
 
 O build de release é assinado com a keystore de depuração, o que serve para instalar no seu aparelho e passar em mesa. Para publicar na loja é preciso uma keystore própria — não está feito.
 
@@ -65,7 +68,15 @@ Elimina WiFi, QR code e o "Something went wrong" do Expo Go. No celular: Opçõe
 pnpm dev:android
 ```
 
-O script já roda o `adb reverse tcp:8081 tcp:8081` antes de subir o Metro — e ele precisa ser refeito a cada reconexão do aparelho. Detalhes e diagnóstico em [docs/stack.md](docs/stack.md).
+O script escolhe uma porta livre, faz o `adb reverse` e abre o app sozinho. O túnel é `tcp:8081` (aparelho) → `tcp:<porta livre>` (Metro): um app de debug do React Native só procura o servidor na **8081 dele**, então quando a 8081 do PC está ocupada por outro programa a saída é atravessar as portas, e não mudar a do Metro. O `adb reverse` precisa ser refeito a cada reconexão do aparelho — o script faz isso sempre. Detalhes e diagnóstico em [docs/stack.md](docs/stack.md).
+
+### Expo Go ou development build
+
+O Expo Go da loja carrega **um SDK por vez** e acompanha o mais novo, então ele
+recusa o projeto assim que atualiza na frente dele. `pnpm dev:build` compila o
+app no aparelho e encerra essa dependência: depois disso o `pnpm dev:android`
+conecta direto no nosso app. Exige uma JDK que o Gradle aceite — o script
+verifica e diz qual instalar. Ver [docs/SETUP_PROJETO_WEREWOLF.md](docs/SETUP_PROJETO_WEREWOLF.md).
 
 ---
 
@@ -176,6 +187,7 @@ pnpm dev:android   # jogar no aparelho, por cabo
 - [docs/identidade.htm](docs/) — identidade visual "Luz de Vela": paleta com procedência, luz de vela, colagem de material real.
 - [docs/stack.md](docs/stack.md) — decisões de stack e fluxo de desenvolvimento.
 - [docs/CONTEUDO_DO_JOGO.md](docs/CONTEUDO_DO_JOGO.md) — **todo o conteúdo e contexto do jogo num arquivo só**, escrito para ser entregue a uma IA junto de um pedido de conteúdo novo (roles, modos, eventos, mecânicas).
+- [docs/ASSETS_A_GERAR.md](docs/ASSETS_A_GERAR.md) — as três folhas de imagens que faltam produzir, com o prompt pronto de cada uma e a decisão por trás de cada item.
 
 ---
 

@@ -48,7 +48,7 @@ export function BaralhoScreen({ navigation }: Props) {
   ];
 
   return (
-    <Ambiente clima="neutro" tremula={false}>
+    <Ambiente tipo="operacao" clima="neutro" tremula={false}>
       {/* Cabeçalho fixo com a contagem: é o número que o host olha o tempo todo. */}
       <View style={{ paddingHorizontal: espaco.lg, paddingTop: espaco.md, gap: espaco.xs }}>
         <Rotulo>Passo 3 de 5</Rotulo>

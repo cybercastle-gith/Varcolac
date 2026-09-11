@@ -13,7 +13,9 @@
     "run:android": "node scripts/expo.mjs run:android",
     "doctor": "expo-doctor",
     "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ios": "expo run:ios",
+    "dev:build": "node scripts/dev-build.mjs"
   },
   "dependencies": {
     "@jogo/engine": "workspace:*",

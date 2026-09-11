@@ -39,7 +39,7 @@ const PASSOS: readonly { titulo: string; texto: string }[] = [
 /** "Como jogar" — a diretriz de acessibilidade em 10 minutos, num lugar só. */
 export function ComoJogarScreen() {
   return (
-    <Ambiente clima="neutro" tremula={false}>
+    <Ambiente tipo="operacao" clima="neutro" tremula={false}>
       <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
         <Titulo>Como jogar</Titulo>
         <Corpo cor={cores.ferrugem} serif>

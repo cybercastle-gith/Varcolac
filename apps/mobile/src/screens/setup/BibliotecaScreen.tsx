@@ -86,7 +86,7 @@ export function BibliotecaScreen() {
   ];
 
   return (
-    <Ambiente clima="neutro" tremula={false}>
+    <Ambiente tipo="operacao" clima="neutro" tremula={false}>
       <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
         <Titulo>Biblioteca</Titulo>
         <Pequeno>Toque numa função para abrir a regra inteira.</Pequeno>

@@ -15,6 +15,9 @@ ios/
 
 # ambiente
 .env
+# Excecao: este nao guarda segredo, guarda a raiz do servidor do Metro.
+# Sem ele versionado, um clone novo volta a receber 404 no aparelho.
+!apps/mobile/.env
 .env.*
 !.env.example
 
@@ -29,3 +32,6 @@ Thumbs.db
 # gerado pelo expo prebuild
 apps/mobile/android/
 apps/mobile/ios/
+
+# logs de build desta investigacao
+.scratch/

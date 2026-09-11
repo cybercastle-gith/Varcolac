@@ -9,6 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { cores, espaco, raio, alvoMinimo, tipografia } from '../theme';
+import { Ambiente } from './Ambiente';
 
 /**
  * O kit de operação (item 4 da ordem de produção da identidade).
@@ -19,30 +20,29 @@ import { cores, espaco, raio, alvoMinimo, tipografia } from '../theme';
  * momento em que ela vale mais que beleza.
  */
 
-/** Tela de OPERAÇÃO: fundo Fuligem liso, zero textura, contraste alto. */
-export function TelaOperacao({ children, style }: {
+/**
+ * Tela de OPERAÇÃO: Fuligem liso, contraste alto, zero material.
+ *
+ * Delega ao `Ambiente`, e isso é o principal desta função.
+ *
+ * Antes existiam DOIS sistemas de luz no app: este arquivo tinha um
+ * `TelaMomento` com dois círculos de borda dura, e o `Ambiente` tinha o dele.
+ * Telas diferentes acendiam de jeitos diferentes, e é isso que faz um app
+ * parecer montado de pedaços. Agora a luz tem uma implementação só; o que varia
+ * é o `tipo`. De quebra, estas telas passaram a respeitar a área segura, que o
+ * `Ambiente` aplica.
+ */
+export function TelaOperacao({
+  children,
+  style,
+}: {
   children?: ReactNode;
   style?: StyleProp<ViewStyle> | undefined;
 }) {
-  return <View style={[estilos.telaOperacao, style]}>{children}</View>;
-}
-
-/**
- * Tela de MOMENTO: emoção e teatro.
- * A luz de vela obedece à física de uma chama — uma fonte só, queda rápida,
- * sombra quente. Aqui isso vira um halo radial curto sobre o Fuligem, nunca um
- * degradê suave e longo.
- */
-export function TelaMomento({ children, luz = cores.chama }: {
-  children?: ReactNode;
-  luz?: string | undefined;
-}) {
   return (
-    <View style={estilos.telaMomento}>
-      <View style={[estilos.halo, { backgroundColor: luz, opacity: 0.06 }]} />
-      <View style={[estilos.haloInterno, { backgroundColor: luz, opacity: 0.05 }]} />
-      <View style={estilos.conteudoMomento}>{children}</View>
-    </View>
+    <Ambiente tipo="operacao">
+      <View style={[estilos.telaOperacao, style]}>{children}</View>
+    </Ambiente>
   );
 }
 
@@ -167,34 +167,9 @@ export function Rolagem({ children }: { children: ReactNode }) {
 }
 
 const estilos = StyleSheet.create({
+  // Sem backgroundColor: quem pinta o fundo e o Ambiente, por baixo.
   telaOperacao: {
     flex: 1,
-    backgroundColor: cores.fuligem,
-  },
-  telaMomento: {
-    flex: 1,
-    backgroundColor: cores.fuligem,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  // Queda rápida: o centro é claro e a borda é preta em poucos centímetros.
-  halo: {
-    position: 'absolute',
-    width: 520,
-    height: 520,
-    borderRadius: 260,
-  },
-  haloInterno: {
-    position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-  },
-  conteudoMomento: {
-    alignItems: 'center',
-    paddingHorizontal: espaco.xl,
-    gap: espaco.md,
   },
   botao: {
     minHeight: alvoMinimo,

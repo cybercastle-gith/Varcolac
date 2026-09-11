@@ -29,7 +29,7 @@ export function VotacaoScreen({ navigation }: Props) {
     [estado],
   );
 
-  if (!estado) return <Ambiente clima="dia" />;
+  if (!estado) return <Ambiente tipo="operacao" clima="dia" />;
 
   const semVotacao = temEfeito(estado.efeitos, estado.rodada, 'sem-votacao');
   const vivos = estado.players.filter((p) => p.status === 'vivo');

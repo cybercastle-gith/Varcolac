@@ -1,7 +1,8 @@
 import { View, Text } from 'react-native';
 import { role, type RoleId } from '@jogo/engine';
 import { Motivo, MotivoVivo, corDaFaccao } from './Motivo';
-import { Linho } from './Ambiente';
+import { Material } from './Ambiente';
+import { Bordado, faixa } from './Bordado';
 import { cores, espaco, tipografia } from '../theme';
 
 /**
@@ -38,7 +39,7 @@ export function CartaDeRole({ roleId, varianteId, largura = 240, viva = true }: 
         overflow: 'hidden',
       }}
     >
-      <Linho opacidade={0.05} />
+      <Material material="papel" opacidade={0.13} raio={8} />
 
       {/* Moldura interna a 9px — a medida exata do documento. */}
       <View
@@ -53,6 +54,22 @@ export function CartaDeRole({ roleId, varianteId, largura = 240, viva = true }: 
           opacity: 0.35,
         }}
       />
+
+      {/*
+        A barra bordada, na cor da facção.
+        Não é enfeite: é o que identifica a facção antes de qualquer texto, e
+        cumpre a regra de "nunca cor sozinha" — a barra tem desenho, e não só
+        tom, então ela continua distinguível para quem não separa verde de
+        vermelho.
+      */}
+      <View style={{ alignItems: 'center', marginTop: espaco.lg, opacity: 0.85 }}>
+        <Bordado
+          trama={faixa(Math.floor(largura / 7))}
+          ponto={Math.max(2, Math.round(largura * 0.014))}
+          folga={2}
+          tinta={{ r: cor }}
+        />
+      </View>
 
       <View
         style={{

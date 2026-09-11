@@ -13,6 +13,7 @@
     "dev:mobile": "pnpm --filter mobile start",
     "dev:web": "pnpm --filter mobile web",
     "dev:android": "pnpm --filter mobile dev:android",
+    "dev:build": "pnpm --filter mobile dev:build",
     "apk": "pnpm --filter mobile apk",
     "doctor": "pnpm --filter mobile doctor",
     "test": "pnpm -r test",
