@@ -3,7 +3,8 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { ROLES_VILA, ROLES_LOBOS, ROLES_SOLITARIOS, MODIFICADORES, type Role } from '@jogo/engine';
 import { Rotulo, Titulo, Pequeno } from '../../components/ui';
 import { Ambiente } from '../../components/Ambiente';
-import { Motivo, corDaFaccao } from '../../components/Motivo';
+import { corDaFaccao } from '../../components/Motivo';
+import { IconeDeRole } from '../../components/IconeDeRole';
 import { Aparicao } from '../../components/animacoes';
 import { cores, espaco, raio, tipografia } from '../../theme';
 
@@ -30,7 +31,7 @@ function Carta({ r }: { r: Role }) {
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.sm }}>
-        <Motivo roleId={r.id} tamanho={28} cor={cor} />
+        <IconeDeRole roleId={r.id} tamanho={34} cor={cor} />
         <Text style={[tipografia.nomeDeRole, { color: cores.linhoCru, fontSize: 19, flex: 1 }]}>
           {r.nome}
         </Text>
@@ -61,7 +62,7 @@ function Carta({ r }: { r: Role }) {
                   key={v.id}
                   style={{ flexDirection: 'row', gap: espaco.sm, alignItems: 'center' }}
                 >
-                  <Motivo roleId={r.id} varianteId={v.id} tamanho={26} cor={cores.cera} />
+                  <IconeDeRole roleId={r.id} varianteId={v.id} tamanho={30} cor={cores.cera} />
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={[tipografia.interface, { color: cores.linhoCru, fontSize: 14 }]}>
                       {v.nome} <Text style={{ color: cores.ferrugem }}>· peso {v.peso}</Text>

@@ -17,7 +17,7 @@ import { cores } from '../theme';
 
 const CAIXA = 40; // grade de desenho; tudo é declarado nesta escala e depois escalado
 
-function Peca({ p, cor, escala, traco }: {
+export function Peca({ p, cor, escala, traco }: {
   p: Primitiva;
   cor: string;
   escala: number;

@@ -6,10 +6,11 @@ import { role } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { Ambiente } from '../../components/Ambiente';
-import { Motivo, corDaFaccao } from '../../components/Motivo';
+import { corDaFaccao } from '../../components/Motivo';
+import { IconeDeRole } from '../../components/IconeDeRole';
 import { Revelacao } from '../../components/animacoes';
 import { Botao, Rotulo, Titulo, Pequeno } from '../../components/ui';
-import { cores, espaco, tipografia } from '../../theme';
+import { cores, espaco, tipografia, familia } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Amanhecer'>;
 
@@ -64,10 +65,10 @@ export function AmanhecerScreen({ navigation }: Props) {
               <Revelacao key={p.id} atraso={220 + i * 320}>
                 <View style={{ alignItems: 'center', gap: 6 }}>
                   {estado.config.revelarRoleAoMorrer && (
-                    <Motivo
+                    <IconeDeRole
                       roleId={p.roleId}
                       varianteId={p.varianteId}
-                      tamanho={40}
+                      tamanho={48}
                       cor={corDaFaccao(p.roleId)}
                     />
                   )}
@@ -91,7 +92,7 @@ export function AmanhecerScreen({ navigation }: Props) {
                   key={i}
                   style={[
                     tipografia.corpoSerif,
-                    { color: cores.cera, textAlign: 'center', fontStyle: 'italic' },
+                    { fontFamily: familia.serifItalico, color: cores.cera, textAlign: 'center' },
                   ]}
                 >
                   {a.texto}

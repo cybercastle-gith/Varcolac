@@ -8,7 +8,8 @@ import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { Botao, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
 import { Ambiente } from '../../components/Ambiente';
-import { Motivo, corDaFaccao } from '../../components/Motivo';
+import { corDaFaccao } from '../../components/Motivo';
+import { IconeDeRole } from '../../components/IconeDeRole';
 import { Aparicao } from '../../components/animacoes';
 import { cores, espaco, tipografia } from '../../theme';
 
@@ -97,7 +98,7 @@ export function DiscussaoScreen({ navigation }: Props) {
                   }
                   direita={
                     estado.config.revelarRoleAoMorrer ? (
-                      <Motivo roleId={p.roleId} tamanho={22} cor={corDaFaccao(p.roleId)} />
+                      <IconeDeRole roleId={p.roleId} tamanho={28} cor={corDaFaccao(p.roleId)} />
                     ) : undefined
                   }
                 />

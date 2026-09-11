@@ -8,7 +8,8 @@ import { useJogo } from '../../store/jogo';
 import { useTelaAcesa } from '../../hooks/useTelaAcesa';
 import { SegurarParaRevelar } from '../../components/SegurarParaRevelar';
 import { CartaDeRole } from '../../components/CartaDeRole';
-import { Motivo, corDaFaccao } from '../../components/Motivo';
+import { corDaFaccao } from '../../components/Motivo';
+import { IconeDeRole } from '../../components/IconeDeRole';
 import { Ambiente } from '../../components/Ambiente';
 import { Aparicao, Pulso, Revelacao } from '../../components/animacoes';
 import { Botao, Rotulo, Titulo, Pequeno, Corpo, ItemJogador } from '../../components/ui';
@@ -182,7 +183,7 @@ export function PassagemScreen({ navigation }: Props) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.md }}>
             {/* O toque falso não mostra motivo: ele não pode entregar nada. */}
             {!pergunta.falsa && (
-              <Motivo roleId={p.roleId} varianteId={p.varianteId} tamanho={38} cor={cor} />
+              <IconeDeRole roleId={p.roleId} varianteId={p.varianteId} tamanho={46} cor={cor} />
             )}
             <View style={{ flex: 1 }}>
               <Rotulo>{p.nome}</Rotulo>

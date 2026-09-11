@@ -99,3 +99,43 @@ export const recortes = {
 } as const;
 
 export type NomeDeRecorte = keyof typeof recortes;
+
+/**
+ * Os 24 ícones de função, em xilogravura (Bloco 4 de `ASSETS_A_GERAR.md`).
+ *
+ * Chave = id da role no engine. O desenho é da função BASE; a variante entra
+ * por cima como selo geométrico (ver `complementoDe`, em `IconeDeRole.tsx`) —
+ * é o que mantém a conta em pé: função nova custa um desenho, variante nova
+ * custa zero.
+ */
+export const iconesDeRole = {
+  aldeao: require('../../assets/roles/aldeao.png'),
+  vidente: require('../../assets/roles/vidente.png'),
+  detetive: require('../../assets/roles/detetive.png'),
+  medico: require('../../assets/roles/medico.png'),
+  'guarda-costas': require('../../assets/roles/guarda-costas.png'),
+  xerife: require('../../assets/roles/xerife.png'),
+  necromante: require('../../assets/roles/necromante.png'),
+  padre: require('../../assets/roles/padre.png'),
+  cacador: require('../../assets/roles/cacador.png'),
+  taverneiro: require('../../assets/roles/taverneiro.png'),
+  ancia: require('../../assets/roles/ancia.png'),
+  lobo: require('../../assets/roles/lobo.png'),
+  alfa: require('../../assets/roles/alfa.png'),
+  feiticeiro: require('../../assets/roles/feiticeiro.png'),
+  'lobo-carnical': require('../../assets/roles/lobo-carnical.png'),
+  'lobo-sombra': require('../../assets/roles/lobo-sombra.png'),
+  uivador: require('../../assets/roles/uivador.png'),
+  'lobo-branco': require('../../assets/roles/lobo-branco.png'),
+  bruxa: require('../../assets/roles/bruxa.png'),
+  ladrao: require('../../assets/roles/ladrao.png'),
+  coringa: require('../../assets/roles/coringa.png'),
+  sobrevivente: require('../../assets/roles/sobrevivente.png'),
+  bobo: require('../../assets/roles/bobo.png'),
+  vingador: require('../../assets/roles/vingador.png'),
+} as const;
+
+export type NomeDeIconeDeRole = keyof typeof iconesDeRole;
+
+/** A marca do jogo: a pegada de lobo do Bloco 4, na resolução cheia da folha. */
+export const logo = require('../../assets/logo.png');

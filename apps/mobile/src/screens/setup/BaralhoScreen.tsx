@@ -15,7 +15,8 @@ import {
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { Ambiente } from '../../components/Ambiente';
-import { Motivo, corDaFaccao } from '../../components/Motivo';
+import { corDaFaccao } from '../../components/Motivo';
+import { IconeDeRole } from '../../components/IconeDeRole';
 import { Aparicao } from '../../components/animacoes';
 import { Botao, Rotulo, Titulo, Pequeno } from '../../components/ui';
 import { cores, espaco, raio, tipografia, alvoMinimo } from '../../theme';
@@ -234,7 +235,7 @@ function LinhaDeRole({ r, quantidade, varianteId, aberta, cheio, onAbrir, onAjus
           onPress={onAbrir}
           style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: espaco.sm, padding: espaco.sm }}
         >
-          <Motivo roleId={r.id} varianteId={varianteId} tamanho={30} cor={dentro ? cor : cores.nogueira} />
+          <IconeDeRole roleId={r.id} varianteId={varianteId} tamanho={36} cor={dentro ? cor : cores.nogueira} />
           <View style={{ flex: 1 }}>
             <Text style={[tipografia.corpo, { color: dentro ? cores.linhoCru : cores.ferrugem }]}>
               {varianteId ? r.variantes.find((v) => v.id === varianteId)?.nome : r.nome}
@@ -246,30 +247,25 @@ function LinhaDeRole({ r, quantidade, varianteId, aberta, cheio, onAbrir, onAjus
           </View>
         </Pressable>
 
-        {/* Contador. Alvos de 44px: o mínimo que a mão acerta no escuro. */}
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Pressable
-            onPress={() => onAjustar(-1)}
-            disabled={quantidade === 0}
-            style={{ width: 44, height: 48, alignItems: 'center', justifyContent: 'center', opacity: quantidade === 0 ? 0.25 : 1 }}
-          >
-            <Text style={{ color: cores.linhoCru, fontSize: 20 }}>−</Text>
-          </Pressable>
+        {/*
+          Contador.
+          O alvo sempre teve 44 x 48, que passa no mínimo da identidade — o que
+          faltava era AFORDÂNCIA. Um `−` e um `+` soltos, no escuro, com o
+          aparelho passando de mão em mão, leem como texto e não como botão: a
+          pessoa aperta o nome da função em vez do sinal. A moldura resolve isso
+          sem mexer em tamanho nenhum.
+        */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.xs }}>
+          <Passo sinal="−" onPress={() => onAjustar(-1)} inativo={quantidade === 0} />
           <Text
             style={[
               tipografia.numero,
-              { fontSize: 17, color: dentro ? cores.linhoCru : cores.nogueira, width: 22, textAlign: 'center' },
+              { fontSize: 18, color: dentro ? cores.linhoCru : cores.nogueira, width: 24, textAlign: 'center' },
             ]}
           >
             {quantidade}
           </Text>
-          <Pressable
-            onPress={() => onAjustar(1)}
-            disabled={cheio}
-            style={{ width: 44, height: 48, alignItems: 'center', justifyContent: 'center', opacity: cheio ? 0.25 : 1 }}
-          >
-            <Text style={{ color: cores.linhoCru, fontSize: 20 }}>+</Text>
-          </Pressable>
+          <Passo sinal="+" onPress={() => onAjustar(1)} inativo={cheio} />
         </View>
       </View>
 
@@ -334,10 +330,10 @@ function OpcaoDeVariante({ roleId, varianteId, nome, descricao, peso, ativa, onP
         padding: espaco.sm,
       }}
     >
-      <Motivo
+      <IconeDeRole
         roleId={roleId}
         varianteId={varianteId}
-        tamanho={26}
+        tamanho={32}
         cor={ativa ? cores.cera : cores.nogueira}
       />
       <View style={{ flex: 1 }}>
@@ -355,3 +351,44 @@ function OpcaoDeVariante({ roleId, varianteId, nome, descricao, peso, ativa, onP
 
 // `role` é reexportado por conveniência de quem lê este arquivo isolado.
 void role;
+
+/** Um lado do contador: moldura de 38px dentro do alvo de 44 x 48. */
+function Passo({
+  sinal,
+  onPress,
+  inativo,
+}: {
+  sinal: string;
+  onPress: () => void;
+  inativo: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={inativo}
+      style={({ pressed }) => ({
+        width: 44,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: inativo ? 0.25 : 1,
+        transform: [{ translateY: pressed && !inativo ? 1 : 0 }],
+      })}
+    >
+      <View
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 4,
+          borderWidth: 1,
+          borderColor: '#3E362E',
+          backgroundColor: '#1D1814',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ color: cores.linhoCru, fontSize: 20, lineHeight: 22 }}>{sinal}</Text>
+      </View>
+    </Pressable>
+  );
+}

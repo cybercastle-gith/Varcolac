@@ -146,3 +146,16 @@ export function motivoDe(roleId: RoleId, varianteId?: string): readonly Primitiv
   const extra = varianteId ? (m.complementos?.[varianteId] ?? []) : [];
   return [...m.base, ...extra];
 }
+
+/**
+ * Só o complemento da variante, sem o motivo base.
+ *
+ * Existe para o ícone em xilogravura (Bloco 4): o desenho da função já vem do
+ * arquivo de imagem, então só falta o que a variante acrescenta — a mesma marca
+ * geométrica pequena, agora aplicada como selo no canto do ícone, em vez de
+ * somada ao motivo inteiro.
+ */
+export function complementoDe(roleId: RoleId, varianteId?: string): readonly Primitiva[] {
+  if (!varianteId) return [];
+  return MOTIVOS[roleId]?.complementos?.[varianteId] ?? [];
+}

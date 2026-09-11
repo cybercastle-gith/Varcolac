@@ -35,7 +35,7 @@ export type { GhostModule } from './data/ghosts';
 export { MODOS, modo, AGRAVAMENTOS } from './data/modes/index';
 export type { ModeHooks } from './data/modes/index';
 export { MISSOES_DO_CORINGA, MISSOES_POR_ID } from './data/missions';
-export { MOTIVOS, MOTIVO_AMANTES, motivoDe } from './data/motivos';
+export { MOTIVOS, MOTIVO_AMANTES, motivoDe, complementoDe } from './data/motivos';
 export type { Motivo, Primitiva } from './data/motivos';
 export type { Missao } from './data/missions';
 

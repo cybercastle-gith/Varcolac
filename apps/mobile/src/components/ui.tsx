@@ -91,7 +91,13 @@ export function Botao({ children, onPress, tom = 'primario', desabilitado, style
 }) {
   const fundo =
     tom === 'primario' ? cores.garanca : tom === 'destrutivo' ? cores.sangueSeco : 'transparent';
-  const borda = tom === 'secundario' ? '#3E362E' : 'transparent';
+  const borda =
+    tom === 'secundario'
+      ? '#3E362E'
+      : tom === 'destrutivo'
+        ? '#8C3A32'
+        : // Um fio mais claro que o proprio fundo: e o que da aresta a peca.
+          '#C2453C';
   const texto = tom === 'secundario' ? cores.ferrugem : cores.linhoCru;
 
   return (
@@ -99,13 +105,33 @@ export function Botao({ children, onPress, tom = 'primario', desabilitado, style
       onPress={desabilitado ? undefined : onPress}
       style={({ pressed }) => [
         estilos.botao,
-        { backgroundColor: fundo, borderColor: borda, borderWidth: tom === 'secundario' ? 1 : 0 },
-        pressed && !desabilitado && { opacity: 0.8 },
+        { backgroundColor: fundo, borderColor: borda, borderWidth: 1 },
+        /*
+         * Afundar 1px em vez de so clarear.
+         * No escuro, com o aparelho passando de mao em mao, mudanca de opacidade
+         * quase nao se ve. Deslocamento se ve — e e a diferenca entre a pessoa
+         * saber que o toque pegou e tocar de novo.
+         */
+        pressed && !desabilitado && { opacity: 0.85, transform: [{ translateY: 1 }] },
         desabilitado && { opacity: 0.35 },
         style,
       ]}
     >
-      <Text style={[tipografia.interface, { color: texto }]}>{children}</Text>
+      {/*
+        O fio de luz na aresta de cima.
+        Um retangulo chapado nao tem materia. Uma linha clara no alto e escura
+        embaixo diz que o objeto tem espessura e que a luz vem de cima — a mesma
+        fonte unica do Ambiente, so que dentro do botao.
+      */}
+      <View pointerEvents="none" style={[estilos.aresta, { opacity: tom === 'primario' ? 0.22 : 0.1 }]} />
+      <Text
+        style={[
+          tipografia.interface,
+          { color: texto, letterSpacing: tom === 'primario' ? 0.8 : 0.4 },
+        ]}
+      >
+        {children}
+      </Text>
     </Pressable>
   );
 }
@@ -134,6 +160,12 @@ export function ItemJogador({ nome, detalhe, morto, selecionado, onPress, corDoP
         morto && { opacity: 0.5 },
       ]}
     >
+      {/*
+        O marcador de estado e um losango, nao um circulo.
+        Circulo e vocabulario de aplicativo; losango e o motivo da regiao, o
+        mesmo da marca e das barras bordadas. Custa uma rotacao e amarra a lista
+        ao resto do jogo.
+      */}
       <View
         style={[
           estilos.ponto,
@@ -177,6 +209,8 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: espaco.lg,
+    // O fio de luz da aresta e absoluto: sem isto ele escapa pela quina.
+    overflow: 'hidden',
   },
   item: {
     minHeight: alvoMinimo,
@@ -193,7 +227,15 @@ const estilos = StyleSheet.create({
   ponto: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    transform: [{ rotate: '45deg' }],
+  },
+  aresta: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: cores.linhoCru,
   },
   separador: {
     height: 1,

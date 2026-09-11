@@ -183,11 +183,14 @@ pnpm dev:android   # jogar no aparelho, por cabo
 
 ## Documentos
 
+- **[docs/LEITURA_OBRIGATORIA_PARA_IAS.md](docs/LEITURA_OBRIGATORIA_PARA_IAS.md) — se você é uma IA, comece por aqui.** Memória operacional entre sessões: causa-raiz de cada defeito já resolvido, decisões com o porquê, armadilhas de ferramenta e registro de sessões. Ler antes de agir, escrever antes de encerrar.
+
 - [docs/dossie.htm](docs/) — dossiê de design: pilares, facções, catálogo, precedência, calculadora de peso, modos.
 - [docs/identidade.htm](docs/) — identidade visual "Luz de Vela": paleta com procedência, luz de vela, colagem de material real.
 - [docs/stack.md](docs/stack.md) — decisões de stack e fluxo de desenvolvimento.
 - [docs/CONTEUDO_DO_JOGO.md](docs/CONTEUDO_DO_JOGO.md) — **todo o conteúdo e contexto do jogo num arquivo só**, escrito para ser entregue a uma IA junto de um pedido de conteúdo novo (roles, modos, eventos, mecânicas).
 - [docs/ASSETS_A_GERAR.md](docs/ASSETS_A_GERAR.md) — as três folhas de imagens que faltam produzir, com o prompt pronto de cada uma e a decisão por trás de cada item.
+- [docs/SISTEMA_VISUAL.md](docs/SISTEMA_VISUAL.md) — o que da identidade virou código: as cinco camadas de luz, momento × operação, o bordado, a carta, e onde encaixar os ícones quando chegarem.
 
 ---
 

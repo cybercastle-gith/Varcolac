@@ -7,9 +7,10 @@ import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { Botao, Titulo, Rotulo, Pequeno } from '../../components/ui';
 import { Ambiente } from '../../components/Ambiente';
-import { Motivo, corDaFaccao } from '../../components/Motivo';
+import { corDaFaccao } from '../../components/Motivo';
+import { IconeDeRole } from '../../components/IconeDeRole';
 import { Revelacao } from '../../components/animacoes';
-import { cores, espaco, tipografia } from '../../theme';
+import { cores, espaco, tipografia, familia } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Execucao'>;
 
@@ -54,10 +55,10 @@ export function ExecucaoScreen({ navigation }: Props) {
                 <Text style={[tipografia.titulo, { color: cores.linhoCru }]}>{p.nome}</Text>
                 {estado.config.revelarRoleAoMorrer && (
                   <>
-                    <Motivo
+                    <IconeDeRole
                       roleId={p.roleId}
                       varianteId={p.varianteId}
-                      tamanho={36}
+                      tamanho={44}
                       cor={corDaFaccao(p.roleId)}
                     />
                     <Text style={[tipografia.nomeDeRole, { color: cores.cera, fontSize: 20 }]}>
@@ -78,7 +79,7 @@ export function ExecucaoScreen({ navigation }: Props) {
               key={i}
               style={[
                 tipografia.corpoSerif,
-                { color: cores.cera, textAlign: 'center', fontStyle: 'italic' },
+                { fontFamily: familia.serifItalico, color: cores.cera, textAlign: 'center' },
               ]}
             >
               {a.texto}

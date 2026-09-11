@@ -282,14 +282,21 @@ export function Material({
 const estilos = StyleSheet.create({
   base: { flex: 1, overflow: 'hidden' },
   conteudo: { flex: 1 },
+  /*
+   * `width: '100%'` não é redundante com o `left/right: 0`.
+   *
+   * No react-native-web, uma Image sem largura declarada cai no tamanho
+   * intrínseco do arquivo: o papel da carta cobria 241px de uma carta de 307px
+   * e o resto ficava como uma faixa escura no rodapé, que parecia um elemento
+   * de interface e não um defeito. No aparelho o mesmo código tila certo, então
+   * o erro só aparecia no navegador — que é onde 80% deste projeto é feito.
+   */
   preencher: {
     position: 'absolute',
     left: 0,
-    right: 0,
     top: 0,
-    bottom: 0,
-    width: undefined,
-    height: undefined,
+    width: '100%',
+    height: '100%',
   },
   topo: {
     position: 'absolute',

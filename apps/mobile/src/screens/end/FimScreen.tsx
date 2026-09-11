@@ -5,7 +5,8 @@ import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { Botao, Titulo, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
 import { Ambiente } from '../../components/Ambiente';
-import { Motivo, corDaFaccao } from '../../components/Motivo';
+import { corDaFaccao } from '../../components/Motivo';
+import { IconeDeRole } from '../../components/IconeDeRole';
 import { Aparicao, Revelacao } from '../../components/animacoes';
 import { cores, espaco, tipografia } from '../../theme';
 
@@ -85,7 +86,7 @@ export function FimScreen({ navigation }: Props) {
                     (missao ? ` · missão: ${missao.texto}` : '')
                   }
                   direita={
-                    <Motivo roleId={p.roleId} varianteId={p.varianteId} tamanho={24} cor={cor} />
+                    <IconeDeRole roleId={p.roleId} varianteId={p.varianteId} tamanho={30} cor={cor} />
                   }
                 />
               </Aparicao>
