@@ -5,6 +5,8 @@ coverage/
 .turbo/
 *.tsbuildinfo
 
+.claude 
+
 # expo
 .expo/
 .expo-shared/

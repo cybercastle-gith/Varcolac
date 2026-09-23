@@ -66,7 +66,7 @@ vida real. Offline, sem contas, sem backend.
 O app é o mestre: distribui, narra, resolve interações, injeta eventos e conta
 os votos.
 
-O usuário é o **Felipe** (`cybercastle2000@gmail.com`). Fala português. O git
+O usuário é o **Cyber Caslte**. Fala português. O git
 está em `main`.
 
 ### 1.1 Estrutura
