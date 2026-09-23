@@ -79,7 +79,7 @@ export function amostrar(
         ...Array.from({ length: nVila }, () => rng.pick(ROLES_VILA).id),
       ];
 
-      const deck: Deck = { id: `amostra-${jogadores}-${i}`, nome: 'amostra', roleIds, modificadores: [] };
+      const deck: Deck = { id: `amostra-${jogadores}-${i}`, nome: 'amostra', roleIds };
       const eq = calcularEquilibrio(deck, config, jogadores, opcoes.pesos ?? {});
       const stats = rodarLote({
         partidas: opcoes.partidasPorComposicao,

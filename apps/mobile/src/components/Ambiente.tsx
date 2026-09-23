@@ -191,16 +191,6 @@ export function Ambiente({
       </Animated.View>
 
       {/* Véu da fase: a cor do momento, por cima do material. */}
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backgroundColor: p.veu,
-            opacity: Animated.multiply(transicao, operacao ? p.veuOpacidade * 0.4 : p.veuOpacidade),
-          },
-        ]}
-      />
 
       {/*
         A chama e as sombras. Vão dentro de uma View sem toque porque
@@ -224,16 +214,6 @@ export function Ambiente({
         />
 
         {/* Sombra de topo e de rodapé: é onde o texto pousa. */}
-        <Image
-          source={gradientes.topo}
-          resizeMode="stretch"
-          style={[estilos.topo, { tintColor: cores.fuligem }]}
-        />
-        <Image
-          source={gradientes.vinheta}
-          resizeMode="stretch"
-          style={[estilos.vinheta, { tintColor: cores.fuligem }]}
-        />
       </View>
 
       <View
@@ -260,10 +240,23 @@ export function Material({
   material = 'linho',
   opacidade,
   raio = 0,
+  modo = 'ladrilho',
 }: {
   material?: NomeDeTextura;
   opacidade?: number;
   raio?: number;
+  /**
+   * `ladrilho` repete a amostra · `cobrir` estica uma só até preencher.
+   *
+   * A escolha é por TAMANHO da superfície, não por gosto. As amostras têm cerca
+   * de 235 × 260 e não são perfeitamente contínuas, então toda emenda de
+   * ladrilho é uma descontinuidade em potencial. Numa superfície grande, o
+   * ladrilho é a única opção e a emenda se perde no meio do grão; num objeto
+   * pequeno — a carta tem 240 × 320 — cabe quase um ladrilho só, e a emenda
+   * cai bem visível a uns 80% da altura. `cobrir` resolve por construção: uma
+   * amostra, nenhuma emenda, ao custo de esticar ~20%.
+   */
+  modo?: 'ladrilho' | 'cobrir';
 }) {
   return (
     <View
@@ -272,7 +265,7 @@ export function Material({
     >
       <Image
         source={texturas[material]}
-        resizeMode="repeat"
+        resizeMode={modo === 'cobrir' ? 'cover' : 'repeat'}
         style={[estilos.preencher, { opacity: opacidade ?? opacidadeDaTextura[material] }]}
       />
     </View>

@@ -7,7 +7,7 @@ import { apurar, elegiveisParaVotar, resolverDia } from './voting';
 const base: GameConfig = { ...DEFAULT_CONFIG, semente: 'dia', frequenciaEventos: 'desligado' };
 
 function montar(roleIds: string[], config = base) {
-  const deck: Deck = { id: 't', nome: 't', roleIds, modificadores: [] };
+  const deck: Deck = { id: 't', nome: 't', roleIds };
   const jogadores = roleIds.map((_, i) => ({ nome: `J${i + 1}`, cor: '#000' }));
   const estado = criarPartida(deck, config, jogadores);
   return { estado, id: (r: string) => estado.players.find((p) => p.roleId === r)!.id };

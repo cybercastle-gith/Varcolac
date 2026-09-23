@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ROLES, ROLES_VILA, ROLES_LOBOS, ROLES_SOLITARIOS, MODIFICADORES, ancia } from './index';
+import { ROLES, ROLES_VILA, ROLES_LOBOS, ROLES_SOLITARIOS, ancia } from './index';
 
 describe('catálogo', () => {
-  it('tem 24 roles + 1 modificador', () => {
+  it('tem 24 roles', () => {
     expect(ROLES).toHaveLength(24);
-    expect(MODIFICADORES).toHaveLength(1);
   });
 
   it('distribui as roles como o dossiê: 11 vila, 7 lobos, 6 solitários', () => {

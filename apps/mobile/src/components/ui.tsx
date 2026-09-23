@@ -72,14 +72,15 @@ export function Corpo({ children, cor = cores.linhoCru, serif = false }: {
   );
 }
 
-export function Pequeno({ children, cor = cores.ferrugem }: {
+export function Pequeno({ children, cor = cores.ferrugem,style }: {
   children: ReactNode;
   cor?: string | undefined;
+  style?: StyleProp<ViewStyle> | undefined;
 }) {
-  return <Text style={[tipografia.pequeno, { color: cor }]}>{children}</Text>;
+  return <Text style={[tipografia.pequeno, { color: cor }, style]}>{children}</Text>;
 }
 
-export type TomDeBotao = 'primario' | 'secundario' | 'destrutivo';
+export type TomDeBotao = 'primario' | 'secundario' | 'destrutivo' | 'claro' | 'alternativo';
 
 /** Altura 48px, raio 4px, semibold — especificação da seção 9. */
 export function Botao({ children, onPress, tom = 'primario', desabilitado, style }: {
@@ -90,12 +91,16 @@ export function Botao({ children, onPress, tom = 'primario', desabilitado, style
   style?: StyleProp<ViewStyle> | undefined;
 }) {
   const fundo =
-    tom === 'primario' ? cores.garanca : tom === 'destrutivo' ? cores.sangueSeco : 'transparent';
+    tom === 'primario' ? cores.garanca : tom === 'destrutivo' ? cores.sangueSeco : 'transparent' ;
   const borda =
     tom === 'secundario'
       ? '#3E362E'
       : tom === 'destrutivo'
         ? '#8C3A32'
+        :tom === 'claro'
+          ? cores.linhoCru
+        : tom === 'alternativo'
+        ? '#C2453C'
         : // Um fio mais claro que o proprio fundo: e o que da aresta a peca.
           '#C2453C';
   const texto = tom === 'secundario' ? cores.ferrugem : cores.linhoCru;
@@ -169,12 +174,12 @@ export function ItemJogador({ nome, detalhe, morto, selecionado, onPress, corDoP
       <View
         style={[
           estilos.ponto,
-          { backgroundColor: morto ? cores.sangueSeco : (corDoPonto ?? cores.ferrugem) },
+          { width: 15, height: 15,backgroundColor: morto ? cores.sangueSeco : (corDoPonto ?? cores.ferrugem), borderColor: cores.linhoCru, borderWidth: 0.25 },
         ]}
       />
       <View style={{ flex: 1 }}>
-        <Text style={[tipografia.corpo, { color: cores.linhoCru }]}>{nome}</Text>
-        {detalhe ? <Pequeno>{detalhe}</Pequeno> : null}
+        <Text style={[tipografia.corpo, { color: cores.folhaDeOuro }]}>{nome}</Text>
+        {detalhe ? <Pequeno cor={cores.linhoCru}>{detalhe}</Pequeno> : null}
       </View>
       {/* Nunca cor sozinha: o estado sempre vem com ícone ou texto. */}
       {morto ? <Text style={{ color: cores.sangueSeco, fontSize: 16 }}>✝</Text> : null}

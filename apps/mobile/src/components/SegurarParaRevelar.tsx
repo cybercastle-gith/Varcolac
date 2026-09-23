@@ -73,7 +73,7 @@ export function SegurarParaRevelar({ children, aviso, aoRevelar }: {
             <Animated.View style={[estilos.preenchimento, { height: preenchimento }]} />
             <Text style={estilos.simbolo}>◉</Text>
           </View>
-          <Text style={[tipografia.rotulo, { color: cores.ferrugem, marginTop: espaco.lg }]}>
+          <Text style={[tipografia.rotulo, { color: cores.ferrugem, marginTop: espaco.lg, fontSize: 20 }]}>
             Segure para revelar
           </Text>
           {aviso ? (

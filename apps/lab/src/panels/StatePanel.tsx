@@ -79,7 +79,6 @@ export function StatePanel() {
                 >
                   <td className="py-1">
                     {p.nome}
-                    {p.amanteDe && <span className="text-pink-500 ml-1">♥</span>}
                   </td>
                   <td>
                     {r.nome}

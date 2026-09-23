@@ -94,6 +94,7 @@ código e os testes rodarem em Node, em milissegundos.
 | `docs/CONTEUDO_DO_JOGO.md` | todo o conteúdo do jogo num arquivo, para entregar a uma IA junto de um pedido de conteúdo novo |
 | `docs/ASSETS_A_GERAR.md` | as folhas de imagem a produzir, com prompt pronto e a decisão de cada item |
 | `docs/SETUP_PROJETO_WEREWOLF.md` | por que cada etapa do setup existe e o que fazer quando falha |
+| `docs/VARIANTES_A_CRIAR.md` | prompt pronto para outra IA criar as variantes das 17 funções que não têm |
 | `docs/stack.md` | decisões de stack e fluxo de desenvolvimento |
 | **este arquivo** | memória operacional entre IAs |
 
@@ -315,7 +316,14 @@ Coisas que me atrapalharam e que vão atrapalhar você.
 - **Heredoc do Bash trunca acima de ~200 linhas**, com
   `unexpected EOF while looking for matching`. Conteúdo longo: `Write` num
   arquivo temporário e `cat >>`.
-- **Acentos passam bem no heredoc; barras invertidas não.**
+- **Acentos passam bem no heredoc; barras invertidas não.** Caí nisso três
+  vezes. Regra sem exceção: **script com barra invertida vai pela ferramenta
+  `Write`.** Em Python, monte caminho com `os.path.join(*rel.split('/'))`.
+- **Screenshot do painel pode falhar com "the page did not finish rendering
+  in time" quando a janela do Claude está atrás de outra.** Não é erro de
+  app: tentar de novo resolve. E a primeira compilação web depois de mexer
+  no engine estoura o tempo da navegação — um `curl` em
+  `/index.ts.bundle?platform=web` esquenta o cache antes.
 - **`str.replace` do Python com `\\n` não casa** com template literal de JS que
   tem `\n` de verdade.
 - **`tail -40` num log de build longo esconde o erro.** O bloco
@@ -325,6 +333,15 @@ Coisas que me atrapalharam e que vão atrapalhar você.
 - **O `adb reverse` cai quando o aparelho reconecta.** Um erro vermelho de
   "Unable to load script" no meio de uma sessão que funcionava é quase sempre
   isso. `adb reverse --list` mostra vazio; refazer resolve.
+- **Painel do navegador OCULTO congela `requestAnimationFrame`.** Toda animação
+  para no quadro inicial; como as telas embrulham o conteúdo em `Aparicao`
+  (começa em `opacity: 0`), a captura sai **preta** com o DOM inteiro presente.
+  `document.visibilityState` mente e responde `"visible"`. Antes de investigar
+  tela preta, `tabs_select` para trazer o painel à frente. O erro do
+  `javascript_tool` denuncia: *"The Browser pane is currently hidden."*
+- **`Pressable` do RN Web não reage a evento sintético.** `pointerdown` e
+  `mousedown` despachados por `javascript_tool` no nó do `Pressable` não
+  disparam `onPressIn` — o "segure para revelar" não é testável assim.
 - **O painel do navegador tem dois sistemas de coordenada.** O quadro do
   screenshot é maior que o viewport emulado, e o que parece "faixa colorida na
   borda esquerda da página" é a área da janela em volta. **Já perdi tempo
@@ -865,6 +882,201 @@ solução visual genérica** — inclusive as minhas.
   existir (ver 8.4) — não há ferramenta de geração de imagem nesta sessão
   para produzir isso do zero; precisa vir do usuário ou de upscale
   algorítmico (qualidade inferior) como placeholder.
+
+### 2026-09-22 — linha branca na carta: calha da folha de contato
+
+**O defeito relatado**
+
+> "arruma essa merda aqui fica com uma linha branca em cima e embaixo"
+
+Carta de função com uma tira clara na borda de cima, de baixo **e nas laterais**.
+
+**Causa-raiz — não estava no componente, estava no ARQUIVO da textura**
+
+O recorte de `papel-encardido.png` carregava uma tira da calha branca da folha
+de contato nas quatro bordas. Medido antes:
+
+```
+linha  0 : [229.5 205.2 169.7]     col 0  : [238.5 222.9 197.9]
+linha  1 : [205.5 163.0 105.0]     col -1 : [240.1 225.2 201.4]
+miolo    : [213.5 176.1 120.4]
+linha -1 : [245.6 236.8 223.4]   <- quase branca
+```
+
+O detector de grade do `fatiar-assets.py` usa `quase_branco = (a > 233).all()`.
+Os pixels de transição entre a calha e o material **caem abaixo de 233 primeiro
+no canal AZUL** — papel e linho são creme, o azul despenca antes do vermelho —
+então a transição passa por conteúdo e entra no recorte.
+
+Isso é invisível enquanto a textura é usada em opacidade baixa, e fica gritante
+quando ela vai a `resizeMode="repeat"`: **cada emenda de ladrilho desenha a
+tira clara**. Na carta (240×320) cabe pouco mais de um ladrilho da amostra
+(235×260), então a tira aparece na borda e na emenda.
+
+**Conserto, em três camadas**
+
+1. `aparar_borda()` novo em `scripts/fatiar-assets.py`: compara cada linha e
+   coluna de borda com a mediana do miolo (60% centrais) e remove o que se
+   afasta mais que 14, com teto de 8% por lado. Depois: papel com desvio de
+   borda ~10 (era ~101).
+2. `Material` ganhou `modo: 'ladrilho' | 'cobrir'`. A carta usa `cobrir` —
+   uma amostra esticada, **nenhuma emenda por construção**. `ladrilho`
+   continua sendo o certo para superfície grande, onde a emenda se perde.
+3. `raio={20}` do papel contra `borderRadius: 4` da carta deixava meia-lua do
+   corpo escuro em cada canto. Removido: a carta já recorta com
+   `overflow: 'hidden'`.
+
+**Regressão encontrada de brinde — seleção de folha por ordem alfabética**
+
+`fatiar-assets.py` pegava `sorted(os.listdir('assets/images'))[0], [1], [2]`.
+Funcionou enquanto só havia as três folhas. Quando o usuário largou ali a folha
+de ícones e um print da logo, **"Captura de tela ..." virou o primeiro item** e o
+script tentou fatiar um print de 122×150 como se fosse a folha de 20 materiais.
+Nada foi sobrescrito (a checagem de contagem de células barrou), mas nada foi
+corrigido também — e a mensagem de erro não dizia o porquê.
+
+`assets/images/` é a pasta onde o usuário **joga imagem nova**. Tratar a ordem
+dela como contrato é errado por construção. Agora existe um dicionário `FOLHAS`
+no topo do script, com nome de arquivo explícito e erro que diz o que fazer.
+
+**Armadilhas de ferramenta — duas, e uma delas eu quase persegui como bug**
+
+- **Caí de novo na do heredoc.** Escrevi `\\n` dentro de `python - <<'PY'` e o
+  Bash colapsou para `\n` real, gerando `SyntaxError: unterminated f-string`.
+  Já estava documentado na seção 5. **Para string com barra invertida, use a
+  ferramenta `Write`, não heredoc.**
+- **NOVA, importante: com o painel do navegador OCULTO, o
+  `requestAnimationFrame` não avança.** Toda animação fica congelada no quadro
+  inicial. Como cada tela embrulha o conteúdo em `Aparicao` (que começa em
+  `opacity: 0`), **o app inteiro aparece preto nas capturas** — DOM completo,
+  texto presente, tudo invisível. Eu cheguei a escrever que era um defeito do
+  app antes de achar a causa. O sinal claro veio do erro do `javascript_tool`:
+  *"The Browser pane is currently hidden."* **Antes de investigar tela preta,
+  `tabs_select` para trazer o painel à frente.**
+  `document.visibilityState` responde `"visible"` mesmo assim — não confie nele.
+
+**Verificação feita**
+
+- `pnpm typecheck` limpo.
+- Medição das 26 texturas e fundos: papel saiu da lista de borda suspeita. Os
+  que sobraram (`papel-queimado`, `bordado-vermelho`, `barbante`, `remendo`,
+  `bordado-preto`, `osso`, `dia`, `vitoria`) têm borda legitimamente diferente
+  do miolo — é o desenho do material, não calha.
+- **Visual de verdade**, no `dev:web` (porta 8090, config `app` do
+  `.claude/launch.json`): app percorrido até a Passagem e, para ver a carta
+  isolada, ela foi renderizada **temporariamente** na Home, fotografada e a
+  alteração **revertida** (backup em `.scratch`, typecheck limpo depois).
+  Papel uniforme de borda a borda, sem tira clara e sem meia-lua nos cantos.
+
+**O que ficou para trás**
+
+- **`SegurarParaRevelar` não é acionável por evento sintético no RN Web.**
+  `pointerdown`/`mousedown` despachados no `Pressable` (o div com
+  `tabindex="0"`, 375×716) não disparam `onPressIn`. O caminho que funcionou
+  para ver a carta foi renderizá-la fora do fluxo. Se alguém precisar testar o
+  gesto no navegador, isso continua em aberto.
+- Aparelho Android não estava conectado (`adb devices` vazio), então **a
+  correção não foi conferida no aparelho** — só no navegador. O papel é o mesmo
+  arquivo, mas `resizeMode` tem histórico de divergir entre web e nativo (ver
+  4.14).
+- As outras texturas continuam em `ladrilho` onde são usadas; nenhuma delas
+  está numa superfície pequena hoje, mas a emenda existe e vai aparecer se
+  alguma for para um painel pequeno. Use `modo="cobrir"` nesses casos.
+
+### 2026-09-22 (continuação) — Amantes removidos, variantes visíveis, prompt de variantes
+
+**Amantes: removidos por inteiro, e com eles o conceito de "modificador"**
+
+Pedido literal do usuário: *"tire os amantes"*. Não foi só apagar a role — os
+Amantes eram a **única** razão de existir do conceito de modificador, então
+manter `RoleModifier`, `MODIFICADORES` e `Deck.modificadores` vazios deixaria um
+vocabulário inteiro sem nenhum membro. Removido tudo:
+
+- `data/roles/solitarios.ts` — o objeto `amantes` e `MODIFICADORES`
+- `data/roles/index.ts` — `MODIFICADORES_POR_ID` e os exports
+- `types/role.ts` — a interface `RoleModifier`
+- `types/config.ts` — o campo `Deck.modificadores`
+- `types/player.ts` — a marca `'amante'` e o vínculo `amanteDe`
+- `setup/create-game.ts` — o sorteio do par
+- `turn/roteiro.ts` — o bloco "Seu amor" (e a variante Amor Cego)
+- `resolution/estertor-chain.ts` — o Amor Proibido (morrer de tristeza)
+- `victory/win-conditions.ts` — a camada `'amantes'` do `VictoryLayer`
+- `balance/weight-calculator.ts` — os dois laços sobre `deck.modificadores`
+- `balance/deck-generator.ts`, `simulation/calibragem.ts`,
+  `simulation/batch-runner.ts`
+- `data/motivos.ts` + `index.ts` — `MOTIVO_AMANTES`
+- App: `FimScreen` ("Só o amor sobreviveu"), `BibliotecaScreen` (seção
+  Modificadores), `store/jogo.ts`
+- Laboratório: `StatePanel` (o ♥) e `SimulationPanel` (a barra rosa)
+- Testes: `catalogo.test`, `win-conditions.test`, `estertor-chain.test`,
+  `batch-runner.test`, `voting.test`, `night-pipeline.test`,
+  `weight-calculator.test`
+
+**Método que valeu a pena:** apagar primeiro a definição e deixar o
+`pnpm -r typecheck` apontar os 13 pontos restantes, um por vez. Mais rápido e
+mais seguro que caçar por `grep`. Verificado: typecheck limpo nos 3 pacotes,
+**61 testes do engine + 10 do app passando**.
+
+> Se alguma coisa voltar a citar Amantes, é resíduo — a decisão foi remover, não
+> desativar.
+
+**Biblioteca: as variantes agora se anunciam na lista fechada**
+
+O pedido foi *"faça lá aparecer as variantes"*. Elas **já** eram renderizadas ao
+tocar na função — o que faltava era saber que existiam. Agora a linha fechada
+mostra `3 VARIANTES ▾` ou `SEM VARIANTES`, e o estado aberto diz explicitamente
+"Esta função ainda não tem variantes."
+
+O vazio precisa ser dito: **17 das 24 funções não têm variante nenhuma**.
+Silêncio ali lê como "não carregou", não como "não existe".
+
+Verificado na tela (`dev:web`, porta 8090): 7 funções com contagem + 17 com
+"sem variantes" = 24; zero ocorrência de "amante" ou "modificador" no texto
+renderizado.
+
+**Desequilíbrio de conteúdo, agora explícito**
+
+Todas as 22 variantes existentes estão na **vila** (Aldeão 3, Vidente 4,
+Detetive 3, Médico 3, Guarda-costas 3, Padre 3, Caçador 3). **Lobos e
+solitários não têm nenhuma.** Quem monta baralho hoje tem profundidade de um
+lado só. É o que o próximo documento existe para corrigir.
+
+**`docs/VARIANTES_A_CRIAR.md` — prompt pronto para outra IA**
+
+Contém: o contrato TypeScript de `RoleVariant`, as 11 etapas com a precedência
+real que elas implicam, a tabela de calibragem de peso (variante enfraquecida =
+base − 1, fortalecida = base + 1, teto 4), **8 alavancas** de variante
+(alcance, frequência, atraso, publicidade, ruído, custo, momento, condição),
+as regras duras (uma frase; nada de texto livre; nada de comunicação secreta —
+o sussurro foi cortado e não volta), o tom de nomes, um exemplo real do Padre
+comentado, e as 17 funções com o que cada uma faz hoje.
+
+No fim tem uma checklist para **quem recebe** a resposta: id sem acento, peso é
+absoluto (`pesoEfetivo` substitui, não soma), toda variante precisa de
+complemento em `motivos.ts` (há 4 prontos: `MENOS`, `DUPLO`, `ATRASO`,
+`PUBLICO`), variante que muda `etapa` muda precedência, e recalibrar depois
+(`M = 2.6` foi medido com o catálogo atual).
+
+**Armadilha de ferramenta — terceira vez no mesmo buraco**
+
+Escrevi `p = R + '\\' + rel.replace(...)` dentro de `python - <<'PY'` e o Bash
+colapsou para `'\'`, gerando `SyntaxError: unexpected character after line
+continuation character`. **Já está documentado na seção 5 e eu caí de novo.**
+A regra prática, agora sem exceção: **script com barra invertida vai pela
+ferramenta `Write`, nunca por heredoc.** Use `os.path.join(*rel.split('/'))`
+em vez de montar caminho com `\`.
+
+**Outra, nova:** o screenshot do painel falha com *"the page did not finish
+rendering in time"* quando a janela do Claude está atrás de outra. Não é erro
+de app nem de bundle — **tentar de novo resolve**. E a primeira compilação web
+depois de mexer no engine estoura o tempo da navegação: `curl` no
+`/index.ts.bundle?platform=web` esquenta o cache e a próxima carga funciona.
+
+**O que ficou para trás**
+
+- As variantes ainda não existem: o documento é o pedido, não a entrega.
+- Recalibragem do balanceamento depois que elas chegarem.
+- Nada foi conferido no aparelho (`adb devices` vazio).
 
 <!--
   PRÓXIMA SESSÃO: acrescente seu bloco aqui embaixo, no mesmo formato.

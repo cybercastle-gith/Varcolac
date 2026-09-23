@@ -32,9 +32,7 @@ export function FimScreen({ navigation }: Props) {
       ? 'A vila resistiu.'
       : principal?.camada === 'lobos'
         ? 'A matilha tomou a vila.'
-        : principal?.camada === 'amantes'
-          ? 'Só o amor sobreviveu.'
-          : 'A partida acabou.';
+        : 'A partida acabou.';
 
   return (
     <Ambiente clima="vitoria">

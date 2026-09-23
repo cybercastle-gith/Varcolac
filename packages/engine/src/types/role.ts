@@ -51,15 +51,6 @@ export interface Role {
   readonly descricaoLonga: string;
 }
 
-/** Modificador aplicado sobre roles existentes (Amantes). Não é uma role. */
-export interface RoleModifier {
-  readonly id: string;
-  readonly nome: string;
-  readonly peso: number;
-  readonly alvos: number;
-  readonly variantes: readonly RoleVariant[];
-  readonly descricao: string;
-}
 
 /**
  * Peso efetivo considerando a variante escolhida.

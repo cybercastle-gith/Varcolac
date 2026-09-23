@@ -9,7 +9,6 @@ const deck: Deck = {
   id: 'teste',
   nome: 'teste',
   roleIds: ['vidente', 'medico', 'padre', 'xerife', 'lobo', 'feiticeiro'],
-  modificadores: [],
 };
 
 const config = { ...DEFAULT_CONFIG, semente: 'fixa', frequenciaEventos: 'desligado' as const };

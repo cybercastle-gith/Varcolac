@@ -195,7 +195,7 @@ export const useJogo = create<JogoStore>((set, get) => ({
       if (i < 0) return;
       atual.splice(i, 1);
     }
-    set({ deck: { id: 'manual', nome: 'Montado à mão', roleIds: atual, modificadores: get().deck.modificadores } });
+    set({ deck: { id: 'manual', nome: 'Montado à mão', roleIds: atual } });
     get().recalcular();
   },
 
@@ -208,7 +208,7 @@ export const useJogo = create<JogoStore>((set, get) => ({
   },
 
   limparBaralho: () => {
-    set({ deck: { id: 'manual', nome: 'Montado à mão', roleIds: [], modificadores: [] } });
+    set({ deck: { id: 'manual', nome: 'Montado à mão', roleIds: [] } });
     get().recalcular();
   },
 

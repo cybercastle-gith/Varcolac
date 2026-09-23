@@ -23,10 +23,9 @@ export function JogadoresScreen({ navigation }: Props) {
   return (
     <TelaOperacao>
       <Rolagem>
-        <Rotulo>Passo 1 de 5</Rotulo>
-        <Titulo>Quem está na mesa?</Titulo>
+        <Titulo>Quem irá jogar?</Titulo>
         <Pequeno>
-          {jogadores.length} de 16 · mínimo 5. O celular vai circular nesta ordem.
+          {jogadores.length} de 16 · mínimo 4 jogadores
         </Pequeno>
 
         <View style={{ gap: espaco.sm, marginTop: espaco.md }}>
@@ -52,34 +51,37 @@ export function JogadoresScreen({ navigation }: Props) {
                         minHeight: 48,
                       },
                     ]}
-                  />
+                  >
+                  </TextInput>
                 ) : (
                   <ItemJogador
                     nome={j.nome}
-                    detalhe={`jogador ${i + 1}`}
+                    detalhe={`Jogador ${i + 1}`}
                     corDoPonto={j.cor}
                     onPress={() => setEditando(i)}
+                    direita={
+                      <Pressable
+                        onPress={() => removerJogador(i)}
+                        disabled={jogadores.length <= 5}
+                        style={{
+                          width: 48,
+                          height: 48,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: jogadores.length <= 5 ? 0.25 : 1,
+                        }}
+                      >
+                        <Text style={{ color: cores.linhoCru, fontSize: 30 }}>−</Text>
+                      </Pressable>
+                    }
                   />
                 )}
               </View>
-              <Pressable
-                onPress={() => removerJogador(i)}
-                disabled={jogadores.length <= 5}
-                style={{
-                  width: 48,
-                  height: 48,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: jogadores.length <= 5 ? 0.25 : 1,
-                }}
-              >
-                <Text style={{ color: cores.ferrugem, fontSize: 20 }}>−</Text>
-              </Pressable>
             </View>
           ))}
         </View>
 
-        <Botao tom="secundario" onPress={() => adicionarJogador('')}>
+        <Botao tom="alternativo" onPress={() => adicionarJogador('')}>
           + Adicionar jogador
         </Botao>
       </Rolagem>

@@ -76,9 +76,9 @@ describe('simulação em massa', () => {
     expect(stats.noitesMedia).toBeGreaterThan(0);
 
     const t = taxas(stats);
-    // As camadas principais somam 100%: vila, lobos e amantes cobrem todo fim
-    // de partida. As camadas paralelas não entram nessa conta, de propósito.
-    expect(t.vila + t.lobos + t.solitario + t.amantes).toBeCloseTo(100, 0);
+    // As camadas principais somam 100%: vila, lobos e solitário cobrem todo
+    // fim de partida. As paralelas não entram nessa conta, de propósito.
+    expect(t.vila + t.lobos + t.solitario).toBeCloseTo(100, 0);
   });
 
   it('o lote é reproduzível pela semente base', () => {

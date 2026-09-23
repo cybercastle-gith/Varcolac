@@ -66,9 +66,6 @@ export function SimulationPanel() {
                   <div className="bg-amber-800 flex items-center justify-center" style={{ width: `${t!.solitario}%` }}>
                     {t!.solitario > 8 && `sol ${t!.solitario}%`}
                   </div>
-                  <div className="bg-pink-900 flex items-center justify-center" style={{ width: `${t!.amantes}%` }}>
-                    {t!.amantes > 8 && `am ${t!.amantes}%`}
-                  </div>
                 </div>
               </div>
             </div>

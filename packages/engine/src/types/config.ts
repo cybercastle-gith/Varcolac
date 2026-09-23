@@ -34,8 +34,6 @@ export interface Deck {
   readonly id: string;
   readonly nome: string;
   readonly roleIds: readonly RoleId[];
-  /** Pares de amantes a aplicar sobre roles existentes. */
-  readonly modificadores: readonly string[];
 }
 
 /** Modo Clássico, tudo transparente: o setup mais gentil para quem nunca jogou. */

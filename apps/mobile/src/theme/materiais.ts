@@ -138,4 +138,4 @@ export const iconesDeRole = {
 export type NomeDeIconeDeRole = keyof typeof iconesDeRole;
 
 /** A marca do jogo: a pegada de lobo do Bloco 4, na resolução cheia da folha. */
-export const logo = require('../../assets/logo.png');
+export const logo = require('../../assets/app-logo.png');

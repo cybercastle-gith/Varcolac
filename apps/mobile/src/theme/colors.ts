@@ -5,18 +5,18 @@
 export const cores = {
   // Base
   fuligem: '#14100D', // preto de fumo de vela
-  nogueira: '#3A2A1C', // viga envelhecida
-  ferrugem: '#6B4A32', // ferro forjado oxidado
+  nogueira: '#856346', // viga envelhecida
+  ferrugem: '#af876a', // ferro forjado oxidado
   linhoCru: '#D9CDB4', // tecido não tingido — é o texto mais claro; nunca #FFF
   // Luz
   chama: '#F0C97A',
   cera: '#E0B75C',
   folhaDeOuro: '#C9A227',
   // Acento
-  garanca: '#A32620',
+  garanca: '#d43c34',
   sangueSeco: '#6E1F1F',
   indigo: '#1F3550',
-  horezu: '#2E5545',
+  horezu: '#5b907a',
 } as const;
 
 /** Uso semântico — a cor nunca aparece sozinha; sempre com ícone ou texto. */

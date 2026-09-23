@@ -6,8 +6,8 @@ import { verificarVitoria } from './win-conditions';
 
 const config = { ...DEFAULT_CONFIG, semente: 'vitoria', frequenciaEventos: 'desligado' as const };
 
-function montar(roleIds: string[], modificadores: string[] = []) {
-  const deck: Deck = { id: 't', nome: 't', roleIds, modificadores };
+function montar(roleIds: string[]) {
+  const deck: Deck = { id: 't', nome: 't', roleIds };
   const jogadores = roleIds.map((_, i) => ({ nome: `J${i + 1}`, cor: '#000' }));
   const estado = criarPartida(deck, config, jogadores);
   return { estado, id: (r: string) => estado.players.find((p) => p.roleId === r)!.id };
@@ -54,14 +54,6 @@ describe('condições de vitória', () => {
     expect(r.camadas.some((c) => c.vencedores.includes(id('sobrevivente')))).toBe(true);
   });
 
-  it('os Amantes vencem se forem os dois últimos vivos', () => {
-    const { estado, id } = montar(['aldeao', 'vidente', 'medico', 'lobo'], ['amantes']);
-    const casal = estado.players.filter((p) => p.amanteDe);
-    expect(casal).toHaveLength(2);
-    const r = verificarVitoria(deixarVivos(estado, casal.map((p) => p.id)));
-    expect(r.camadas[0]!.camada).toBe('amantes');
-    void id;
-  });
 
   it('o Vingador vence se o alvo dele morreu, por qualquer causa', () => {
     const { estado, id } = montar(['aldeao', 'vingador', 'medico', 'lobo']);

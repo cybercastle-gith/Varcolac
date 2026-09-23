@@ -52,7 +52,6 @@ export function BaralhoScreen({ navigation }: Props) {
     <Ambiente tipo="operacao" clima="neutro" tremula={false}>
       {/* Cabeçalho fixo com a contagem: é o número que o host olha o tempo todo. */}
       <View style={{ paddingHorizontal: espaco.lg, paddingTop: espaco.md, gap: espaco.xs }}>
-        <Rotulo>Passo 3 de 5</Rotulo>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: espaco.sm }}>
           <Titulo>O baralho</Titulo>
           <Text
@@ -66,7 +65,7 @@ export function BaralhoScreen({ navigation }: Props) {
         </View>
         {s.equilibrio && total > 0 && (
           <Pequeno cor={s.equilibrio.aceitavel ? cores.horezu : cores.garanca}>
-            índice {s.equilibrio.ie} · {s.equilibrio.leitura.replace('-', ' ')}
+            {s.equilibrio.leitura.replace('-', ' ').replace(/^./, (letra) => letra.toUpperCase())}{s.equilibrio.aceitavel ? '': ' (não recomendado)'}
           </Pequeno>
         )}
       </View>
@@ -110,16 +109,8 @@ export function BaralhoScreen({ navigation }: Props) {
           </Pequeno>
 
           <View style={{ flexDirection: 'row', gap: espaco.sm, marginBottom: espaco.xs }}>
-            <Botao tom="secundario" onPress={s.limparBaralho} style={{ flex: 1 }}>
+            <Botao tom="claro" onPress={s.limparBaralho} style={{ flex: 1 }}>
               Limpar
-            </Botao>
-            <Botao
-              tom="secundario"
-              onPress={s.completarComAldeoes}
-              desabilitado={faltam <= 0}
-              style={{ flex: 1 }}
-            >
-              {faltam > 0 ? `+${faltam} Aldeão` : 'Completo'}
             </Botao>
           </View>
 
@@ -223,9 +214,12 @@ function LinhaDeRole({ r, quantidade, varianteId, aberta, cheio, onAbrir, onAjus
   return (
     <View
       style={{
-        borderWidth: 1,
-        borderColor: dentro ? cor : '#2E2721',
-        backgroundColor: dentro ? '#221B17' : '#1A1613',
+        shadowColor: dentro ? cor : cores.linhoCru,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: dentro ? 0.75 : 0.45,
+        shadowRadius: dentro ? 10 : 8,
+        elevation: dentro ? 8 : 4,
+        backgroundColor: dentro ? '' : '#1A1613',
         borderRadius: raio.padrao,
         overflow: 'hidden',
       }}
@@ -233,7 +227,7 @@ function LinhaDeRole({ r, quantidade, varianteId, aberta, cheio, onAbrir, onAjus
       <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: alvoMinimo }}>
         <Pressable
           onPress={onAbrir}
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: espaco.sm, padding: espaco.sm }}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 }}
         >
           <IconeDeRole roleId={r.id} varianteId={varianteId} tamanho={36} cor={dentro ? cor : cores.nogueira} />
           <View style={{ flex: 1 }}>
@@ -241,8 +235,7 @@ function LinhaDeRole({ r, quantidade, varianteId, aberta, cheio, onAbrir, onAjus
               {varianteId ? r.variantes.find((v) => v.id === varianteId)?.nome : r.nome}
             </Text>
             <Text style={[tipografia.pequeno, { color: cores.ferrugem, fontSize: 11 }]}>
-              peso {varianteId ? r.variantes.find((v) => v.id === varianteId)?.peso : r.peso}
-              {r.variantes.length > 0 ? ` · ${r.variantes.length} variantes` : ''}
+              {r.variantes.length > 0 ? ` Ver ${r.variantes.length} variantes` : ''}
             </Text>
           </View>
         </Pressable>
@@ -344,7 +337,6 @@ function OpcaoDeVariante({ roleId, varianteId, nome, descricao, peso, ativa, onP
           {descricao}
         </Text>
       </View>
-      <Text style={[tipografia.pequeno, { color: cores.nogueira }]}>{peso}</Text>
     </Pressable>
   );
 }

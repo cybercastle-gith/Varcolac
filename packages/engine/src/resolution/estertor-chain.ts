@@ -65,14 +65,6 @@ export function dispararEstertores(
     const r = role(morto.roleId);
     const candidatos = vivos(estado).filter((p) => p.id !== id);
 
-    // Amor Proibido: o amante morre de tristeza. Vale para qualquer role.
-    if (morto.amanteDe) {
-      const par = estado.players.find((p) => p.id === morto.amanteDe);
-      if (par && par.status === 'vivo') {
-        abater(par.id, `Amor Proibido: morreu de tristeza por ${morto.nome}.`, id);
-      }
-    }
-
     if (r.id === 'cacador') {
       if (morto.varianteId === 'ultimo-uivo') {
         const alvo = declarados.get(id) ?? candidatos[0]?.id;

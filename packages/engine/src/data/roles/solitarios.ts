@@ -1,6 +1,6 @@
-import type { Role, RoleModifier } from '../../types/role';
+import type { Role } from '../../types/role';
 
-/** As 6 roles solitárias + o modificador Amantes. */
+/** As 6 roles solitárias. */
 
 export const bruxa: Role = {
   id: 'bruxa',
@@ -93,31 +93,6 @@ export const vingador: Role = {
   variantes: [],
 };
 
-/** Amantes é modificador, não role: aplica-se sobre duas roles existentes. */
-export const amantes: RoleModifier = {
-  id: 'amantes',
-  nome: 'Amantes',
-  peso: 2,
-  alvos: 2,
-  descricao:
-    'Cada amante mantém a própria role. Vencem se forem os dois últimos vivos.',
-  variantes: [
-    {
-      id: 'amor-proibido',
-      nome: 'Amor Proibido',
-      descricao: 'Se um morre, o outro morre de tristeza.',
-      peso: 2,
-      etapa: 'estertores',
-    },
-    {
-      id: 'amor-cego',
-      nome: 'Amor Cego',
-      descricao: 'Só um dos dois sabe do vínculo.',
-      peso: 2,
-    },
-  ],
-};
-
 export const ROLES_SOLITARIOS: readonly Role[] = [
   bruxa,
   ladrao,
@@ -126,5 +101,3 @@ export const ROLES_SOLITARIOS: readonly Role[] = [
   bobo,
   vingador,
 ];
-
-export const MODIFICADORES: readonly RoleModifier[] = [amantes];

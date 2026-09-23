@@ -32,10 +32,9 @@ export function RevisaoScreen({ navigation }: Props) {
   return (
     <TelaOperacao>
       <Rolagem>
-        <Rotulo>Passo 5 de 5</Rotulo>
-        <Titulo>A vila desta noite</Titulo>
+        <Titulo>Revisão do jogo</Titulo>
         <Pequeno>
-          {jogadores.length} jogadores · {MODOS[config.modo].nome} · eventos{' '}
+          {jogadores.length} jogadores · {MODOS[config.modo].nome} · Eventos{' '}
           {config.frequenciaEventos}
         </Pequeno>
 
@@ -65,82 +64,6 @@ export function RevisaoScreen({ navigation }: Props) {
             );
           })}
         </View>
-
-        <View style={{ height: espaco.md }} />
-        <Rotulo>Índice de equilíbrio</Rotulo>
-
-        {equilibrio && (
-          <>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: espaco.md }}>
-              <Text style={[tipografia.numero, { color: cores.linhoCru, fontSize: 36 }]}>
-                {equilibrio.ie}
-              </Text>
-              <Text
-                style={[
-                  tipografia.interface,
-                  { color: equilibrio.aceitavel ? cores.horezu : cores.garanca },
-                ]}
-              >
-                {equilibrio.leitura.replace('-', ' ')}
-              </Text>
-            </View>
-
-            {/* Barra com centro marcado: Horezu no equilíbrio, Garança nos extremos. */}
-            <View
-              style={{
-                height: 24,
-                backgroundColor: '#1D1814',
-                borderRadius: raio.padrao,
-                borderWidth: 1,
-                borderColor: '#2E2721',
-                justifyContent: 'center',
-              }}
-            >
-              <View
-                style={{
-                  position: 'absolute',
-                  left: '50%',
-                  width: 1,
-                  top: 0,
-                  bottom: 0,
-                  backgroundColor: '#3E362E',
-                }}
-              />
-              <View
-                style={{
-                  position: 'absolute',
-                  left: `${largura}%`,
-                  width: 4,
-                  top: 3,
-                  bottom: 3,
-                  marginLeft: -2,
-                  borderRadius: 2,
-                  backgroundColor: equilibrio.aceitavel ? cores.horezu : cores.garanca,
-                }}
-              />
-            </View>
-
-            {equilibrio.violacoes.map((v) => (
-              <Pequeno key={v} cor={cores.garanca}>
-                {v}
-              </Pequeno>
-            ))}
-            {equilibrio.sugestoes.map((s) => (
-              <Pequeno key={s} cor={cores.cera}>
-                {s}
-              </Pequeno>
-            ))}
-            {equilibrio.violacoes.length === 0 && equilibrio.sugestoes.length === 0 && (
-              <Pequeno cor={cores.horezu}>Composição dentro da tolerância.</Pequeno>
-            )}
-          </>
-        )}
-
-        <View style={{ height: espaco.md }} />
-        <Corpo cor={cores.ferrugem} serif>
-          A noite 1 já distribui as funções: o celular dá uma volta, cada pessoa vê quem é e
-          já age na mesma passagem.
-        </Corpo>
       </Rolagem>
 
       <View style={{ padding: espaco.lg, gap: espaco.sm }}>

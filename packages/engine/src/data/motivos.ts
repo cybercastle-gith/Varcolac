@@ -131,14 +131,6 @@ export const MOTIVOS: Readonly<Record<RoleId, Motivo>> = {
   vingador: { base: [LOSANGO, { f: 'triangulo', t: 10, dy: -2 }] },
 };
 
-/** Motivo do modificador Amantes, que não é role mas precisa de marca. */
-export const MOTIVO_AMANTES: Motivo = {
-  base: [
-    { f: 'circulo', t: 16, dx: -6 },
-    { f: 'circulo', t: 16, dx: 6 },
-  ],
-  complementos: { 'amor-proibido': [{ f: 'barra', c: 30, rot: 45 }], 'amor-cego': MENOS },
-};
 
 /** As primitivas de uma role, já com o complemento da variante aplicado. */
 export function motivoDe(roleId: RoleId, varianteId?: string): readonly Primitiva[] {

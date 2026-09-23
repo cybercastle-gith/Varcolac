@@ -47,7 +47,6 @@ export function rodarLote(opcoes: BatchOptions): BatchStats {
     vila: 0,
     lobos: 0,
     solitario: 0,
-    amantes: 0,
   };
   const noites: number[] = [];
   const distribuicao: Record<number, number> = {};
@@ -94,6 +93,5 @@ export function taxas(stats: BatchStats): Record<VictoryLayer, number> {
     vila: pct(stats.vitoriasPorCamada.vila),
     lobos: pct(stats.vitoriasPorCamada.lobos),
     solitario: pct(stats.vitoriasPorCamada.solitario),
-    amantes: pct(stats.vitoriasPorCamada.amantes),
   };
 }

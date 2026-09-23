@@ -12,7 +12,6 @@ const deck = (roleIds: string[]): Deck => ({
   id: 'teste',
   nome: 'teste',
   roleIds,
-  modificadores: [],
 });
 
 /** Setup neutro: nenhum ajuste, para medir só a composição. */

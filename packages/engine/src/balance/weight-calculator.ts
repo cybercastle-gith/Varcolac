@@ -1,7 +1,6 @@
 import type { Deck, GameConfig } from '../types/config';
 import { pesoEfetivo, type Role } from '../types/role';
 import { role } from '../data/roles/index';
-import { MODIFICADORES_POR_ID } from '../data/roles/index';
 
 /**
  * IE = Força da Vila − (Força da Matilha × M)
@@ -127,9 +126,6 @@ function verificarRestricoes(roles: readonly Role[], deck: Deck, jogadores: numb
     violacoes.push(`Roles de peso 4+: ${pesados}, teto é ${tetoPesados} (uma a cada 4).`);
   }
 
-  for (const m of deck.modificadores) {
-    if (!MODIFICADORES_POR_ID.has(m)) violacoes.push(`Modificador desconhecido: ${m}.`);
-  }
 
   return violacoes;
 }
@@ -184,11 +180,6 @@ export function calcularEquilibrio(
       if (r.alinhamento === 'mal') forcaMatilha += peso;
       else if (r.alinhamento === 'bem') forcaVila += peso;
     }
-  }
-
-  // Amantes reforçam a vila apenas por serem um par que se conhece.
-  for (const id of deck.modificadores) {
-    forcaVila += MODIFICADORES_POR_ID.get(id)?.peso ?? 0;
   }
 
   const m = multiplicador(jogadores);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { ROLES_VILA, ROLES_LOBOS, ROLES_SOLITARIOS, MODIFICADORES, type Role } from '@jogo/engine';
+import { ROLES_VILA, ROLES_LOBOS, ROLES_SOLITARIOS, type Role } from '@jogo/engine';
 import { Rotulo, Titulo, Pequeno } from '../../components/ui';
 import { Ambiente } from '../../components/Ambiente';
 import { corDaFaccao } from '../../components/Motivo';
@@ -40,6 +40,23 @@ function Carta({ r }: { r: Role }) {
 
       <Text style={[tipografia.pequeno, { color: cores.ferrugem }]}>{r.descricaoCurta}</Text>
 
+      {/*
+        A contagem de variantes fica na linha FECHADA, e não só depois do toque.
+        Sem ela não há como saber que existe mais coisa atrás da função — e como
+        17 das 24 funções ainda não têm variante nenhuma, o vazio também precisa
+        ser dito: "sem variantes" é informação, silêncio é ambiguidade.
+      */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Text style={[tipografia.rotulo, { color: r.variantes.length > 0 ? cores.cera : cores.nogueira, fontSize: 10 }]}>
+          {r.variantes.length > 0
+            ? `${r.variantes.length} ${r.variantes.length === 1 ? 'variante' : 'variantes'}`
+            : 'sem variantes'}
+        </Text>
+        <Text style={[tipografia.rotulo, { color: cores.nogueira, fontSize: 10 }]}>
+          {aberta ? '▴' : '▾'}
+        </Text>
+      </View>
+
       {aberta && (
         <View style={{ gap: espaco.sm, marginTop: espaco.xs }}>
           <Text style={[tipografia.corpoSerif, { color: cores.linhoCru }]}>
@@ -53,6 +70,10 @@ function Carta({ r }: { r: Role }) {
               {r.usoLimitado.total === 1 ? 'Uma vez por partida.' : `${r.usoLimitado.total} usos.`}
             </Pequeno>
           )}
+          {r.variantes.length === 0 && (
+            <Pequeno cor={cores.nogueira}>Esta função ainda não tem variantes.</Pequeno>
+          )}
+
           {r.variantes.length > 0 && (
             <>
               <Rotulo cor={cores.cera}>Variantes</Rotulo>
@@ -105,30 +126,6 @@ export function BibliotecaScreen() {
           </View>
         ))}
 
-        <View style={{ gap: espaco.sm, marginTop: espaco.sm }}>
-          <Rotulo>Modificadores · {MODIFICADORES.length}</Rotulo>
-          {MODIFICADORES.map((mod) => (
-            <View
-              key={mod.id}
-              style={{
-                backgroundColor: '#1D1814',
-                borderColor: '#2E2721',
-                borderWidth: 1,
-                borderRadius: raio.padrao,
-                padding: espaco.md,
-                gap: 4,
-              }}
-            >
-              <Text style={[tipografia.nomeDeRole, { color: cores.linhoCru, fontSize: 19 }]}>
-                {mod.nome}
-              </Text>
-              <Pequeno>{mod.descricao}</Pequeno>
-              <Pequeno cor={cores.nogueira}>
-                Aplica-se sobre {mod.alvos} funções existentes; cada um mantém a sua.
-              </Pequeno>
-            </View>
-          ))}
-        </View>
       </ScrollView>
     </Ambiente>
   );

@@ -7,7 +7,7 @@ import { dispararEstertores } from './estertor-chain';
 const config = { ...DEFAULT_CONFIG, semente: 'estertor', frequenciaEventos: 'desligado' as const };
 
 function montar(roleIds: string[]): { estado: GameState; id: (r: string) => string } {
-  const deck: Deck = { id: 't', nome: 't', roleIds, modificadores: [] };
+  const deck: Deck = { id: 't', nome: 't', roleIds };
   const jogadores = roleIds.map((_, i) => ({ nome: `J${i + 1}`, cor: '#000' }));
   const estado = criarPartida(deck, config, jogadores);
   return { estado, id: (r) => estado.players.find((p) => p.roleId === r)!.id };
@@ -66,17 +66,4 @@ describe('cadeia de estertores', () => {
     ).toBe(true);
   });
 
-  it('Amor Proibido: o amante morre de tristeza', () => {
-    const { estado, id } = montar(['aldeao', 'vidente', 'lobo', 'medico', 'padre']);
-    const a = id('aldeao');
-    const b = id('vidente');
-    const comAmantes: GameState = {
-      ...estado,
-      players: estado.players.map((p) =>
-        p.id === a ? { ...p, amanteDe: b } : p.id === b ? { ...p, amanteDe: a } : p,
-      ),
-    };
-    const r = dispararEstertores(abater(comAmantes, a), [a]);
-    expect(r.estado.players.find((p) => p.id === b)!.status).toBe('morto');
-  });
 });

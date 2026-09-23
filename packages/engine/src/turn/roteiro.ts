@@ -43,7 +43,7 @@ export interface Passagem {
   readonly player: Player;
   /** A role só é revelada na noite 1, embutida na mesma passagem. */
   readonly revelarRole: boolean;
-  /** Companheiros que este jogador conhece (matilha, dupla, amante). */
+  /** Companheiros que este jogador conhece (matilha, dupla). */
   readonly companheiros: readonly PlayerId[];
   readonly rotuloCompanheiros: string | null;
   readonly pergunta: Pergunta;
@@ -74,12 +74,6 @@ function companheirosDe(estado: GameState, p: Player): { ids: PlayerId[]; rotulo
       ? estado.objetivosSecretos[p.id]!.slice('dupla:'.length)
       : null;
     if (par) return { ids: [par], rotulo: 'Sua dupla' };
-  }
-
-  if (p.amanteDe) {
-    // Amor Cego: só um dos dois sabe do vínculo.
-    const cego = estado.config.variantes['amantes'] === 'amor-cego';
-    if (!cego || p.id < p.amanteDe) return { ids: [p.amanteDe], rotulo: 'Seu amor' };
   }
 
   if (r.faccao === 'lobos' && estado.config.modo !== 'traicao') {

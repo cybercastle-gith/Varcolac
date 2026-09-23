@@ -1,4 +1,5 @@
 import { View, Text, Pressable, Switch } from 'react-native';
+import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MODULOS_DE_FANTASMA, type EventFrequency, type WolfCountVisibility } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
@@ -78,23 +79,54 @@ function Opcoes<T extends string>({ valor, onChange, opcoes }: {
  */
 export function SistemasScreen({ navigation }: Props) {
   const { config, setConfig } = useJogo();
+  const [seletorFantasmaAberto, setSeletorFantasmaAberto] = useState(false);
+  const moduloSelecionado = MODULOS_DE_FANTASMA.find((m) =>
+    config.modulosDeFantasma.includes(m.id),
+  );
 
   return (
     <TelaOperacao>
       <Rolagem>
-        <Rotulo>Passo 4 de 5</Rotulo>
-        <Titulo>Como a mesa joga</Titulo>
+        <Titulo>Opções de jogo</Titulo>
 
         <Linha
           titulo="Revelar a função ao morrer"
           descricao="Quando alguém morre, a mesa descobre o que ele era."
           direita={
-            <Switch
-              value={config.revelarRoleAoMorrer}
-              onValueChange={(v) => setConfig({ revelarRoleAoMorrer: v })}
-              trackColor={{ true: cores.garanca, false: '#3E362E' }}
-              thumbColor={cores.linhoCru}
-            />
+            <Pressable
+              onPress={() =>
+                setConfig({
+                  revelarRoleAoMorrer: !config.revelarRoleAoMorrer,
+                })
+              }
+            >
+              <View
+              style={{
+                width: 42,
+                height: 25,
+                borderRadius: 15,
+                backgroundColor: config.revelarRoleAoMorrer
+                  ? cores.folhaDeOuro
+                  : cores.ferrugem,
+                justifyContent: 'center',
+                padding: 3,
+              }}
+            >
+              <View
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 12,
+                  backgroundColor: config.revelarRoleAoMorrer
+                    ? cores.fuligem
+                    : cores.linhoCru,
+                  alignSelf: config.revelarRoleAoMorrer
+                    ? 'flex-end'
+                    : 'flex-start',
+                }}
+              />
+            </View>
+            </Pressable>
           }
         />
 
@@ -162,27 +194,65 @@ export function SistemasScreen({ navigation }: Props) {
           essa pessoa um canal silencioso.
         </Pequeno>
 
-        {MODULOS_DE_FANTASMA.map((m) => (
-          <Linha
-            key={m.id}
-            titulo={`${m.nome}`}
-            descricao={m.descricao}
-            direita={
-              <Switch
-                value={config.modulosDeFantasma.includes(m.id)}
-                onValueChange={(on) =>
-                  setConfig({
-                    modulosDeFantasma: on
-                      ? [...config.modulosDeFantasma, m.id]
-                      : config.modulosDeFantasma.filter((x) => x !== m.id),
-                  })
-                }
-                trackColor={{ true: cores.garanca, false: '#3E362E' }}
-                thumbColor={cores.linhoCru}
-              />
-            }
-          />
-        ))}
+        <Pressable
+          onPress={() => setSeletorFantasmaAberto((aberto) => !aberto)}
+          style={{
+            minHeight: alvoMinimo,
+            padding: espaco.md,
+            borderRadius: raio.padrao,
+            borderWidth: 1,
+            borderColor: cores.garanca,
+            backgroundColor: '#241A17',
+          }}
+        >
+          <Text style={[tipografia.corpo, { color: cores.linhoCru }]}>
+            {moduloSelecionado?.nome ?? 'Nenhum módulo'}
+          </Text>
+          <Text style={[tipografia.pequeno, { color: cores.ferrugem }]}>
+            {moduloSelecionado?.descricao ?? 'Toque para escolher um módulo.'}
+          </Text>
+        </Pressable>
+
+        {seletorFantasmaAberto ? (
+          <View style={{ gap: espaco.sm, marginTop: espaco.sm }}>
+            <Pressable
+              onPress={() => {
+                setConfig({ modulosDeFantasma: [] });
+                setSeletorFantasmaAberto(false);
+              }}
+              style={{
+                minHeight: alvoMinimo,
+                padding: espaco.md,
+                borderRadius: raio.padrao,
+                borderWidth: 1,
+                borderColor: '#3E362E',
+              }}
+            >
+              <Text style={[tipografia.corpo, { color: cores.linhoCru }]}>Nenhum</Text>
+            </Pressable>
+
+            {MODULOS_DE_FANTASMA.map((m) => (
+              <Pressable
+                key={m.id}
+                onPress={() => {
+                  setConfig({ modulosDeFantasma: [m.id] });
+                  setSeletorFantasmaAberto(false);
+                }}
+                style={{
+                  minHeight: alvoMinimo,
+                  padding: espaco.md,
+                  borderRadius: raio.padrao,
+                  borderWidth: 1,
+                  borderColor: '#3E362E',
+                }}
+              >
+                <Text style={[tipografia.corpo, { color: cores.linhoCru }]}>
+                  {m.nome}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
       </Rolagem>
 
       <View style={{ padding: espaco.lg }}>

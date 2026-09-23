@@ -75,7 +75,7 @@ export function gerarBaralho(opcoes: GenerationOptions, rng: Rng): GeneratedDeck
       ...escolherVila(jogadores - nLobos - nSolitarios, tetoPesados, rng),
     ];
 
-    const deck: Deck = { id: 'surpresa', nome: 'Baralho Surpresa', roleIds, modificadores: [] };
+    const deck: Deck = { id: 'surpresa', nome: 'Baralho Surpresa', roleIds };
     const equilibrio = calcularEquilibrio(deck, config, jogadores);
     const candidato = { deck, equilibrio, tentativas: tentativa };
 
@@ -101,11 +101,10 @@ const repetir = (id: string, n: number) => Array.from({ length: n }, () => id);
  */
 export function baralhoDeFabrica(estilo: DeckStyle, jogadores: number): Deck {
   const lobos = lobosPara(jogadores);
-  const monta = (nome: string, roleIds: string[], modificadores: string[] = []): Deck => ({
+  const monta = (nome: string, roleIds: string[]): Deck => ({
     id: estilo,
     nome,
     roleIds: completar(roleIds, jogadores),
-    modificadores,
   });
 
   switch (estilo) {
@@ -118,7 +117,6 @@ export function baralhoDeFabrica(estilo: DeckStyle, jogadores: number): Deck {
         id: estilo,
         nome: 'Roleta Russa',
         roleIds: ['lobo', ...repetir('bobo', jogadores - 1)],
-        modificadores: [],
       };
 
     case 'misterio':
@@ -133,7 +131,7 @@ export function baralhoDeFabrica(estilo: DeckStyle, jogadores: number): Deck {
         'bobo',
         'coringa',
         'vidente',
-      ], ['amantes']);
+      ]);
 
     case 'matilha':
       // Lobos são quase metade da mesa. Vila com poucos poderes.
@@ -161,7 +159,6 @@ export function baralhoDeFabrica(estilo: DeckStyle, jogadores: number): Deck {
         id: estilo,
         nome: 'Todos Poderosos',
         roleIds: completar(roleIds, jogadores, 'taverneiro'),
-        modificadores: [],
       };
     }
 
@@ -194,7 +191,7 @@ export function baralhoDeFabrica(estilo: DeckStyle, jogadores: number): Deck {
         'cacador',
         'ancia',
         'bruxa',
-      ], ['amantes']);
+      ]);
   }
 }
 

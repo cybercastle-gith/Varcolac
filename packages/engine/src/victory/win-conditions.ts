@@ -6,7 +6,7 @@ import { role } from '../data/roles/index';
 import { MISSOES_POR_ID } from '../data/missions';
 
 /** Vitórias são em camadas: a vila pode vencer e o Bobo também. */
-export type VictoryLayer = 'vila' | 'lobos' | 'solitario' | 'amantes';
+export type VictoryLayer = 'vila' | 'lobos' | 'solitario';
 
 export interface VictoryClaim {
   readonly camada: VictoryLayer;
@@ -107,7 +107,6 @@ function camadasDeSolitarios(estado: GameState, vivosAgora: readonly Player[]): 
  * - Vila vence eliminando todas as ameaças.
  * - Lobos vencem ao igualar ou superar a vila em número.
  * - Solitários do mal contam como lobos na paridade.
- * - Amantes vencem se forem os dois últimos vivos.
  * - Lobo Branco pode vencer sozinho ou junto com a matilha.
  * - Bobo vence ao ser linchado, e isso encerra a partida na votação, não aqui.
  */
@@ -128,17 +127,7 @@ export function verificarVitoria(estado: GameState): VictoryResult {
   const lobosVivos = vivosAgora.filter((p) => lado(estado, p) === 'lobos');
   const vilaViva = vivosAgora.filter((p) => lado(estado, p) === 'vila');
 
-  const [a, b] = vivosAgora;
-  const casalSozinho =
-    vivosAgora.length === 2 && !!a && !!b && a.amanteDe === b.id && b.amanteDe === a.id;
-
-  if (casalSozinho) {
-    camadas.push({
-      camada: 'amantes',
-      vencedores: [a!.id, b!.id],
-      motivo: 'Os dois amantes são os últimos vivos.',
-    });
-  } else if (lobosVivos.length === 0) {
+  if (lobosVivos.length === 0) {
     camadas.push({
       camada: 'vila',
       vencedores: vilaViva.map((p) => p.id),

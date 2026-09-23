@@ -68,17 +68,6 @@ function aplicarVinculos(
   const bruxa = lista.find((p) => p.roleId === 'bruxa');
   if (bruxa) objetivos[bruxa.id] = rng.next() < 0.5 ? 'pocao-vida' : 'pocao-morte';
 
-  // Amantes: modificador sobre duas roles existentes; cada um mantém a sua.
-  if (deck.modificadores.includes('amantes') && lista.length >= 2) {
-    const [a, b] = rng.sample(lista, 2);
-    if (a && b) {
-      lista = lista.map((p) => {
-        if (p.id === a.id) return { ...p, amanteDe: b.id };
-        if (p.id === b.id) return { ...p, amanteDe: a.id };
-        return p;
-      });
-    }
-  }
 
   return { players: lista, objetivos };
 }

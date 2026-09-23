@@ -60,9 +60,73 @@ def verde_croma(a):
     return (g > 90) & (g.astype(int) - r > 45) & (g.astype(int) - b > 45)
 
 
-def salvar(img, caixa, destino):
+
+def aparar_borda(img, tolerancia=14, maximo_frac=0.08):
+    """
+    Remove a tira de calha que sobra no recorte.
+
+    O detector de grade usa `quase_branco` (`> 233` nos tres canais), e os
+    pixels da transicao entre a calha branca e o material caem abaixo disso
+    primeiro no canal AZUL — papel e linho sao creme, entao o azul despenca
+    antes do vermelho. Resultado: a borda entra no recorte como conteudo.
+
+    Isso passa despercebido enquanto a textura e usada em opacidade baixa, e
+    aparece de forma gritante quando ela vai a `resizeMode="repeat"`: cada
+    emenda de ladrilho desenha a tira clara, e a superficie ganha uma grade de
+    linhas brancas. Foi assim que a carta de funcao ficou com linha branca em
+    cima, embaixo e nas laterais.
+
+    Medido em `papel-encardido.png` antes da correcao:
+
+        linha  0   [229.5 205.2 169.7]
+        linha  1   [205.5 163.0 105.0]   <- o papel de verdade
+        linha -1   [245.6 236.8 223.4]   <- quase branca
+
+    Aqui a referencia e a mediana do MIOLO (60% centrais), e some toda borda
+    que se afasta dela mais que `tolerancia`. O teto de 8% por lado evita que
+    um material legitimamente claro numa ponta seja comido.
+    """
+    a = np.asarray(img.convert('RGB')).astype(np.int16)
+    h, w = a.shape[:2]
+    miolo = a[int(h * 0.2):int(h * 0.8), int(w * 0.2):int(w * 0.8)]
+    referencia = np.median(miolo.reshape(-1, 3), axis=0)
+
+    def longe(linha):
+        return np.abs(linha.mean(axis=0) - referencia).max() > tolerancia
+
+    topo, base = 0, h
+    for _ in range(int(h * maximo_frac)):
+        if topo < base and longe(a[topo]):
+            topo += 1
+        else:
+            break
+    for _ in range(int(h * maximo_frac)):
+        if base - 1 > topo and longe(a[base - 1]):
+            base -= 1
+        else:
+            break
+
+    esq, dir_ = 0, w
+    for _ in range(int(w * maximo_frac)):
+        if esq < dir_ and longe(a[:, esq]):
+            esq += 1
+        else:
+            break
+    for _ in range(int(w * maximo_frac)):
+        if dir_ - 1 > esq and longe(a[:, dir_ - 1]):
+            dir_ -= 1
+        else:
+            break
+
+    return img.crop((esq, topo, dir_, base))
+
+
+def salvar(img, caixa, destino, aparar=True):
     os.makedirs(os.path.dirname(destino), exist_ok=True)
-    img.crop(caixa).save(destino)
+    recorte = img.crop(caixa)
+    if aparar:
+        recorte = aparar_borda(recorte)
+    recorte.save(destino)
 
 
 def chave_de_cor(recorte):
@@ -113,6 +177,37 @@ RECORTES = [
 FUNDOS = ['noite', 'dia', 'morte', 'vitoria', 'neutro', 'terra']
 
 
+
+# As folhas, por NOME e nao por ordem alfabetica.
+#
+# Isto ja quebrou uma vez: o script pegava `sorted(...)[0], [1], [2]` da pasta
+# `assets/images/`. Funcionou enquanto so havia as tres folhas; no momento em
+# que o usuario largou ali a folha de icones e um print da logo, "Captura de
+# tela ..." virou o primeiro item e o script tentou fatiar um print de 122x150
+# como se fosse a folha de 20 materiais.
+#
+# `assets/images/` e a pasta onde o usuario JOGA imagem nova — tratar a ordem
+# dela como contrato e errado por construcao. Folha nova: acrescente aqui.
+FOLHAS = {
+    'materiais': 'ChatGPT Image 11 de set. de 2026, 12_55_46.png',
+    'recortes': 'ChatGPT Image 11 de set. de 2026, 12_58_34.png',
+    'fundos': 'ChatGPT Image 11 de set. de 2026, 13_01_27.png',
+    # A folha de icones das funcoes tem script proprio, porque a grade dela nao
+    # e detectavel: ver `scripts/fatiar-icones-roles.py`.
+}
+
+
+def folha(nome):
+    caminho = os.path.join(ENTRADA, FOLHAS[nome])
+    if not os.path.exists(caminho):
+        sys.exit(
+            f'Nao achei a folha de {nome}:\n    {caminho}\n\n'
+            'Se o arquivo foi renomeado ou substituido, atualize FOLHAS no topo '
+            'deste script. A ordem dos arquivos na pasta nao e usada de proposito.'
+        )
+    return caminho
+
+
 def celulas(img, cols, rows, esperado, nome_folha):
     total = len(cols) * len(rows)
     print(f'  {nome_folha}: {len(cols)} colunas x {len(rows)} linhas = {total}')
@@ -122,13 +217,7 @@ def celulas(img, cols, rows, esperado, nome_folha):
 
 
 def main():
-    arquivos = sorted(
-        os.path.join(ENTRADA, f) for f in os.listdir(ENTRADA) if f.lower().endswith('.png')
-    )
-    if len(arquivos) < 3:
-        sys.exit(f'Esperava 3 folhas em {ENTRADA}, achei {len(arquivos)}.')
-
-    materiais, recortes, fundos = arquivos[0], arquivos[1], arquivos[2]
+    materiais, recortes, fundos = (folha('materiais'), folha('recortes'), folha('fundos'))
 
     # ── Bloco 1: materiais, calha branca, 5 x 4 ─────────────────────────────
     img = Image.open(materiais)

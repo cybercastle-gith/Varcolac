@@ -22,53 +22,11 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
  */
 function SeloDaMarca() {
   return (
-    <View
-      style={{
-        width: 132,
-        height: 132,
-        borderRadius: 66,
-        backgroundColor: cores.sangueSeco,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,.45)',
-        shadowColor: '#000',
-        shadowOpacity: 0.5,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 10 },
-        elevation: 12,
-        overflow: 'hidden',
-      }}
-    >
-      <View
-        style={{
-          position: 'absolute',
-          width: 96,
-          height: 96,
-          borderRadius: 48,
-          top: 10,
-          left: 16,
-          backgroundColor: 'rgba(163,38,32,.4)',
-        }}
-      />
-      <View
-        style={{
-          position: 'absolute',
-          top: 6,
-          left: 6,
-          right: 6,
-          bottom: 6,
-          borderRadius: 60,
-          borderWidth: 1,
-          borderColor: 'rgba(0,0,0,.35)',
-        }}
-      />
       <Image
         source={logo}
         resizeMode="contain"
-        style={{ width: 66, height: 82, opacity: 0.96 }}
+        style={{ width: 200, height: 150, opacity: 0.96 }}
       />
-    </View>
   );
 }
 
@@ -90,10 +48,22 @@ export function HomeScreen({ navigation }: Props) {
             >
               VÂRCOLAC
             </Text>
-            <Pequeno cor={cores.ferrugem}>
-              Um aparelho. A mesa inteira. Ninguém sai antes do fim.
-            </Pequeno>
-            <Bordado trama={faixa(17)} ponto={4} folga={3} opacidade={0.75} />
+            <Text style={[
+              { 
+                maxWidth: 320, 
+                fontFamily: familia.serifRegular, 
+                color: cores.ferrugem, 
+                fontSize: 16, 
+                textAlign: 'center',
+                // --- Adicione as linhas abaixo para o efeito de luz suave ---
+                textShadowColor: 'rgba(255, 255, 255, 0.6)', // Cor da luz (Branco com 80% de opacidade)
+                textShadowOffset: { width: 0, height: 0 },    // Centraliza o brilho ao redor da letra
+                textShadowRadius: 1,                          // Intensidade/difusão do brilho
+              }
+            ]}> 
+              O perigo aguarda a espreita, você está pronto para sobreviver?
+            </Text>
+
           </View>
         </Aparicao>
       </View>
@@ -105,24 +75,19 @@ export function HomeScreen({ navigation }: Props) {
           <Botao onPress={() => navigation.navigate('Jogadores')}>Jogar</Botao>
           <View style={{ flexDirection: 'row', gap: espaco.sm }}>
             <Botao
-              tom="secundario"
+              tom="claro"
               onPress={() => navigation.navigate('Biblioteca')}
-              style={{ flex: 1 }}
+              style={{ flex: 1,  }}
             >
               Funções
             </Botao>
             <Botao
-              tom="secundario"
+              tom="claro"
               onPress={() => navigation.navigate('ComoJogar')}
               style={{ flex: 1 }}
             >
               Como jogar
             </Botao>
-          </View>
-          <View style={{ alignItems: 'center', marginTop: espaco.sm }}>
-            <Rotulo cor={cores.nogueira}>
-              {ROLES.length} funções · 5 a 16 jogadores
-            </Rotulo>
           </View>
         </View>
       </Aparicao>

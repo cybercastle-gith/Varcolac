@@ -8,7 +8,6 @@ export type CauseOfDeath =
   | 'matilha'
   | 'linchamento'
   | 'estertor'
-  | 'amante'
   | 'evento'
   | 'bruxa'
   | 'lobo-branco'
@@ -37,8 +36,6 @@ export interface Player {
   readonly status: PlayerStatus;
   readonly mortoNaRodada?: number;
   readonly causaMorte?: CauseOfDeath;
-  /** Vínculo de amantes, se houver. */
-  readonly amanteDe?: PlayerId;
   /** Usos restantes da habilidade. */
   readonly usosRestantes: number;
   readonly flags: PlayerFlags;

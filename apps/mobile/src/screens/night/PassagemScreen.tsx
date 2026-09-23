@@ -101,7 +101,6 @@ export function PassagemScreen({ navigation }: Props) {
                     marginVertical: espaco.sm,
                   }}
                 />
-                <Pequeno cor={cores.ferrugem}>Ninguém mais deve ver esta tela.</Pequeno>
               </View>
             </Revelacao>
           </View>
@@ -126,7 +125,7 @@ export function PassagemScreen({ navigation }: Props) {
     return (
       <Ambiente clima="noite">
         <View style={{ flex: 1 }}>
-          <SegurarParaRevelar aviso="Cubra a tela com a mão.">
+          <SegurarParaRevelar >
             <Revelacao>
               <View style={{ alignItems: 'center', gap: espaco.md }}>
                 <CartaDeRole roleId={p.roleId} varianteId={p.varianteId} largura={230} />
@@ -155,7 +154,7 @@ export function PassagemScreen({ navigation }: Props) {
               setEtapa('agir');
             }}
           >
-            Entendi
+            Prosseguir
           </Botao>
         </View>
       </Ambiente>
