@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { ROLES_VILA, ROLES_LOBOS, ROLES_SOLITARIOS, type Role } from '@jogo/engine';
+import {
+  ROLES_VILA,
+  ROLES_LOBOS,
+  ROLES_SOLITARIOS,
+  motivoDaPendencia,
+  type Role,
+} from '@jogo/engine';
 import { Rotulo, Titulo, Pequeno } from '../../components/ui';
 import { Ambiente } from '../../components/Ambiente';
 import { corDaFaccao } from '../../components/Motivo';
@@ -42,12 +48,18 @@ function Carta({ r }: { r: Role }) {
 
       {/*
         A contagem de variantes fica na linha FECHADA, e não só depois do toque.
-        Sem ela não há como saber que existe mais coisa atrás da função — e como
-        17 das 24 funções ainda não têm variante nenhuma, o vazio também precisa
-        ser dito: "sem variantes" é informação, silêncio é ambiguidade.
+        Sem ela não há como saber que existe mais coisa atrás da função. O caso
+        "sem variantes" continua sendo dito em voz alta mesmo agora que as 24
+        funções têm pelo menos três: silêncio é ambiguidade, e uma função nova
+        vai nascer sem variante nenhuma um dia.
       */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <Text style={[tipografia.rotulo, { color: r.variantes.length > 0 ? cores.cera : cores.nogueira, fontSize: 10 }]}>
+        <Text
+          style={[
+            tipografia.rotulo,
+            { color: r.variantes.length > 0 ? cores.cera : cores.nogueira, fontSize: 10 },
+          ]}
+        >
           {r.variantes.length > 0
             ? `${r.variantes.length} ${r.variantes.length === 1 ? 'variante' : 'variantes'}`
             : 'sem variantes'}
@@ -59,9 +71,7 @@ function Carta({ r }: { r: Role }) {
 
       {aberta && (
         <View style={{ gap: espaco.sm, marginTop: espaco.xs }}>
-          <Text style={[tipografia.corpoSerif, { color: cores.linhoCru }]}>
-            {r.descricaoLonga}
-          </Text>
+          <Text style={[tipografia.corpoSerif, { color: cores.linhoCru }]}>{r.descricaoLonga}</Text>
           {r.etapa && (
             <Pequeno cor={cores.nogueira}>Age na etapa: {r.etapa.replace('-', ' ')}</Pequeno>
           )}
@@ -89,6 +99,24 @@ function Carta({ r }: { r: Role }) {
                       {v.nome} <Text style={{ color: cores.ferrugem }}>· peso {v.peso}</Text>
                     </Text>
                     <Pequeno>{v.descricao}</Pequeno>
+                    {/*
+                      O aviso de pendência, agora com o MOTIVO junto.
+
+                      Enquanto eram 61 variantes sem mecânica, "regra ainda não
+                      implementada" bastava — era o estado geral do catálogo.
+                      Sobraram três, cada uma travada numa pergunta de regra
+                      diferente, e aí o rótulo genérico vira mistério: o host
+                      precisa saber se aquilo vai virar a função base, uma
+                      aproximação ou nada.
+                    */}
+                    {motivoDaPendencia(v.id) && (
+                      <View style={{ gap: 2 }}>
+                        <Text style={[tipografia.rotulo, { color: cores.ferrugem, fontSize: 9 }]}>
+                          regra ainda não implementada
+                        </Text>
+                        <Pequeno cor={cores.nogueira}>{motivoDaPendencia(v.id)}</Pequeno>
+                      </View>
+                    )}
                   </View>
                 </View>
               ))}
@@ -125,7 +153,6 @@ export function BibliotecaScreen() {
             ))}
           </View>
         ))}
-
       </ScrollView>
     </Ambiente>
   );

@@ -1,10 +1,15 @@
 # Variantes a criar — prompt para outra IA
 
-Este arquivo tem **um prompt pronto para colar**. Ele pede a outra IA as
-variantes que faltam nas 17 funções que ainda não têm nenhuma.
+Este arquivo tem **um prompt pronto para colar**. Ele abre uma conversa com
+outra IA para inventar as variantes que faltam nas 17 funções que ainda não têm
+nenhuma.
 
-Abaixo do prompt ficam as notas de quem vai **receber** a resposta: o que
-conferir antes de colar no código.
+**O tom é de proposta, não de entrega.** A IA sugere, você aprova ou reprova
+uma a uma, e o que for reprovado volta como ideia nova — quantas rodadas forem
+necessárias. Ela não escreve o catálogo final; ela ajuda você a chegar nele.
+
+Abaixo do prompt ficam as notas de quem vai **receber** as propostas: o que
+conferir antes de colar qualquer coisa no código.
 
 ---
 
@@ -45,11 +50,25 @@ nenhuma**. Quem monta baralho hoje tem profundidade de um lado só.
 # O PROMPT — copie daqui até o fim do bloco
 
 ```
-Você vai escrever VARIANTES para as funções de um jogo de dedução social
-presencial (tipo Lobisomem/Werewolf), pass-and-play num celular só, que circula
-pela mesa. O app é o mestre: distribui, narra, resolve e conta votos.
+Vamos trabalhar juntos nas VARIANTES de um jogo de dedução social presencial
+(tipo Lobisomem/Werewolf), pass-and-play num celular só, que circula pela mesa.
+O app é o mestre: distribui, narra, resolve e conta votos.
 
-Preciso de 3 variantes para cada uma das 17 funções listadas no fim.
+Dezessete funções ainda não têm variante nenhuma. Quero fechar isso com você,
+e o combinado é este:
+
+- Você PROPÕE. Eu aprovo ou reprovo, uma proposta de cada vez.
+- O que eu reprovar, você NÃO tenta defender: me traz outra ideia, diferente
+  de verdade — outra alavanca, outro ângulo, não a mesma coisa reescrita.
+- Se eu disser só "não", pergunte o que não serviu antes de tentar de novo.
+  Chutar duas vezes na mesma direção desperdiça a rodada dos dois.
+- Pode discordar de mim e argumentar, uma vez, se achar que a proposta era boa
+  e eu entendi errado. Depois disso, a decisão é minha.
+- Não escreva o catálogo final. Nenhuma variante está fechada enquanto eu não
+  disser que está.
+
+Se alguma coisa do jogo não estiver clara para propor bem, PERGUNTE antes de
+inventar. Prefiro responder três perguntas a descartar dez propostas.
 
 ## O que é uma variante, neste jogo
 
@@ -210,23 +229,35 @@ SOLITÁRIOS
 - vingador (peso 1, vitória própria): Escolhe um alvo na noite 1 e vence se ele
   morrer, por qualquer causa.
 
-## O que entregar
+## Como vamos conversar
 
-Para cada uma das 17 funções, **3 variantes**, no formato:
+**Uma função por vez.** Comece pelo Lobo — é a função mais jogada da matilha e
+o que decidirmos nela vira referência para as outras seis.
 
-### <id da função> — <Nome>
+Para cada função, proponha **3 variantes**, assim:
+
+### <Nome da função>
+
+**Proposta 1 — <Nome da variante>**
+<a descrição de uma frase, como o jogador vai ler>
+Alavanca: <qual das 8> · Peso sugerido: N (base é M, porque <motivo>)
+Por que acho que funciona: <uma ou duas frases>
+
+...e o mesmo para as propostas 2 e 3.
+
+Termine sempre perguntando quais eu aprovo. Não passe para a função seguinte
+antes de eu responder.
+
+Quando eu aprovar uma, escreva a versão final dela neste formato, e só então:
 
 ```ts
-variantes: [
-  { id: '...', nome: '...', descricao: '...', peso: N },
-  ...
-]
+{ id: '...', nome: '...', descricao: '...', peso: N }
 ```
 
-E, embaixo de cada função, **uma linha por variante** explicando qual das 8
-alavancas você usou e por que o peso é aquele. Sem isso eu não consigo revisar.
+Se eu reprovar, traga 2 propostas novas para aquela vaga, usando alavancas
+diferentes das que eu já recusei — e diga qual alavanca você abandonou.
 
-Não escreva introdução nem conclusão. Comece na primeira função.
+Comece pelo Lobo.
 ```
 
 ---

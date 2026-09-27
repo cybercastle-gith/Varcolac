@@ -43,12 +43,15 @@ export function ComoJogarScreen() {
       <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
         <Titulo>Como jogar</Titulo>
         <Corpo cor={cores.ferrugem} serif>
-          Um aparelho, a mesa inteira, sem internet. O app é o mestre: distribui, narra, resolve
-          e conta os votos. A discussão acontece entre as pessoas.
+          Um aparelho, a mesa inteira, sem internet. O app é o mestre: distribui, narra, resolve e
+          conta os votos. A discussão acontece entre as pessoas.
         </Corpo>
 
         {PASSOS.map((p, i) => (
-          <View key={p.titulo} style={{ flexDirection: 'row', gap: espaco.md, marginTop: espaco.sm }}>
+          <View
+            key={p.titulo}
+            style={{ flexDirection: 'row', gap: espaco.md, marginTop: espaco.sm }}
+          >
             <Text style={[tipografia.numero, { color: cores.nogueira, fontSize: 22, width: 28 }]}>
               {i + 1}
             </Text>
@@ -62,9 +65,9 @@ export function ComoJogarScreen() {
         <View style={{ height: espaco.md }} />
         <Rotulo>Como se vence</Rotulo>
         <Pequeno>
-          A vila vence eliminando todas as ameaças. Os lobos vencem quando igualam a vila em
-          número — não precisam superar. Solitários têm objetivo próprio e podem vencer junto
-          com qualquer lado, ou sozinhos.
+          A vila vence eliminando todas as ameaças. Os lobos vencem quando igualam a vila em número
+          — não precisam superar. Solitários têm objetivo próprio e podem vencer junto com qualquer
+          lado, ou sozinhos.
         </Pequeno>
       </ScrollView>
     </Ambiente>

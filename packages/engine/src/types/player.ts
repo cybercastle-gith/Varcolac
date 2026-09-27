@@ -1,3 +1,4 @@
+import type { Marcas } from './marcas';
 import type { RoleId, VariantId } from './role';
 
 export type PlayerId = string;
@@ -11,7 +12,8 @@ export type CauseOfDeath =
   | 'evento'
   | 'bruxa'
   | 'lobo-branco'
-  | 'guarda-costas';
+  | 'guarda-costas'
+  | 'exorcismo';
 
 /** Marcas voláteis, limpas ao fim de cada noite. O laboratório exibe todas. */
 export interface PlayerFlags {
@@ -39,6 +41,11 @@ export interface Player {
   /** Usos restantes da habilidade. */
   readonly usosRestantes: number;
   readonly flags: PlayerFlags;
+  /**
+   * Estado persistente da partida — o oposto de `flags`, que `fecharNoite`
+   * zera toda madrugada. Ver `types/marcas.ts`.
+   */
+  readonly marcas: Marcas;
   /** Perde o voto do dia seguinte (custo da Vidente, Motim...). */
   readonly semVoto: boolean;
   /** Não pode falar no dia seguinte (preso pelo Xerife). */

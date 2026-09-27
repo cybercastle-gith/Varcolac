@@ -19,11 +19,36 @@ import type { RoleId } from '../types/role';
 /** Primitivas desenháveis. Tudo é composto a partir delas. */
 export type Primitiva =
   /** Quadrado girado 45°: o losango, motivo-base do repertório. */
-  | { readonly f: 'losango'; readonly t: number; readonly cheio?: boolean; readonly dx?: number; readonly dy?: number }
-  | { readonly f: 'circulo'; readonly t: number; readonly cheio?: boolean; readonly dx?: number; readonly dy?: number }
+  | {
+      readonly f: 'losango';
+      readonly t: number;
+      readonly cheio?: boolean;
+      readonly dx?: number;
+      readonly dy?: number;
+    }
+  | {
+      readonly f: 'circulo';
+      readonly t: number;
+      readonly cheio?: boolean;
+      readonly dx?: number;
+      readonly dy?: number;
+    }
   /** Barra reta. `rot` em graus. */
-  | { readonly f: 'barra'; readonly c: number; readonly e?: number; readonly rot?: number; readonly dx?: number; readonly dy?: number }
-  | { readonly f: 'triangulo'; readonly t: number; readonly baixo?: boolean; readonly dx?: number; readonly dy?: number }
+  | {
+      readonly f: 'barra';
+      readonly c: number;
+      readonly e?: number;
+      readonly rot?: number;
+      readonly dx?: number;
+      readonly dy?: number;
+    }
+  | {
+      readonly f: 'triangulo';
+      readonly t: number;
+      readonly baixo?: boolean;
+      readonly dx?: number;
+      readonly dy?: number;
+    }
   /** Ponto pequeno, usado quase só como complemento de variante. */
   | { readonly f: 'ponto'; readonly dx?: number; readonly dy?: number };
 
@@ -85,14 +110,24 @@ export const MOTIVOS: Readonly<Record<RoleId, Motivo>> = {
     complementos: { curandeiro: MENOS, 'de-guerra': DUPLO, 'de-plantao': ATRASO },
   },
   'guarda-costas': {
-    base: [{ f: 'triangulo', t: 22 }, { f: 'barra', c: 26, dy: 12 }],
+    base: [
+      { f: 'triangulo', t: 22 },
+      { f: 'barra', c: 26, dy: 12 },
+    ],
     complementos: { sacrificio: MAIS, escudo: ATRASO, muralha: DUPLO },
   },
   xerife: {
-    base: [{ f: 'circulo', t: 26 }, { f: 'barra', c: 26, rot: 45 }],
+    base: [
+      { f: 'circulo', t: 26 },
+      { f: 'barra', c: 26, rot: 45 },
+    ],
   },
   necromante: {
-    base: [{ f: 'losango', t: 24 }, { f: 'barra', c: 24, rot: 90 }, { f: 'ponto', dy: -14 }],
+    base: [
+      { f: 'losango', t: 24 },
+      { f: 'barra', c: 24, rot: 90 },
+      { f: 'ponto', dy: -14 },
+    ],
   },
   padre: {
     base: [...CRUZ, { f: 'ponto', dy: -16 }],
@@ -103,11 +138,17 @@ export const MOTIVOS: Readonly<Record<RoleId, Motivo>> = {
     },
   },
   cacador: {
-    base: [{ f: 'barra', c: 30, rot: 45 }, { f: 'triangulo', t: 12, dx: 10, dy: -10 }],
+    base: [
+      { f: 'barra', c: 30, rot: 45 },
+      { f: 'triangulo', t: 12, dx: 10, dy: -10 },
+    ],
     complementos: { armadilha: [LOSANGO_PEQUENO], 'ultimo-uivo': PUBLICO, vingativo: MENOS },
   },
   taverneiro: {
-    base: [{ f: 'triangulo', t: 20, baixo: true }, { f: 'barra', c: 20, dy: -12 }],
+    base: [
+      { f: 'triangulo', t: 20, baixo: true },
+      { f: 'barra', c: 20, dy: -12 },
+    ],
   },
   ancia: {
     base: [{ f: 'circulo', t: 28 }, { f: 'circulo', t: 16 }, PUPILA],
@@ -119,7 +160,13 @@ export const MOTIVOS: Readonly<Record<RoleId, Motivo>> = {
   feiticeiro: { base: [DENTE, { f: 'barra', c: 30, rot: 45 }] },
   'lobo-carnical': { base: [DENTE, { f: 'triangulo', t: 10, baixo: true, dy: 12 }] },
   'lobo-sombra': { base: [DENTE, { f: 'circulo', t: 30 }] },
-  uivador: { base: [DENTE, { f: 'barra', c: 12, rot: 45, dx: -14, dy: -8 }, { f: 'barra', c: 12, rot: -45, dx: 14, dy: -8 }] },
+  uivador: {
+    base: [
+      DENTE,
+      { f: 'barra', c: 12, rot: 45, dx: -14, dy: -8 },
+      { f: 'barra', c: 12, rot: -45, dx: 14, dy: -8 },
+    ],
+  },
   'lobo-branco': { base: [{ f: 'triangulo', t: 18 }, DENTE] },
 
   // ── Solitários ── o losango VAZADO é a marca comum.
@@ -127,10 +174,14 @@ export const MOTIVOS: Readonly<Record<RoleId, Motivo>> = {
   ladrao: { base: [LOSANGO, { f: 'barra', c: 26, rot: 45 }] },
   coringa: { base: [LOSANGO, { f: 'losango', t: 11 }] },
   sobrevivente: { base: [LOSANGO, { f: 'barra', c: 14, rot: 90, dy: 2 }] },
-  bobo: { base: [{ f: 'losango', t: 22, cheio: true }, { f: 'ponto', dy: -15 }] },
+  bobo: {
+    base: [
+      { f: 'losango', t: 22, cheio: true },
+      { f: 'ponto', dy: -15 },
+    ],
+  },
   vingador: { base: [LOSANGO, { f: 'triangulo', t: 10, dy: -2 }] },
 };
-
 
 /** As primitivas de uma role, já com o complemento da variante aplicado. */
 export function motivoDe(roleId: RoleId, varianteId?: string): readonly Primitiva[] {

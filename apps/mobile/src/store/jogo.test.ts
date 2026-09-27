@@ -24,7 +24,7 @@ const zerar = () => {
     acoes: [],
     votos: {},
   });
-  useJogo.getState().setConfig({ semente: 'mesa-de-teste' });
+  useJogo.getState().setConfig({ semente: 'mesa-de-teste', modo: 'classico' });
 };
 
 /** Responde a passagem atual escolhendo sempre o primeiro alvo válido. */
@@ -107,12 +107,23 @@ describe('sessão de mesa', () => {
     expect(aldeao.companheiros).toHaveLength(0);
   });
 
-  it('no modo Traição a matilha é totalmente cega', () => {
+  it('o modo Traição começa SEM nenhum lobo na mesa', () => {
+    // Mudou em 2026-09-25: antes o modo herdava o baralho normal, com matilha
+    // completa desde a noite 1, e a conversão noturna só somava lobos em cima
+    // dos que já existiam — "todos começam na vila" era falso.
     useJogo.getState().setConfig({ modo: 'traicao' });
     useJogo.getState().comecar();
-    const lobos = useJogo.getState().roteiro.filter((p) => p.player.roleId === 'lobo');
-    expect(lobos.length).toBeGreaterThan(0);
-    for (const l of lobos) expect(l.companheiros).toHaveLength(0);
+    const { estado } = useJogo.getState();
+    const lobos = estado!.players.filter((p) => role(p.roleId).faccao === 'lobos');
+    expect(lobos).toHaveLength(0);
+  });
+
+  it('no modo Traição ninguém conhece companheiro de matilha', () => {
+    useJogo.getState().setConfig({ modo: 'traicao' });
+    useJogo.getState().comecar();
+    for (const passagem of useJogo.getState().roteiro) {
+      expect(passagem.companheiros).toHaveLength(0);
+    }
   });
 
   it('o lobo não pode escolher outro lobo como alvo', () => {

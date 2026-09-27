@@ -45,21 +45,57 @@ const traicao: ModeHooks = {
   id: 'traicao',
   nome: 'Traição',
   descricao:
-    'Todos começam na vila. A cada noite o app converte alguém em segredo. A matilha é ' +
-    'totalmente cega: nenhum lobo conhece nenhum outro, em momento algum.',
+    'A mesa começa SEM nenhum lobo. A cada noite o app converte alguém em segredo. A ' +
+    'matilha é totalmente cega: nenhum lobo conhece nenhum outro, em momento algum.',
   // NOTA DE DESIGN: o dossiê resolvia a coordenação da matilha cega com o
   // sussurro noturno, que foi cortado do jogo. Sem ele, os lobos da Traição
   // dependem só do que der para dizer em voz alta durante o dia.
+
+  /**
+   * Começa sem lobo nenhum.
+   *
+   * Antes o modo herdava o baralho normal, com matilha completa desde a noite 1
+   * — e aí a conversão noturna só somava lobos em cima dos que já existiam. O
+   * modo inteiro perdia o sentido: "todos começam na vila" era falso.
+   *
+   * Quem era lobo vira Aldeão e a carta muda de verdade; solitários ficam como
+   * estão, porque o objetivo próprio deles não depende de facção.
+   */
+  aoCriarPartida: (estado) => ({
+    ...estado,
+    players: estado.players.map((p) => {
+      if (role(p.roleId).faccao !== 'lobos') return p;
+      // `varianteId` é REMOVIDA, não posta como undefined: o tipo é opcional
+      // com `exactOptionalPropertyTypes`, e a variante do lobo não existe no
+      // Aldeão de qualquer forma.
+      const { varianteId: _, ...semVariante } = p;
+      return { ...semVariante, roleId: 'aldeao' };
+    }),
+  }),
+
   aoAmanhecer: (estado, rng) => {
     // O convertido MANTÉM a própria role: um Médico convertido continua curando.
     // Por isso a conversão mexe na facção, não na habilidade.
-    const candidatos = vivos(estado).filter((p) => role(p.roleId).faccao === 'vila');
-    if (candidatos.length <= 2) return estado;
+    const jaConvertidos = Object.values(estado.objetivosSecretos).filter(
+      (o) => o === 'convertido',
+    ).length;
+    const candidatos = vivos(estado).filter(
+      (p) => role(p.roleId).faccao === 'vila' && estado.objetivosSecretos[p.id] !== 'convertido',
+    );
+    // Para de converter quando a matilha secreta chegaria a metade da mesa:
+    // passar disso encerra a partida sozinho, sem ninguém ter jogado.
+    if (candidatos.length <= 2 || jaConvertidos >= Math.floor(vivos(estado).length / 2)) {
+      return estado;
+    }
     const convertido = rng.pick(candidatos);
-    return {
-      ...estado,
-      objetivosSecretos: { ...estado.objetivosSecretos, [convertido.id]: 'convertido' },
-    };
+    return anunciar(
+      {
+        ...estado,
+        objetivosSecretos: { ...estado.objetivosSecretos, [convertido.id]: 'convertido' },
+      },
+      'Alguém virou esta noite. Ninguém sabe quem.',
+      'modo',
+    );
   },
 };
 

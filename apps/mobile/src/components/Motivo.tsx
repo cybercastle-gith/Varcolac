@@ -17,7 +17,12 @@ import { cores } from '../theme';
 
 const CAIXA = 40; // grade de desenho; tudo é declarado nesta escala e depois escalado
 
-export function Peca({ p, cor, escala, traco }: {
+export function Peca({
+  p,
+  cor,
+  escala,
+  traco,
+}: {
   p: Primitiva;
   cor: string;
   escala: number;
@@ -72,10 +77,7 @@ export function Peca({ p, cor, escala, traco }: {
               width: e(p.c),
               height: traco,
               backgroundColor: cor,
-              transform: [
-                ...(base.transform as object[]),
-                { rotate: `${p.rot ?? 0}deg` },
-              ] as never,
+              transform: [...(base.transform as object[]), { rotate: `${p.rot ?? 0}deg` }] as never,
             },
           ]}
         />
@@ -114,7 +116,13 @@ export function Peca({ p, cor, escala, traco }: {
   }
 }
 
-export function Motivo({ roleId, varianteId, tamanho = 40, cor, style }: {
+export function Motivo({
+  roleId,
+  varianteId,
+  tamanho = 40,
+  cor,
+  style,
+}: {
   roleId: RoleId;
   varianteId?: string | undefined;
   tamanho?: number;
@@ -129,7 +137,10 @@ export function Motivo({ roleId, varianteId, tamanho = 40, cor, style }: {
 
   return (
     <View
-      style={[{ width: tamanho, height: tamanho, alignItems: 'center', justifyContent: 'center' }, style]}
+      style={[
+        { width: tamanho, height: tamanho, alignItems: 'center', justifyContent: 'center' },
+        style,
+      ]}
     >
       {pecas.map((p, i) => (
         <Peca key={i} p={p} cor={tinta} escala={escala} traco={traco} />

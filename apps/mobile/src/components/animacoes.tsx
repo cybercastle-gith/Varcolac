@@ -12,7 +12,12 @@ import { duracaoMaximaMs } from '../theme';
  */
 
 /** Entrada: sobe um pouco e aparece. O atraso escalona listas. */
-export function Aparicao({ children, atraso = 0, distancia = 10, style }: {
+export function Aparicao({
+  children,
+  atraso = 0,
+  distancia = 10,
+  style,
+}: {
   children: ReactNode;
   atraso?: number;
   distancia?: number;
@@ -84,8 +89,18 @@ export function Pulso({ children, ativo = true }: { children: ReactNode; ativo?:
     if (!ativo) return;
     const laco = Animated.loop(
       Animated.sequence([
-        Animated.timing(v, { toValue: 0.55, duration: 1100, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(v, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(v, {
+          toValue: 0.55,
+          duration: 1100,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(v, {
+          toValue: 1,
+          duration: 1100,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
       ]),
     );
     laco.start();

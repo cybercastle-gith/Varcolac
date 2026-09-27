@@ -37,12 +37,27 @@ export function AmanhecerScreen({ navigation }: Props) {
   const mortosDaNoite = estado.players.filter(
     (p) => p.status === 'morto' && p.mortoNaRodada === estado.rodada,
   );
-  const anuncios = estado.anuncios.filter((a) => a.rodada === estado.rodada);
+  /**
+   * O anúncio do evento sai daqui: ele tem tela própria agora (`EventoScreen`),
+   * mostrada antes desta. Sem este filtro a mesma frase apareceria duas vezes
+   * seguidas, e a segunda vez rouba o peso da primeira.
+   */
+  const anuncios = estado.anuncios.filter(
+    (a) => a.rodada === estado.rodada && a.origem !== 'evento',
+  );
   const houveMorte = mortosDaNoite.length > 0;
 
   return (
     <Ambiente clima={houveMorte ? 'morte' : 'dia'}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: espaco.lg, gap: espaco.md }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: espaco.lg,
+          gap: espaco.md,
+        }}
+      >
         <Revelacao>
           <View style={{ alignItems: 'center', gap: espaco.sm }}>
             <Text style={{ color: houveMorte ? cores.sangueSeco : cores.cera, fontSize: 26 }}>

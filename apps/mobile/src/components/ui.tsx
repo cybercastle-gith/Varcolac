@@ -46,21 +46,31 @@ export function TelaOperacao({
   );
 }
 
-export function Rotulo({ children, cor = cores.ferrugem }: {
+export function Rotulo({
+  children,
+  cor = cores.ferrugem,
+}: {
   children: ReactNode;
   cor?: string | undefined;
 }) {
   return <Text style={[tipografia.rotulo, { color: cor }]}>{children}</Text>;
 }
 
-export function Titulo({ children, cor = cores.linhoCru }: {
+export function Titulo({
+  children,
+  cor = cores.linhoCru,
+}: {
   children: ReactNode;
   cor?: string | undefined;
 }) {
   return <Text style={[tipografia.titulo, { color: cor }]}>{children}</Text>;
 }
 
-export function Corpo({ children, cor = cores.linhoCru, serif = false }: {
+export function Corpo({
+  children,
+  cor = cores.linhoCru,
+  serif = false,
+}: {
   children: ReactNode;
   cor?: string | undefined;
   serif?: boolean | undefined;
@@ -72,7 +82,11 @@ export function Corpo({ children, cor = cores.linhoCru, serif = false }: {
   );
 }
 
-export function Pequeno({ children, cor = cores.ferrugem,style }: {
+export function Pequeno({
+  children,
+  cor = cores.ferrugem,
+  style,
+}: {
   children: ReactNode;
   cor?: string | undefined;
   style?: StyleProp<ViewStyle> | undefined;
@@ -83,7 +97,13 @@ export function Pequeno({ children, cor = cores.ferrugem,style }: {
 export type TomDeBotao = 'primario' | 'secundario' | 'destrutivo' | 'claro' | 'alternativo';
 
 /** Altura 48px, raio 4px, semibold — especificação da seção 9. */
-export function Botao({ children, onPress, tom = 'primario', desabilitado, style }: {
+export function Botao({
+  children,
+  onPress,
+  tom = 'primario',
+  desabilitado,
+  style,
+}: {
   children: ReactNode;
   onPress?: (() => void) | undefined;
   tom?: TomDeBotao | undefined;
@@ -91,18 +111,18 @@ export function Botao({ children, onPress, tom = 'primario', desabilitado, style
   style?: StyleProp<ViewStyle> | undefined;
 }) {
   const fundo =
-    tom === 'primario' ? cores.garanca : tom === 'destrutivo' ? cores.sangueSeco : 'transparent' ;
+    tom === 'primario' ? cores.garanca : tom === 'destrutivo' ? cores.sangueSeco : 'transparent';
   const borda =
     tom === 'secundario'
       ? '#3E362E'
       : tom === 'destrutivo'
         ? '#8C3A32'
-        :tom === 'claro'
+        : tom === 'claro'
           ? cores.linhoCru
-        : tom === 'alternativo'
-        ? '#C2453C'
-        : // Um fio mais claro que o proprio fundo: e o que da aresta a peca.
-          '#C2453C';
+          : tom === 'alternativo'
+            ? '#C2453C'
+            : // Um fio mais claro que o proprio fundo: e o que da aresta a peca.
+              '#C2453C';
   const texto = tom === 'secundario' ? cores.ferrugem : cores.linhoCru;
 
   return (
@@ -128,7 +148,10 @@ export function Botao({ children, onPress, tom = 'primario', desabilitado, style
         embaixo diz que o objeto tem espessura e que a luz vem de cima — a mesma
         fonte unica do Ambiente, so que dentro do botao.
       */}
-      <View pointerEvents="none" style={[estilos.aresta, { opacity: tom === 'primario' ? 0.22 : 0.1 }]} />
+      <View
+        pointerEvents="none"
+        style={[estilos.aresta, { opacity: tom === 'primario' ? 0.22 : 0.1 }]}
+      />
       <Text
         style={[
           tipografia.interface,
@@ -145,7 +168,16 @@ export function Botao({ children, onPress, tom = 'primario', desabilitado, style
  * Item de lista de jogador.
  * Morto nunca sai da lista — pilar B: morrer muda o seu jogo, não encerra.
  */
-export function ItemJogador({ nome, detalhe, morto, selecionado, onPress, corDoPonto, direita }: {
+export function ItemJogador({
+  nome,
+  detalhe,
+  morto,
+  selecionado,
+  onPress,
+  corDoPonto,
+  direita,
+  desabilitado,
+}: {
   nome: string;
   detalhe?: string | undefined;
   morto?: boolean | undefined;
@@ -153,16 +185,27 @@ export function ItemJogador({ nome, detalhe, morto, selecionado, onPress, corDoP
   onPress?: (() => void) | undefined;
   corDoPonto?: string | undefined;
   direita?: ReactNode | undefined;
+  /**
+   * Toque recusado, mas a linha continua legível.
+   *
+   * Diferente de `morto`, que é estado do jogador: isto é estado da ESCOLHA. O
+   * primeiro caso foi o Aldeão Teimoso, cujo voto trava depois de declarado —
+   * esconder as outras opções seria pior, porque ele precisa ver o que deixou
+   * de poder fazer.
+   */
+  desabilitado?: boolean | undefined;
 }) {
+  const clicavel = !!onPress && !desabilitado;
   return (
     <Pressable
       onPress={onPress}
-      disabled={!onPress}
+      disabled={!clicavel}
       style={({ pressed }) => [
         estilos.item,
         selecionado && { borderColor: cores.garanca, backgroundColor: '#241A17' },
-        pressed && onPress && { opacity: 0.75 },
+        pressed && clicavel && { opacity: 0.75 },
         morto && { opacity: 0.5 },
+        desabilitado && !selecionado && { opacity: 0.4 },
       ]}
     >
       {/*
@@ -174,7 +217,13 @@ export function ItemJogador({ nome, detalhe, morto, selecionado, onPress, corDoP
       <View
         style={[
           estilos.ponto,
-          { width: 15, height: 15,backgroundColor: morto ? cores.sangueSeco : (corDoPonto ?? cores.ferrugem), borderColor: cores.linhoCru, borderWidth: 0.25 },
+          {
+            width: 15,
+            height: 15,
+            backgroundColor: morto ? cores.sangueSeco : (corDoPonto ?? cores.ferrugem),
+            borderColor: cores.linhoCru,
+            borderWidth: 0.25,
+          },
         ]}
       />
       <View style={{ flex: 1 }}>

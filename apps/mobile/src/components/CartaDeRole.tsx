@@ -34,7 +34,12 @@ const TINTA_FRACA = '#3B2A1D';
  * nenhuma, que não desenhava nada e só confundia quem lesse o arquivo. Se a
  * moldura voltar, volta com `borderWidth` — não como marcação vazia.
  */
-export function CartaDeRole({ roleId, varianteId, largura = 240, viva = true }: {
+export function CartaDeRole({
+  roleId,
+  varianteId,
+  largura = 240,
+  viva = true,
+}: {
   roleId: RoleId;
   varianteId?: string | undefined;
   largura?: number;
@@ -109,9 +114,7 @@ export function CartaDeRole({ roleId, varianteId, largura = 240, viva = true }: 
           {variante?.nome ?? r.nome}
         </Text>
 
-        {variante && (
-          <Text style={[tipografia.rotulo, { color: cor, fontSize: 9 }]}>{r.nome}</Text>
-        )}
+        {variante && <Text style={[tipografia.rotulo, { color: cor, fontSize: 9 }]}>{r.nome}</Text>}
 
         <Text
           style={[

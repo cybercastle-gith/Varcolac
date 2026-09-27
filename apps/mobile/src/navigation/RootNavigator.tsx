@@ -12,6 +12,7 @@ import { BaralhoScreen } from '../screens/setup/BaralhoScreen';
 import { SistemasScreen } from '../screens/setup/SistemasScreen';
 import { RevisaoScreen } from '../screens/setup/RevisaoScreen';
 import { PassagemScreen } from '../screens/night/PassagemScreen';
+import { EventoScreen } from '../screens/day/EventoScreen';
 import { AmanhecerScreen } from '../screens/day/AmanhecerScreen';
 import { DiscussaoScreen } from '../screens/day/DiscussaoScreen';
 import { VotacaoScreen } from '../screens/day/VotacaoScreen';
@@ -51,8 +52,16 @@ export function RootNavigator() {
         }}
       >
         <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Biblioteca" component={BibliotecaScreen} options={{ title: 'Funções' }} />
-        <Stack.Screen name="ComoJogar" component={ComoJogarScreen} options={{ title: 'Como jogar' }} />
+        <Stack.Screen
+          name="Biblioteca"
+          component={BibliotecaScreen}
+          options={{ title: 'Funções' }}
+        />
+        <Stack.Screen
+          name="ComoJogar"
+          component={ComoJogarScreen}
+          options={{ title: 'Como jogar' }}
+        />
 
         <Stack.Screen name="Jogadores" component={JogadoresScreen} options={{ title: 'Mesa' }} />
         <Stack.Screen name="Modo" component={ModoScreen} options={{ title: 'Modo' }} />
@@ -60,12 +69,37 @@ export function RootNavigator() {
         <Stack.Screen name="Sistemas" component={SistemasScreen} options={{ title: 'Sistemas' }} />
         <Stack.Screen name="Revisao" component={RevisaoScreen} options={{ title: 'Revisão' }} />
 
-        <Stack.Screen name="Passagem" component={PassagemScreen} options={{ headerShown: false, gestureEnabled: false }} />
-        <Stack.Screen name="Amanhecer" component={AmanhecerScreen} options={{ headerShown: false, gestureEnabled: false }} />
-        <Stack.Screen name="Discussao" component={DiscussaoScreen} options={{ title: 'Discussão' }} />
+        <Stack.Screen
+          name="Passagem"
+          component={PassagemScreen}
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="Evento"
+          component={EventoScreen}
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="Amanhecer"
+          component={AmanhecerScreen}
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="Discussao"
+          component={DiscussaoScreen}
+          options={{ title: 'Discussão' }}
+        />
         <Stack.Screen name="Votacao" component={VotacaoScreen} options={{ title: 'Votação' }} />
-        <Stack.Screen name="Execucao" component={ExecucaoScreen} options={{ headerShown: false, gestureEnabled: false }} />
-        <Stack.Screen name="Fim" component={FimScreen} options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen
+          name="Execucao"
+          component={ExecucaoScreen}
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="Fim"
+          component={FimScreen}
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

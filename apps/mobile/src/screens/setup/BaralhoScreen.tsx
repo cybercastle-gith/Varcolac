@@ -8,6 +8,7 @@ import {
   ROLES_SOLITARIOS,
   ROLES_VILA,
   role,
+  varianteImplementada,
   type DeckStyle,
   type Role,
   type RoleId,
@@ -65,13 +66,21 @@ export function BaralhoScreen({ navigation }: Props) {
         </View>
         {s.equilibrio && total > 0 && (
           <Pequeno cor={s.equilibrio.aceitavel ? cores.horezu : cores.garanca}>
-            {s.equilibrio.leitura.replace('-', ' ').replace(/^./, (letra) => letra.toUpperCase())}{s.equilibrio.aceitavel ? '': ' (não recomendado)'}
+            {s.equilibrio.leitura.replace('-', ' ').replace(/^./, (letra) => letra.toUpperCase())}
+            {s.equilibrio.aceitavel ? '' : ' (não recomendado)'}
           </Pequeno>
         )}
       </View>
 
       {/* Duas abas: montar (padrão) e pronto. */}
-      <View style={{ flexDirection: 'row', gap: espaco.xs, padding: espaco.lg, paddingBottom: espaco.sm }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: espaco.xs,
+          padding: espaco.lg,
+          paddingBottom: espaco.sm,
+        }}
+      >
         {(
           [
             ['montar', 'Montar o meu'],
@@ -93,7 +102,10 @@ export function BaralhoScreen({ navigation }: Props) {
             }}
           >
             <Text
-              style={[tipografia.interface, { color: aba === id ? cores.linhoCru : cores.ferrugem }]}
+              style={[
+                tipografia.interface,
+                { color: aba === id ? cores.linhoCru : cores.ferrugem },
+              ]}
             >
               {rotulo}
             </Text>
@@ -102,11 +114,111 @@ export function BaralhoScreen({ navigation }: Props) {
       </View>
 
       {aba === 'montar' ? (
-        <ScrollView contentContainerStyle={{ paddingHorizontal: espaco.lg, paddingBottom: espaco.xl, gap: espaco.sm }}>
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: espaco.lg,
+            paddingBottom: espaco.xl,
+            gap: espaco.sm,
+          }}
+        >
           <Pequeno>
-            Escolha quantas cartas de cada função entram, e qual versão de cada uma. Toque no
-            nome para ver as variantes.
+            Escolha quantas cartas de cada função entram, e qual versão de cada uma. Toque no nome
+            para ver as variantes.
           </Pequeno>
+
+          {/*
+            Sorteio entre as escolhidas.
+            É o meio-termo entre montar carta a carta e aceitar o Baralho
+            Surpresa inteiro: o host marca QUAIS funções topa ver na mesa, sem
+            dizer quantas de cada, e o app sorteia uma composição válida só com
+            elas — medindo o equilíbrio, como em qualquer outro baralho.
+          */}
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: s.permitidas.length > 0 ? cores.cera : '#2E2721',
+              borderRadius: raio.padrao,
+              padding: espaco.md,
+              gap: espaco.sm,
+              marginBottom: espaco.xs,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.sm }}>
+              <View style={{ flex: 1 }}>
+                <Rotulo cor={s.permitidas.length > 0 ? cores.cera : cores.ferrugem}>
+                  Sortear entre as escolhidas
+                </Rotulo>
+                <Text style={[tipografia.pequeno, { color: cores.ferrugem, fontSize: 11 }]}>
+                  {s.permitidas.length === 0
+                    ? 'Toque no losango de cada função que pode entrar.'
+                    : `${s.permitidas.length} marcadas · o app escolhe ${s.jogadores.length} entre elas`}
+                </Text>
+              </View>
+              {s.permitidas.length > 0 && (
+                <Pressable onPress={s.limparPermitidas} hitSlop={10}>
+                  <Text style={[tipografia.rotulo, { color: cores.nogueira, fontSize: 10 }]}>
+                    desmarcar
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+
+            <Botao
+              tom={s.permitidas.length > 0 ? 'primario' : 'secundario'}
+              desabilitado={s.permitidas.length === 0}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                s.sortearEntrePermitidas();
+              }}
+            >
+              Sortear a mesa
+            </Botao>
+          </View>
+
+          {/*
+            Composição oculta: a mesa não vê o que entrou.
+            Fica junto do sorteio de propósito — é a mesma ideia levada ao fim:
+            o host escolhe o vocabulário e nem ele vê a composição.
+          */}
+          <Pressable
+            onPress={() => {
+              void Haptics.selectionAsync();
+              s.setConfig({ composicaoOculta: !s.config.composicaoOculta });
+            }}
+            style={{
+              minHeight: alvoMinimo,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: espaco.md,
+              borderWidth: 1,
+              borderColor: s.config.composicaoOculta ? cores.cera : '#2E2721',
+              backgroundColor: s.config.composicaoOculta ? '#241A17' : '#1A1613',
+              borderRadius: raio.padrao,
+              paddingHorizontal: espaco.md,
+              marginBottom: espaco.xs,
+            }}
+          >
+            <View
+              style={{
+                width: 16,
+                height: 16,
+                borderWidth: 1.5,
+                borderColor: s.config.composicaoOculta ? cores.cera : '#3E362E',
+                backgroundColor: s.config.composicaoOculta ? cores.cera : 'transparent',
+                transform: [{ rotate: '45deg' }],
+              }}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={[tipografia.interface, { color: cores.linhoCru }]}>
+                Composição oculta
+              </Text>
+              <Text style={[tipografia.pequeno, { color: cores.ferrugem, fontSize: 11 }]}>
+                {s.config.composicaoOculta
+                  ? 'Ninguém vê o baralho. Cada um descobre só a própria função.'
+                  : 'A mesa vê quais funções entraram antes de começar.'}
+              </Text>
+            </View>
+          </Pressable>
 
           <View style={{ flexDirection: 'row', gap: espaco.sm, marginBottom: espaco.xs }}>
             <Botao tom="claro" onPress={s.limparBaralho} style={{ flex: 1 }}>
@@ -121,6 +233,12 @@ export function BaralhoScreen({ navigation }: Props) {
                 <Aparicao key={r.id} atraso={gi * 40 + i * 12}>
                   <LinhaDeRole
                     r={r}
+                    oculta={s.config.composicaoOculta}
+                    permitida={s.permitidas.includes(r.id)}
+                    onPermitir={() => {
+                      void Haptics.selectionAsync();
+                      s.alternarPermitida(r.id);
+                    }}
                     quantidade={s.contarRole(r.id)}
                     varianteId={s.config.variantes[r.id]}
                     aberta={aberta === r.id}
@@ -138,7 +256,13 @@ export function BaralhoScreen({ navigation }: Props) {
           ))}
         </ScrollView>
       ) : (
-        <ScrollView contentContainerStyle={{ paddingHorizontal: espaco.lg, paddingBottom: espaco.xl, gap: espaco.sm }}>
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: espaco.lg,
+            paddingBottom: espaco.xl,
+            gap: espaco.sm,
+          }}
+        >
           <Pressable
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -158,6 +282,65 @@ export function BaralhoScreen({ navigation }: Props) {
               O app monta uma composição válida que ninguém na mesa conhece de antemão.
             </Text>
           </Pressable>
+
+          {/*
+            O que o baralho escolhido tem dentro.
+            O Baralho Surpresa trocava a composição em silêncio: o host tocava,
+            o contador no topo mudava de número e nenhuma carta aparecia. Sem
+            isto não há como revisar — nem como decidir se vale sortear de novo.
+          */}
+          {s.config.composicaoOculta && (
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: cores.cera,
+                borderRadius: raio.padrao,
+                padding: espaco.md,
+                marginTop: espaco.sm,
+                gap: 4,
+              }}
+            >
+              <Rotulo cor={cores.cera}>Composição oculta</Rotulo>
+              <Text style={[tipografia.pequeno, { color: cores.ferrugem }]}>
+                O baralho está fechado. Cada um vê só a própria função, na noite 1, e a mesa inteira
+                só descobre o resto no fim da partida.
+              </Text>
+            </View>
+          )}
+
+          {s.deck.roleIds.length > 0 && !s.config.composicaoOculta && (
+            <View style={{ gap: espaco.xs, marginTop: espaco.sm }}>
+              <Rotulo cor={cores.cera}>Neste baralho · {s.deck.nome}</Rotulo>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espaco.xs }}>
+                {[
+                  ...new Map(
+                    s.deck.roleIds.map((id) => [id, s.deck.roleIds.filter((x) => x === id).length]),
+                  ).entries(),
+                ].map(([id, n]) => (
+                  <View
+                    key={id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      backgroundColor: '#1D1814',
+                      borderWidth: 1,
+                      borderColor: '#2E2721',
+                      borderRadius: raio.padrao,
+                      paddingVertical: 6,
+                      paddingHorizontal: 10,
+                    }}
+                  >
+                    <IconeDeRole roleId={id} tamanho={22} cor={corDaFaccao(id)} />
+                    <Text style={[tipografia.pequeno, { color: cores.linhoCru }]}>
+                      {role(id).nome}
+                      {n > 1 ? ` ×${n}` : ''}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
 
           {ESTILOS.map((e, i) => (
             <Aparicao key={e.id} atraso={i * 20}>
@@ -198,38 +381,106 @@ export function BaralhoScreen({ navigation }: Props) {
 }
 
 /** Uma linha do construtor: motivo, nome, contador e as variantes. */
-function LinhaDeRole({ r, quantidade, varianteId, aberta, cheio, onAbrir, onAjustar, onVariante }: {
+function LinhaDeRole({
+  r,
+  quantidade,
+  varianteId,
+  aberta,
+  cheio,
+  permitida,
+  oculta,
+  onAbrir,
+  onAjustar,
+  onVariante,
+  onPermitir,
+}: {
   r: Role;
   quantidade: number;
   varianteId: string | undefined;
   aberta: boolean;
   cheio: boolean;
+  /** Marcada para entrar no sorteio. Independe da quantidade escolhida à mão. */
+  permitida: boolean;
+  /** Composição oculta: mostra `?` no lugar da quantidade. */
+  oculta: boolean;
   onAbrir: () => void;
   onAjustar: (delta: number) => void;
   onVariante: (v: string | null) => void;
+  onPermitir: () => void;
 }) {
   const cor = corDaFaccao(r.id);
   const dentro = quantidade > 0;
 
   return (
     <View
+      /*
+       * A linha selecionada tem FUNDO e BORDA, não sombra.
+       *
+       * Antes o fundo era `dentro ? '' : '#1A1613'` — string vazia não é cor
+       * válida, então a linha escolhida ficava sem fundo nenhum. Com
+       * `elevation` e sem superfície opaca, o Android desenha a sombra solta e
+       * deslocada para baixo (o `elevation` ignora `shadowOffset`), que é a
+       * mancha esquisita em volta das funções selecionadas.
+       *
+       * Borda colorida faz o mesmo trabalho e é honesta: diz "esta entrou" sem
+       * fingir profundidade que a tela não tem. Também cumpre "nunca cor
+       * sozinha" — o contador ao lado diz quantas.
+       */
       style={{
-        shadowColor: dentro ? cor : cores.linhoCru,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: dentro ? 0.75 : 0.45,
-        shadowRadius: dentro ? 10 : 8,
-        elevation: dentro ? 8 : 4,
-        backgroundColor: dentro ? '' : '#1A1613',
+        backgroundColor: dentro ? '#241A17' : '#1A1613',
+        borderWidth: 1,
+        borderColor: dentro ? cor : '#2E2721',
         borderRadius: raio.padrao,
         overflow: 'hidden',
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: alvoMinimo }}>
+        {/*
+          O marcador do sorteio.
+          Losango e não caixa de seleção: é o motivo da Vila no vocabulário do
+          jogo, e o alvo de toque tem 44px mesmo com o desenho pequeno — no
+          escuro, alvo pequeno é alvo errado.
+        */}
+        <Pressable
+          onPress={onPermitir}
+          hitSlop={6}
+          style={{
+            width: 44,
+            alignSelf: 'stretch',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          accessibilityLabel={`${permitida ? 'Tirar' : 'Pôr'} ${r.nome} no sorteio`}
+        >
+          <View
+            style={{
+              width: 16,
+              height: 16,
+              borderWidth: 1.5,
+              borderColor: permitida ? cores.cera : '#3E362E',
+              backgroundColor: permitida ? cores.cera : 'transparent',
+              transform: [{ rotate: '45deg' }],
+            }}
+          />
+        </Pressable>
+
         <Pressable
           onPress={onAbrir}
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 }}
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            paddingVertical: 12,
+            paddingRight: 12,
+          }}
         >
-          <IconeDeRole roleId={r.id} varianteId={varianteId} tamanho={36} cor={dentro ? cor : cores.nogueira} />
+          <IconeDeRole
+            roleId={r.id}
+            varianteId={varianteId}
+            tamanho={36}
+            cor={dentro ? cor : cores.nogueira}
+          />
           <View style={{ flex: 1 }}>
             <Text style={[tipografia.corpo, { color: dentro ? cores.linhoCru : cores.ferrugem }]}>
               {varianteId ? r.variantes.find((v) => v.id === varianteId)?.nome : r.nome}
@@ -253,17 +504,34 @@ function LinhaDeRole({ r, quantidade, varianteId, aberta, cheio, onAbrir, onAjus
           <Text
             style={[
               tipografia.numero,
-              { fontSize: 18, color: dentro ? cores.linhoCru : cores.nogueira, width: 24, textAlign: 'center' },
+              {
+                fontSize: 18,
+                color: dentro ? cores.linhoCru : cores.nogueira,
+                width: 24,
+                textAlign: 'center',
+              },
             ]}
           >
-            {quantidade}
+            {/*
+              Com a composição oculta, o host continua montando — ele só não vê
+              QUANTAS de cada entraram. É o que faz o baralho ser surpresa até
+              para quem o montou.
+            */}
+            {oculta ? '?' : quantidade}
           </Text>
           <Passo sinal="+" onPress={() => onAjustar(1)} inativo={cheio} />
         </View>
       </View>
 
       {aberta && (
-        <View style={{ padding: espaco.md, gap: espaco.sm, borderTopWidth: 1, borderTopColor: '#2E2721' }}>
+        <View
+          style={{
+            padding: espaco.md,
+            gap: espaco.sm,
+            borderTopWidth: 1,
+            borderTopColor: '#2E2721',
+          }}
+        >
           <Text style={[tipografia.pequeno, { color: cores.ferrugem }]}>{r.descricaoLonga}</Text>
 
           {r.variantes.length > 0 && (
@@ -300,7 +568,15 @@ function LinhaDeRole({ r, quantidade, varianteId, aberta, cheio, onAbrir, onAjus
   );
 }
 
-function OpcaoDeVariante({ roleId, varianteId, nome, descricao, peso, ativa, onPress }: {
+function OpcaoDeVariante({
+  roleId,
+  varianteId,
+  nome,
+  descricao,
+  peso,
+  ativa,
+  onPress,
+}: {
   roleId: RoleId;
   varianteId?: string;
   nome: string;
@@ -336,6 +612,12 @@ function OpcaoDeVariante({ roleId, varianteId, nome, descricao, peso, ativa, onP
         <Text style={[tipografia.pequeno, { color: cores.nogueira, fontSize: 11 }]}>
           {descricao}
         </Text>
+        {/* O host precisa saber antes de escolher, não depois de jogar. */}
+        {varianteId && !varianteImplementada(varianteId) && (
+          <Text style={[tipografia.rotulo, { color: cores.nogueira, fontSize: 9 }]}>
+            regra ainda não implementada
+          </Text>
+        )}
       </View>
     </Pressable>
   );

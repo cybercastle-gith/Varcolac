@@ -12,6 +12,8 @@ export type RootStackParamList = {
   // Noite
   Passagem: undefined;
   // Dia
+  /** Só entra quando a noite teve evento NARRADO. Vem antes das mortes. */
+  Evento: undefined;
   Amanhecer: undefined;
   Discussao: undefined;
   Votacao: undefined;

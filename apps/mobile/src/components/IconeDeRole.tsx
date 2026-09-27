@@ -18,7 +18,13 @@ import { Peca, corDaFaccao } from './Motivo';
  * distinção de facção continua vindo de outro lugar — a barra bordada da
  * carta, a borda da lista — que é a mesma razão de "nunca cor sozinha".
  */
-export function IconeDeRole({ roleId, varianteId, tamanho = 40, cor, style }: {
+export function IconeDeRole({
+  roleId,
+  varianteId,
+  tamanho = 40,
+  cor,
+  style,
+}: {
   roleId: RoleId;
   varianteId?: string | undefined;
   tamanho?: number;

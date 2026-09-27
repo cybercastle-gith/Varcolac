@@ -44,7 +44,15 @@ export interface GameState {
   readonly players: readonly Player[];
   readonly rodada: number;
   readonly fase: Phase;
+  /** O evento em vigor NESTA noite. Posto por `prepararNoite`. */
   readonly eventoDaNoite: EventId | null;
+  /**
+   * O evento já sorteado e anunciado, que entra em vigor na noite SEGUINTE.
+   *
+   * A separação entre anunciado e em vigor é o que dá à mesa um dia inteiro
+   * para discutir a ameaça antes de ela acontecer.
+   */
+  readonly eventoAnunciado: EventId | null;
   /** Eventos já usados — nenhum se repete na mesma partida. */
   readonly eventosUsados: readonly EventId[];
   readonly historicoVotos: readonly VoteRecord[];

@@ -23,6 +23,9 @@ export const aldeao: Role = {
       nome: 'Herdeiro',
       descricao: 'Uma vez por partida, herda a role de alguém que morreu.',
       peso: 2,
+      // O Aldeão base não age à noite, então a variante precisa da própria
+      // etapa — sem ela o roteiro devolvia toque falso e a herança não existia.
+      etapa: 'informacao',
       usoLimitado: { kind: 'por-partida', total: 1 },
     },
     {
@@ -36,6 +39,7 @@ export const aldeao: Role = {
       nome: 'Testemunha',
       descricao: 'Uma vez por partida, o app confirma publicamente que ele é aldeão.',
       peso: 1,
+      etapa: 'informacao',
       usoLimitado: { kind: 'por-partida', total: 1 },
     },
   ],
@@ -185,11 +189,39 @@ export const xerife: Role = {
   etapa: 'bloqueio',
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: false,
-  descricaoCurta: 'Prende um jogador: ele não age, não morre e não fala no dia seguinte.',
+  descricaoCurta:
+    'Prende um jogador para a NOITE seguinte: ele não age e não morre. Continua falando.',
   descricaoLonga:
     'Prender o Médico anula a cura daquela noite — o Xerife pode atrapalhar a própria vila. ' +
     'A imunidade do preso é perfurável pelo Feiticeiro.',
-  variantes: [],
+  variantes: [
+    {
+      id: 'testemunha-da-cela',
+      nome: 'Testemunha da Cela',
+      descricao:
+        'Prende um jogador, revela a prisão no dia seguinte, mantém o preso sem poder ' +
+        'agir na segunda noite e o liberta no segundo dia revelando-o como Lobo ou ' +
+        'Aldeão.',
+      peso: 3,
+      etapa: 'bloqueio',
+    },
+    {
+      id: 'xerife-de-si-mesmo',
+      nome: 'Xerife de Si Mesmo',
+      descricao:
+        'Pode prender a si próprio e fica imune a ataques e investigações naquela ' +
+        'noite, mas não age nem vota no dia seguinte.',
+      peso: 3,
+      etapa: 'bloqueio',
+    },
+    {
+      id: 'boca-calada',
+      nome: 'Boca Calada',
+      descricao: 'Prende um jogador normalmente, e o preso não fala nem vota no dia seguinte.',
+      peso: 3,
+      etapa: 'bloqueio',
+    },
+  ],
 };
 
 export const necromante: Role = {
@@ -205,7 +237,35 @@ export const necromante: Role = {
   descricaoLonga:
     'Apenas mortes de noites anteriores. A ressurreição não desfaz estertores já ' +
     'disparados: se o Caçador atirou, o tiro vale.',
-  variantes: [],
+  variantes: [
+    {
+      id: 'cova-aberta',
+      nome: 'Cova Aberta',
+      descricao: 'Ressuscita um morto da noite anterior, mas ele volta sem sua habilidade.',
+      peso: 3,
+      etapa: 'ressurreicao',
+      usoLimitado: { kind: 'por-partida', total: 1 },
+    },
+    {
+      id: 'ultima-vela',
+      nome: 'Última Vela',
+      descricao:
+        'Ressuscita um morto de qualquer noite, mas ele morre novamente ao fim do ' + 'dia.',
+      peso: 3,
+      etapa: 'ressurreicao',
+      usoLimitado: { kind: 'por-partida', total: 1 },
+    },
+    {
+      id: 'incorporacao',
+      nome: 'Incorporação',
+      descricao:
+        'Ressuscita um morto e utiliza sua habilidade até o fim da partida sem mudar ' +
+        'de facção ou de papel.',
+      peso: 4,
+      etapa: 'ressurreicao',
+      usoLimitado: { kind: 'por-partida', total: 1 },
+    },
+  ],
 };
 
 export const padre: Role = {
@@ -225,8 +285,16 @@ export const padre: Role = {
     {
       id: 'exorcista',
       nome: 'Exorcista',
-      descricao: 'Uma vez por partida, anula todas as mortes da noite.',
-      peso: 2,
+      descricao:
+        'Uma vez por partida, benze um jogador. Se for lobo, o lobo morre; se não for, ' +
+        'o Padre perde a moral e vira Aldeão comum.',
+      // Aposta tudo num nome: o Padre base garante uma noite sem mortes, e este
+      // troca essa garantia pela chance de tirar um lobo — e pelo risco de sair
+      // do jogo como Aldeão se errar. Por isso pesa mais que o Padre base.
+      peso: 3,
+      // `ataque`, e não `protecao`: a benza MATA, e a morte é resolvida na
+      // etapa 8 junto com todas as outras.
+      etapa: 'ataque',
       usoLimitado: { kind: 'por-partida', total: 1 },
     },
     {
@@ -290,9 +358,34 @@ export const taverneiro: Role = {
   etapa: 'bloqueio',
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: false,
-  descricaoCurta: 'Embebeda um jogador por noite: o poder dele falha, e ele não é avisado.',
+  descricaoCurta: 'Embebeda um jogador: na noite seguinte o poder dele falha, e ele não é avisado.',
   descricaoLonga: 'Pode atrapalhar a própria vila — e frequentemente atrapalha.',
-  variantes: [],
+  variantes: [
+    {
+      id: 'ultima-dose',
+      nome: 'Última Dose',
+      descricao: 'Só pode embebedar jogadores que ainda não tenham sido embebedados.',
+      peso: 1,
+      etapa: 'bloqueio',
+    },
+    {
+      id: 'ressaca-da-vila',
+      nome: 'Ressaca da Vila',
+      descricao:
+        'O jogador embebedado só descobre na noite seguinte que sua ação foi ' + 'bloqueada.',
+      peso: 2,
+      etapa: 'bloqueio',
+    },
+    {
+      id: 'bebida-forte',
+      nome: 'Bebida Forte',
+      descricao:
+        'O alvo não pode agir nem votar até a próxima noite, quando pode repetir o ' +
+        'mesmo tipo de ação duas vezes.',
+      peso: 2,
+      etapa: 'bloqueio',
+    },
+  ],
 };
 
 export const ancia: Role = {
@@ -310,7 +403,32 @@ export const ancia: Role = {
   descricaoCurta: 'Se morrer por qualquer causa, a vila perde todos os poderes por uma noite.',
   descricaoLonga:
     'Inclui linchamento. É a razão pela qual revelar a Anciã cedo é perigoso para a vila.',
-  variantes: [],
+  variantes: [
+    {
+      id: 'testamento',
+      nome: 'Testamento',
+      descricao: 'Ao morrer, escolhe um jogador vivo para manter seu poder na noite seguinte.',
+      peso: 3,
+      // A escolha é declarada EM VIDA, na passagem: num pass-and-play o morto
+      // não recebe mais o aparelho para escolher nada.
+      etapa: 'estertores',
+    },
+    {
+      id: 'luto-da-vila',
+      nome: 'Luto da Vila',
+      descricao: 'Se a Anciã morrer, todos os jogadores perdem seus poderes durante uma noite.',
+      peso: 3,
+    },
+    {
+      id: 'heranca-amarga',
+      nome: 'Herança Amarga',
+      descricao:
+        'Escolhe um jogador à noite e, se a Anciã morrer, todos perdem seus poderes ' +
+        'por uma noite e o escolhido vira Aldeão para sempre.',
+      peso: 3,
+      etapa: 'estertores',
+    },
+  ],
 };
 
 export const ROLES_VILA: readonly Role[] = [

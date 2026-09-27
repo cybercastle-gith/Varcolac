@@ -12,7 +12,6 @@ export const ROLES: readonly Role[] = [...ROLES_VILA, ...ROLES_LOBOS, ...ROLES_S
 
 export const ROLES_POR_ID: ReadonlyMap<RoleId, Role> = new Map(ROLES.map((r) => [r.id, r]));
 
-
 /** Lança se o id não existir — um baralho com id errado é bug, não caso de uso. */
 export function role(id: RoleId): Role {
   const r = ROLES_POR_ID.get(id);

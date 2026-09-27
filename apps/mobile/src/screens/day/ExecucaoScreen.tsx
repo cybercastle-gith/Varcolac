@@ -36,58 +36,65 @@ export function ExecucaoScreen({ navigation }: Props) {
 
   return (
     <Ambiente clima="morte">
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: espaco.lg, gap: espaco.md }}>
-      <Rotulo>Dia {estado.rodada}</Rotulo>
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: espaco.lg,
+          gap: espaco.md,
+        }}
+      >
+        <Rotulo>Dia {estado.rodada}</Rotulo>
 
-      {!votacao?.linchadoId ? (
-        <>
-          <Titulo>A corda ficou vazia.</Titulo>
-          <Pequeno cor={cores.ferrugem}>
-            {votacao?.empate ? 'A vila empatou e não decidiu nada.' : 'Ninguém foi condenado.'}
-          </Pequeno>
-        </>
-      ) : (
-        <View style={{ alignItems: 'center', gap: espaco.lg }}>
-          {executados.map((p, i) => (
-            <Revelacao key={p.id} atraso={i * 320}>
-              <View style={{ alignItems: 'center', gap: 6 }}>
-                <Text style={{ color: cores.sangueSeco, fontSize: 26 }}>✝</Text>
-                <Text style={[tipografia.titulo, { color: cores.linhoCru }]}>{p.nome}</Text>
-                {estado.config.revelarRoleAoMorrer && (
-                  <>
-                    <IconeDeRole
-                      roleId={p.roleId}
-                      varianteId={p.varianteId}
-                      tamanho={44}
-                      cor={corDaFaccao(p.roleId)}
-                    />
-                    <Text style={[tipografia.nomeDeRole, { color: cores.cera, fontSize: 20 }]}>
-                      {role(p.roleId).nome}
-                    </Text>
-                  </>
-                )}
-              </View>
-            </Revelacao>
-          ))}
-        </View>
-      )}
+        {!votacao?.linchadoId ? (
+          <>
+            <Titulo>A corda ficou vazia.</Titulo>
+            <Pequeno cor={cores.ferrugem}>
+              {votacao?.empate ? 'A vila empatou e não decidiu nada.' : 'Ninguém foi condenado.'}
+            </Pequeno>
+          </>
+        ) : (
+          <View style={{ alignItems: 'center', gap: espaco.lg }}>
+            {executados.map((p, i) => (
+              <Revelacao key={p.id} atraso={i * 320}>
+                <View style={{ alignItems: 'center', gap: 6 }}>
+                  <Text style={{ color: cores.sangueSeco, fontSize: 26 }}>✝</Text>
+                  <Text style={[tipografia.titulo, { color: cores.linhoCru }]}>{p.nome}</Text>
+                  {estado.config.revelarRoleAoMorrer && (
+                    <>
+                      <IconeDeRole
+                        roleId={p.roleId}
+                        varianteId={p.varianteId}
+                        tamanho={44}
+                        cor={corDaFaccao(p.roleId)}
+                      />
+                      <Text style={[tipografia.nomeDeRole, { color: cores.cera, fontSize: 20 }]}>
+                        {role(p.roleId).nome}
+                      </Text>
+                    </>
+                  )}
+                </View>
+              </Revelacao>
+            ))}
+          </View>
+        )}
 
-      {anuncios.length > 0 && (
-        <View style={{ marginTop: espaco.lg, gap: 6, alignItems: 'center' }}>
-          {anuncios.map((a, i) => (
-            <Text
-              key={i}
-              style={[
-                tipografia.corpoSerif,
-                { fontFamily: familia.serifItalico, color: cores.cera, textAlign: 'center' },
-              ]}
-            >
-              {a.texto}
-            </Text>
-          ))}
-        </View>
-      )}
-
+        {anuncios.length > 0 && (
+          <View style={{ marginTop: espaco.lg, gap: 6, alignItems: 'center' }}>
+            {anuncios.map((a, i) => (
+              <Text
+                key={i}
+                style={[
+                  tipografia.corpoSerif,
+                  { fontFamily: familia.serifItalico, color: cores.cera, textAlign: 'center' },
+                ]}
+              >
+                {a.texto}
+              </Text>
+            ))}
+          </View>
+        )}
       </View>
 
       <View style={{ padding: espaco.lg }}>

@@ -23,6 +23,14 @@ export interface GenerationOptions {
   readonly estilo?: DeckStyle;
   /** Tentativas antes de aceitar a melhor composição encontrada. */
   readonly maxTentativas?: number;
+  /**
+   * Só estas funções podem entrar. Vazio ou ausente = catálogo inteiro.
+   *
+   * É o que permite ao host dizer "quero que a mesa tenha SÓ estas cartas, me
+   * surpreenda com a composição". Ele escolhe o vocabulário; o app escolhe
+   * quantas de cada, e mede o equilíbrio.
+   */
+  readonly permitidas?: readonly string[];
 }
 
 export interface GeneratedDeck {
@@ -43,9 +51,12 @@ function escolher(pool: readonly Role[], n: number, rng: Rng): string[] {
 }
 
 /** A vila respeita o teto de roles caras; o resto vira role barata. */
-function escolherVila(n: number, tetoPesados: number, rng: Rng): string[] {
-  const baratas = ROLES_VILA.filter((r) => r.peso < 4);
-  const caras = ROLES_VILA.filter((r) => r.peso >= 4);
+function escolherVilaDe(pool: readonly Role[], n: number, tetoPesados: number, rng: Rng): string[] {
+  const baratas = pool.filter((r) => r.peso < 4);
+  const caras = pool.filter((r) => r.peso >= 4);
+  // Sem role barata permitida, as caras assumem tudo — e vice-versa.
+  if (baratas.length === 0) return escolher(caras, n, rng);
+  if (caras.length === 0) return escolher(baratas, n, rng);
   const nCaras = Math.min(tetoPesados, rng.int(0, tetoPesados), n);
   return [...escolher(caras, nCaras, rng), ...escolher(baratas, n - nCaras, rng)];
 }
@@ -60,22 +71,52 @@ function escolherVila(n: number, tetoPesados: number, rng: Rng): string[] {
  * desvio: o app avisa e o host decide, como manda o dossiê.
  */
 export function gerarBaralho(opcoes: GenerationOptions, rng: Rng): GeneratedDeck {
-  const { jogadores, config, maxTentativas = 200 } = opcoes;
+  const { jogadores, config, maxTentativas = 200, permitidas } = opcoes;
   if (jogadores < 5) throw new RangeError('A mesa mínima é de 5 jogadores.');
+
+  /**
+   * O filtro de catálogo.
+   *
+   * Cada grupo cai para o que o host permitiu; grupo que ficou vazio volta ao
+   * catálogo inteiro daquele grupo. Isso é deliberado: sem nenhum lobo
+   * permitido não existe partida, então o app prefere desobedecer a restrição a
+   * entregar uma mesa impossível. A tela avisa quando isso acontece.
+   */
+  const permitido = permitidas && permitidas.length > 0 ? new Set(permitidas) : null;
+  const filtrar = (grupo: readonly Role[]) => {
+    if (!permitido) return grupo;
+    const restrito = grupo.filter((r) => permitido.has(r.id));
+    return restrito.length > 0 ? restrito : grupo;
+  };
+
+  const lobosPossiveis = filtrar(ROLES_LOBOS);
+  const solitariosPossiveis = filtrar(ROLES_SOLITARIOS);
+  const vilaPossivel = filtrar(ROLES_VILA);
 
   const nLobos = lobosPara(jogadores);
   const tetoPesados = Math.floor(jogadores / 4);
   let melhor: GeneratedDeck | null = null;
 
   for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
-    const nSolitarios = rng.int(0, Math.floor(jogadores * 0.25));
+    // Sem solitário permitido, não force nenhum na mesa.
+    const tetoSolitarios =
+      permitido &&
+      solitariosPossiveis === ROLES_SOLITARIOS &&
+      !ROLES_SOLITARIOS.some((r) => permitido.has(r.id))
+        ? 0
+        : Math.floor(jogadores * 0.25);
+    const nSolitarios = rng.int(0, tetoSolitarios);
     const roleIds = [
-      ...escolher(ROLES_LOBOS, nLobos, rng),
-      ...escolher(ROLES_SOLITARIOS, nSolitarios, rng),
-      ...escolherVila(jogadores - nLobos - nSolitarios, tetoPesados, rng),
+      ...escolher(lobosPossiveis, nLobos, rng),
+      ...escolher(solitariosPossiveis, nSolitarios, rng),
+      ...escolherVilaDe(vilaPossivel, jogadores - nLobos - nSolitarios, tetoPesados, rng),
     ];
 
-    const deck: Deck = { id: 'surpresa', nome: 'Baralho Surpresa', roleIds };
+    const deck: Deck = {
+      id: permitido ? 'sorteado' : 'surpresa',
+      nome: permitido ? 'Sorteado entre as suas' : 'Baralho Surpresa',
+      roleIds,
+    };
     const equilibrio = calcularEquilibrio(deck, config, jogadores);
     const candidato = { deck, equilibrio, tentativas: tentativa };
 

@@ -17,10 +17,24 @@ import { cores, espaco, tipografia } from '../theme';
  */
 const ESPERA_MS = 550;
 
-export function SegurarParaRevelar({ children, aviso, aoRevelar }: {
+export function SegurarParaRevelar({
+  children,
+  aviso,
+  aoRevelar,
+  fixaAposRevelar = true,
+}: {
   children: ReactNode;
   aviso?: string;
   aoRevelar?: () => void;
+  /**
+   * Depois de revelar uma vez, soltar o dedo NÃO esconde de novo.
+   *
+   * Antes escondia: `soltar()` zerava `revelado` sem condição, então a carta
+   * sumia no instante em que a pessoa tirava o dedo para ler com calma. Segurar
+   * é o gesto que protege o segredo de quem está ao lado — depois que a pessoa
+   * já viu, obrigá-la a continuar segurando não protege mais nada.
+   */
+  fixaAposRevelar?: boolean;
 }) {
   const [revelado, setRevelado] = useState(false);
   const progresso = useRef(new Animated.Value(0)).current;
@@ -49,6 +63,7 @@ export function SegurarParaRevelar({ children, aviso, aoRevelar }: {
 
   const soltar = () => {
     animacao.current?.stop();
+    if (fixaAposRevelar && revelado) return;
     progresso.setValue(0);
     setRevelado(false);
   };
@@ -73,7 +88,12 @@ export function SegurarParaRevelar({ children, aviso, aoRevelar }: {
             <Animated.View style={[estilos.preenchimento, { height: preenchimento }]} />
             <Text style={estilos.simbolo}>◉</Text>
           </View>
-          <Text style={[tipografia.rotulo, { color: cores.ferrugem, marginTop: espaco.lg, fontSize: 20 }]}>
+          <Text
+            style={[
+              tipografia.rotulo,
+              { color: cores.ferrugem, marginTop: espaco.lg, fontSize: 20 },
+            ]}
+          >
             Segure para revelar
           </Text>
           {aviso ? (

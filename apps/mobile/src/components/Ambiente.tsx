@@ -160,9 +160,24 @@ export function Ambiente({
     if (!oscila) return;
     const laco = Animated.loop(
       Animated.sequence([
-        Animated.timing(chama, { toValue: 0.97, duration: 1300, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(chama, { toValue: 1.02, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(chama, { toValue: 1, duration: 1700, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(chama, {
+          toValue: 0.97,
+          duration: 1300,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(chama, {
+          toValue: 1.02,
+          duration: 900,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(chama, {
+          toValue: 1,
+          duration: 1700,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
       ]),
     );
     laco.start();
@@ -219,7 +234,12 @@ export function Ambiente({
       <View
         style={[
           estilos.conteudo,
-          { paddingTop: margens.top, paddingBottom: margens.bottom, paddingLeft: margens.left, paddingRight: margens.right },
+          {
+            paddingTop: margens.top,
+            paddingBottom: margens.bottom,
+            paddingLeft: margens.left,
+            paddingRight: margens.right,
+          },
         ]}
       >
         {children}

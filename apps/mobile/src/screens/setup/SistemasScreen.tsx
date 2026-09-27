@@ -9,7 +9,11 @@ import { cores, espaco, raio, tipografia, alvoMinimo } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Sistemas'>;
 
-function Linha({ titulo, descricao, direita }: {
+function Linha({
+  titulo,
+  descricao,
+  direita,
+}: {
   titulo: string;
   descricao?: string;
   direita: React.ReactNode;
@@ -35,7 +39,11 @@ function Linha({ titulo, descricao, direita }: {
   );
 }
 
-function Opcoes<T extends string>({ valor, onChange, opcoes }: {
+function Opcoes<T extends string>({
+  valor,
+  onChange,
+  opcoes,
+}: {
   valor: T;
   onChange: (v: T) => void;
   opcoes: readonly { valor: T; rotulo: string }[];
@@ -58,12 +66,7 @@ function Opcoes<T extends string>({ valor, onChange, opcoes }: {
               backgroundColor: ativo ? '#241A17' : 'transparent',
             }}
           >
-            <Text
-              style={[
-                tipografia.pequeno,
-                { color: ativo ? cores.linhoCru : cores.ferrugem },
-              ]}
-            >
+            <Text style={[tipografia.pequeno, { color: ativo ? cores.linhoCru : cores.ferrugem }]}>
               {o.rotulo}
             </Text>
           </Pressable>
@@ -101,31 +104,25 @@ export function SistemasScreen({ navigation }: Props) {
               }
             >
               <View
-              style={{
-                width: 42,
-                height: 25,
-                borderRadius: 15,
-                backgroundColor: config.revelarRoleAoMorrer
-                  ? cores.folhaDeOuro
-                  : cores.ferrugem,
-                justifyContent: 'center',
-                padding: 3,
-              }}
-            >
-              <View
                 style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 12,
-                  backgroundColor: config.revelarRoleAoMorrer
-                    ? cores.fuligem
-                    : cores.linhoCru,
-                  alignSelf: config.revelarRoleAoMorrer
-                    ? 'flex-end'
-                    : 'flex-start',
+                  width: 42,
+                  height: 25,
+                  borderRadius: 15,
+                  backgroundColor: config.revelarRoleAoMorrer ? cores.folhaDeOuro : cores.ferrugem,
+                  justifyContent: 'center',
+                  padding: 3,
                 }}
-              />
-            </View>
+              >
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 12,
+                    backgroundColor: config.revelarRoleAoMorrer ? cores.fuligem : cores.linhoCru,
+                    alignSelf: config.revelarRoleAoMorrer ? 'flex-end' : 'flex-start',
+                  }}
+                />
+              </View>
             </Pressable>
           }
         />
@@ -190,8 +187,8 @@ export function SistemasScreen({ navigation }: Props) {
         <View style={{ height: espaco.md }} />
         <Rotulo>Módulos de fantasma</Rotulo>
         <Pequeno>
-          Quem morre continua na mesa, ouvindo tudo e proibido de falar. Estes módulos dão a
-          essa pessoa um canal silencioso.
+          Quem morre continua na mesa, ouvindo tudo e proibido de falar. Estes módulos dão a essa
+          pessoa um canal silencioso.
         </Pequeno>
 
         <Pressable
@@ -246,9 +243,7 @@ export function SistemasScreen({ navigation }: Props) {
                   borderColor: '#3E362E',
                 }}
               >
-                <Text style={[tipografia.corpo, { color: cores.linhoCru }]}>
-                  {m.nome}
-                </Text>
+                <Text style={[tipografia.corpo, { color: cores.linhoCru }]}>{m.nome}</Text>
               </Pressable>
             ))}
           </View>

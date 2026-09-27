@@ -32,7 +32,9 @@ export function ModoScreen({ navigation }: Props) {
     <Ambiente tipo="operacao" clima="neutro" tremula={false}>
       <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
         <Titulo>Qual estilo de jogo?</Titulo>
-        <Pequeno cor={cores.folhaDeOuro}>O modo muda as regras da partida, não as funções do baralho.</Pequeno>
+        <Pequeno cor={cores.folhaDeOuro}>
+          O modo muda as regras da partida, não as funções do baralho.
+        </Pequeno>
 
         <View style={{ gap: espaco.sm, marginTop: espaco.sm }}>
           {Object.values(MODOS).map((m, i) => {

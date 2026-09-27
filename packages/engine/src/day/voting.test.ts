@@ -34,10 +34,10 @@ describe('votação', () => {
   });
 
   it('com eventos ligados, A Corda Escolhe desfaz o empate', () => {
-    const { estado, id } = montar(
-      ['aldeao', 'vidente', 'medico', 'lobo', 'cacador'],
-      { ...base, frequenciaEventos: 'raro' },
-    );
+    const { estado, id } = montar(['aldeao', 'vidente', 'medico', 'lobo', 'cacador'], {
+      ...base,
+      frequenciaEventos: 'raro',
+    });
     const votos = { [id('aldeao')]: id('lobo'), [id('lobo')]: id('aldeao') };
     const r = resolverDia(estado, votos);
     expect(r.estado.players.filter((p) => p.status === 'morto')).toHaveLength(1);
@@ -47,9 +47,7 @@ describe('votação', () => {
     const { estado, id } = montar(['aldeao', 'vidente', 'medico', 'lobo', 'cacador']);
     const semVoto: GameState = {
       ...estado,
-      players: estado.players.map((p) =>
-        p.roleId === 'vidente' ? { ...p, semVoto: true } : p,
-      ),
+      players: estado.players.map((p) => (p.roleId === 'vidente' ? { ...p, semVoto: true } : p)),
     };
     const { podem, impedidos } = elegiveisParaVotar(semVoto);
     expect(podem).not.toContain(id('vidente'));

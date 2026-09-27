@@ -65,5 +65,4 @@ describe('cadeia de estertores', () => {
       ),
     ).toBe(true);
   });
-
 });

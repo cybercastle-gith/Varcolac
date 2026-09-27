@@ -6,13 +6,7 @@ export type VariantId = string;
 
 /** Categoria funcional, no espírito de Town of Salem: ajuda a montar baralho. */
 export type RoleCategory =
-  | 'informacao'
-  | 'protecao'
-  | 'ataque'
-  | 'suporte'
-  | 'bloqueio'
-  | 'passivo'
-  | 'nenhuma';
+  'informacao' | 'protecao' | 'ataque' | 'suporte' | 'bloqueio' | 'passivo' | 'nenhuma';
 
 /** Quantas vezes a habilidade pode ser usada. */
 export type UsageLimit =
@@ -50,7 +44,6 @@ export interface Role {
   readonly descricaoCurta: string;
   readonly descricaoLonga: string;
 }
-
 
 /**
  * Peso efetivo considerando a variante escolhida.

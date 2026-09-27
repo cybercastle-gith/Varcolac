@@ -18,10 +18,7 @@ export type ResolvedAlignment = 'bem' | 'mal' | 'puro';
  * Conta para a paridade lobos × vila?
  * Lobos sempre contam. Solitários contam quando alinhados ao mal.
  */
-export function countsAsWolf(
-  faction: Faction,
-  alignment: ResolvedAlignment | undefined,
-): boolean {
+export function countsAsWolf(faction: Faction, alignment: ResolvedAlignment | undefined): boolean {
   if (faction === 'lobos') return true;
   if (faction === 'solitario') return alignment === 'mal';
   return false;

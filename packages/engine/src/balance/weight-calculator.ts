@@ -43,16 +43,10 @@ import { role } from '../data/roles/index';
  * protegendo alvo plausível, matilha caçando informação, Detetive somando
  * leituras. Só depois disso os PESOS das roles da vila poderão ser calibrados.
  */
-export const MULTIPLICADOR_POR_FAIXA = [
-  { min: 5, max: Infinity, m: 2.6 },
-] as const;
+export const MULTIPLICADOR_POR_FAIXA = [{ min: 5, max: Infinity, m: 2.6 }] as const;
 
 export type BalanceReading =
-  | 'equilibrado'
-  | 'vila-forte'
-  | 'vila-quebrada'
-  | 'matilha-forte'
-  | 'massacre';
+  'equilibrado' | 'vila-forte' | 'vila-quebrada' | 'matilha-forte' | 'massacre';
 
 export interface BalanceResult {
   readonly ie: number;
@@ -125,7 +119,6 @@ function verificarRestricoes(roles: readonly Role[], deck: Deck, jogadores: numb
   if (pesados > tetoPesados) {
     violacoes.push(`Roles de peso 4+: ${pesados}, teto é ${tetoPesados} (uma a cada 4).`);
   }
-
 
   return violacoes;
 }

@@ -33,16 +33,14 @@ export interface PontoDeAmostra {
 }
 
 /** Gera composições variadas e mede cada uma. */
-export function amostrar(
-  opcoes: {
-    readonly jogadores: readonly number[];
-    readonly composicoesPorTamanho: number;
-    readonly partidasPorComposicao: number;
-    readonly config?: GameConfig;
-    readonly pesos?: PesosCustomizados;
-    readonly semente?: string;
-  },
-): readonly PontoDeAmostra[] {
+export function amostrar(opcoes: {
+  readonly jogadores: readonly number[];
+  readonly composicoesPorTamanho: number;
+  readonly partidasPorComposicao: number;
+  readonly config?: GameConfig;
+  readonly pesos?: PesosCustomizados;
+  readonly semente?: string;
+}): readonly PontoDeAmostra[] {
   const config: GameConfig = opcoes.config ?? {
     ...DEFAULT_CONFIG,
     // Setup cru: sem os ajustes que somam a favor da vila, para medir só a

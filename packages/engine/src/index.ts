@@ -18,24 +18,32 @@ export { pesoEfetivo, etapaEfetiva, usosIniciais } from './types/role';
 export { DEFAULT_CONFIG } from './types/config';
 export { CHANCE_DE_EVENTO, etapasCanceladasPor, efeitoDo } from './types/event';
 export { efeitosDaRodada, temEfeito, limparEfeitosVencidos } from './types/effect';
-export {
-  jogador,
-  vivos,
-  mortos,
-  nomeDe,
-  comJogador,
-  CONTADORES_ZERADOS,
-} from './types/game-state';
+export { jogador, vivos, mortos, nomeDe, comJogador, CONTADORES_ZERADOS } from './types/game-state';
 
 // ── Catálogos ───────────────────────────────────────────────────────────────
 export * from './data/roles/index';
-export { EVENTOS, EVENTOS_SORTE, EVENTOS_GATILHO, EVENTOS_POR_ID, evento } from './data/events/index';
+export {
+  EVENTOS,
+  EVENTOS_SORTE,
+  EVENTOS_GATILHO,
+  EVENTOS_POR_ID,
+  evento,
+} from './data/events/index';
 export { MODULOS_DE_FANTASMA, MODULOS_POR_ID, moduloAtivo } from './data/ghosts';
 export type { GhostModule } from './data/ghosts';
 export { MODOS, modo, AGRAVAMENTOS } from './data/modes/index';
 export type { ModeHooks } from './data/modes/index';
 export { MISSOES_DO_CORINGA, MISSOES_POR_ID } from './data/missions';
 export { MOTIVOS, motivoDe, complementoDe } from './data/motivos';
+export {
+  VARIANTES_IMPLEMENTADAS,
+  varianteImplementada,
+  contagemDeVariantes,
+  motivoDaPendencia,
+  VARIANTES_PENDENTES,
+} from './data/variantes-implementadas';
+export { leituraDeFaccao, respostaImediata, type RespostaImediata } from './turn/leitura';
+export { prepararNoite } from './resolution/night-pipeline';
 export type { Motivo, Primitiva } from './data/motivos';
 export type { Missao } from './data/missions';
 
@@ -62,7 +70,7 @@ export { roteiroDaNoite, contagemDeLobosVisivel } from './turn/roteiro';
 export type { Passagem, Pergunta, TipoDePergunta } from './turn/roteiro';
 
 // ── Dia ─────────────────────────────────────────────────────────────────────
-export { resolverDia, elegiveisParaVotar, apurar } from './day/voting';
+export { resolverDia, elegiveisParaVotar, votoTrava, apurar } from './day/voting';
 export type { Votos, DayResult } from './day/voting';
 
 // ── Vitória ─────────────────────────────────────────────────────────────────

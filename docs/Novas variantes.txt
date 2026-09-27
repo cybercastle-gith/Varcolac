@@ -1,0 +1,472 @@
+// ============================================================
+// LOBO
+// ============================================================
+
+{
+  id: 'rastro',
+  nome: 'Rastro',
+  descricao: 'O alvo do ataque é revelado no início do dia e permanece vivo até o fim da votação, morrendo depois.',
+  peso: 3,
+  etapa: 'ataque',
+},
+
+{
+  id: 'voto-de-sangue',
+  nome: 'Voto de Sangue',
+  descricao: 'Depois de participar de um ataque, o Lobo não pode votar no dia seguinte.',
+  peso: 2,
+},
+
+{
+  id: 'desgarrado',
+  nome: 'Lobo Desgarrado',
+  descricao: 'Escolhe um alvo diferente dos demais Lobos e, se houver qualquer repetição, a matilha não mata ninguém.',
+  peso: 2,
+  etapa: 'ataque',
+},
+
+// ============================================================
+// NECROMANTE
+// ============================================================
+
+{
+  id: 'cova-aberta',
+  nome: 'Cova Aberta',
+  descricao: 'Ressuscita um morto da noite anterior, mas ele volta sem sua habilidade.',
+  peso: 3,
+  etapa: 'ressurreicao',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+{
+  id: 'ultima-vela',
+  nome: 'Última Vela',
+  descricao: 'Ressuscita um morto de qualquer noite, mas ele morre novamente ao fim do dia.',
+  peso: 3,
+  etapa: 'ressurreicao',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+{
+  id: 'incorporacao',
+  nome: 'Incorporação',
+  descricao: 'Ressuscita um morto e utiliza sua habilidade até o fim da partida sem mudar de facção ou de papel.',
+  peso: 4,
+  etapa: 'ressurreicao',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+// ============================================================
+// TAVERNEIRO
+// ============================================================
+
+{
+  id: 'ultima-dose',
+  nome: 'Última Dose',
+  descricao: 'Só pode embebedar jogadores que ainda não tenham sido embebedados.',
+  peso: 1,
+  etapa: 'bloqueio',
+},
+
+{
+  id: 'ressaca-da-vila',
+  nome: 'Ressaca da Vila',
+  descricao: 'O jogador embebedado só descobre na noite seguinte que sua ação foi bloqueada.',
+  peso: 2,
+  etapa: 'bloqueio',
+},
+
+{
+  id: 'bebida-forte',
+  nome: 'Bebida Forte',
+  descricao: 'O alvo não pode agir nem votar até a próxima noite, quando pode repetir o mesmo tipo de ação duas vezes.',
+  peso: 2,
+  etapa: 'bloqueio',
+},
+
+// ============================================================
+// ANCIÃ
+// ============================================================
+
+{
+  id: 'testamento',
+  nome: 'Testamento',
+  descricao: 'Ao morrer, escolhe um jogador vivo para manter seu poder na noite seguinte.',
+  peso: 3,
+},
+
+{
+  id: 'luto-da-vila',
+  nome: 'Luto da Vila',
+  descricao: 'Se a Anciã morrer, todos os jogadores perdem seus poderes durante uma noite.',
+  peso: 3,
+},
+
+{
+  id: 'heranca-amarga',
+  nome: 'Herança Amarga',
+  descricao: 'Escolhe um jogador à noite e, se a Anciã morrer, todos perdem seus poderes por uma noite e o escolhido vira Aldeão para sempre.',
+  peso: 3,
+},
+
+// ============================================================
+// LOBO-ALFA
+// ============================================================
+
+{
+  id: 'sangue-novo',
+  nome: 'Sangue Novo',
+  descricao: 'O convertido mantém sua antiga habilidade durante a primeira noite em que agir como Lobo.',
+  peso: 4,
+  etapa: 'ataque',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+{
+  id: 'sangue-marcado',
+  nome: 'Sangue Marcado',
+  descricao: 'Se o convertido morrer, a identidade do Alfa é revelada à Vila.',
+  peso: 3,
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+{
+  id: 'treinamento',
+  nome: 'Treinamento',
+  descricao: 'O convertido só pode participar dos ataques depois que o Alfa morrer.',
+  peso: 3,
+  etapa: 'ataque',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+// ============================================================
+// FEITICEIRO
+// ============================================================
+
+{
+  id: 'fio-de-prata',
+  nome: 'Fio de Prata',
+  descricao: 'A perfuração atravessa a proteção, mas não atravessa uma imunidade.',
+  peso: 3,
+  etapa: 'perfuracao',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+{
+  id: 'marca-de-ferro',
+  nome: 'Marca de Ferro',
+  descricao: 'A perfuração impede o alvo de receber proteção pelo resto da partida.',
+  peso: 3,
+  etapa: 'perfuracao',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+{
+  id: 'olho-do-diabo',
+  nome: 'Olho do Diabo',
+  descricao: 'A perfuração informa ao Feiticeiro se o alvo foi protegido ou curado e, se foi, por quem.',
+  peso: 3,
+  etapa: 'perfuracao',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+// ============================================================
+// LOBO-CARNICEIRO
+// ============================================================
+
+{
+  id: 'morto-vivo',
+  nome: 'Morto-Vivo',
+  descricao: 'Ao morrer, continua em jogo sem poder matar, votar ou agir, mas pode falar e ser morto novamente.',
+  peso: 4,
+},
+
+{
+  id: 'sangue-derramado',
+  nome: 'Sangue Derramado',
+  descricao: 'Quando o Carniceiro morre, quem causou sua morte perde seu poder na noite seguinte.',
+  peso: 3,
+},
+
+{
+  id: 'ultima-carne',
+  nome: 'Última Carne',
+  descricao: 'Na noite após morrer, escolhe um jogador e, se ele morrer durante a noite ou o dia seguinte, o Carniceiro volta à vida.',
+  peso: 4,
+  etapa: 'estertores',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+// ============================================================
+// LOBO-SOMBRA
+// ============================================================
+
+{
+  id: 'sombra-de-alguem',
+  nome: 'Sombra de Alguém',
+  descricao: 'Escolhe um jogador e, na noite seguinte, utiliza o papel dele por uma noite, ficando imune à investigação se não tiver escolhido um Lobo.',
+  peso: 3,
+},
+
+{
+  id: 'mascara-de-luto',
+  nome: 'Máscara de Luto',
+  descricao: 'Se nenhuma morte acontecer naquela noite, fica imune à investigação automaticamente.',
+  peso: 3,
+},
+
+{
+  id: 'nome-roubado',
+  nome: 'Nome Roubado',
+  descricao: 'Escolhe um jogador morto e, naquela noite, qualquer investigação contra o Lobo-Sombra retorna o papel desse morto.',
+  peso: 3,
+},
+
+// ============================================================
+// UIVADOR
+// ============================================================
+
+{
+  id: 'uivo-comprado',
+  nome: 'Uivo Comprado',
+  descricao: 'Revela publicamente um Lobo, mas o revelado ganha o direito de votar duas vezes no dia da revelação.',
+  peso: 3,
+  etapa: 'informacao',
+},
+
+{
+  id: 'uivo-de-troca',
+  nome: 'Uivo de Troca',
+  descricao: 'Revela publicamente um Lobo, mas perde permanentemente o direito de votar pelo resto da partida.',
+  peso: 3,
+  etapa: 'informacao',
+},
+
+{
+  id: 'uivo-de-manada',
+  nome: 'Uivo de Manada',
+  descricao: 'Revela publicamente quantos Lobos ainda estão vivos, sem revelar seus nomes.',
+  peso: 3,
+  etapa: 'informacao',
+},
+
+// ============================================================
+// LOBO-BRANCO
+// ============================================================
+
+{
+  id: 'sangue-acumulado',
+  nome: 'Sangue Acumulado',
+  descricao: 'Escolhe um Lobo em vez de matar e, se esse Lobo morrer, mata dois Aldeões na noite seguinte.',
+  peso: 2,
+  etapa: 'ataque',
+},
+
+{
+  id: 'ultimo-da-matilha',
+  nome: 'Último da Matilha',
+  descricao: 'Só pode matar um Lobo se houver exatamente ele e mais um Lobo vivos; com três ou mais Lobos, não pode realizar o ataque.',
+  peso: 2,
+  etapa: 'ataque',
+},
+
+{
+  id: 'jejum-forcado',
+  nome: 'Jejum Forçado',
+  descricao: 'Se a matilha matar um Aldeão, na noite seguinte o Lobo-Branco só pode matar um Lobo.',
+  peso: 2,
+  etapa: 'ataque',
+},
+
+// ============================================================
+// XERIFE
+// ============================================================
+
+{
+  id: 'testemunha-da-cela',
+  nome: 'Testemunha da Cela',
+  descricao: 'Prende um jogador, revela a prisão no dia seguinte, mantém o preso sem poder agir na segunda noite e o liberta no segundo dia revelando-o como Lobo ou Aldeão.',
+  peso: 3,
+  etapa: 'bloqueio',
+},
+
+{
+  id: 'xerife-de-si-mesmo',
+  nome: 'Xerife de Si Mesmo',
+  descricao: 'Pode prender a si próprio e fica imune a ataques e investigações naquela noite, mas não age nem vota no dia seguinte.',
+  peso: 3,
+  etapa: 'bloqueio',
+},
+
+{
+  id: 'boca-calada',
+  nome: 'Boca Calada',
+  descricao: 'Prende um jogador normalmente, mas o preso não pode falar no dia seguinte.',
+  peso: 3,
+  etapa: 'bloqueio',
+},
+
+// ============================================================
+// BRUXA
+// ============================================================
+
+{
+  id: 'pocao-compartilhada',
+  nome: 'Poção Compartilhada',
+  descricao: 'A poção escolhida pela Bruxa atinge dois jogadores escolhidos às cegas, sem que ela saiba quais serão atingidos.',
+  peso: 3,
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+{
+  id: 'pocao-misteriosa',
+  nome: 'Poção Misteriosa',
+  descricao: 'Escolhe usar a poção e um alvo, mas só descobre no momento da resolução se a poção era de vida ou de morte.',
+  peso: 3,
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+{
+  id: 'pocao-ressonante',
+  nome: 'Poção Ressonante',
+  descricao: 'Ao usar a poção de morte, revela publicamente que a Bruxa existe, sem revelar quem ela é nem quem foi o alvo.',
+  peso: 3,
+  etapa: 'ataque',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+// ============================================================
+// LADRÃO
+// ============================================================
+
+{
+  id: 'troca-forcada',
+  nome: 'Troca Forçada',
+  descricao: 'Na noite 1, escolhe dois jogadores e troca os papéis entre eles sem trocar o próprio.',
+  peso: 2,
+  etapa: 'estado-inicial',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+{
+  id: 'contaminacao',
+  nome: 'Contaminação',
+  descricao: 'Na noite 1, transforma o alvo em outro Ladrão e, se todos os vivos forem Ladrões, o Ladrão original vence sozinho.',
+  peso: 2,
+  etapa: 'estado-inicial',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+{
+  id: 'troca-com-mortos',
+  nome: 'Troca com Mortos',
+  descricao: 'Na noite 1, troca seu papel pelo de um jogador morto e volta ao jogo com o papel escolhido.',
+  peso: 2,
+  etapa: 'estado-inicial',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+// ============================================================
+// CORINGA
+// ============================================================
+
+{
+  id: 'missao-herdada',
+  nome: 'Missão Herdada',
+  descricao: 'Se o Coringa morrer antes de cumprir a missão, ela passa para o último jogador que votou nele, que vence no lugar dele.',
+  peso: 2,
+},
+
+{
+  id: 'missao-sem-volta',
+  nome: 'Missão Sem Volta',
+  descricao: 'Só vence se cumprir a missão antes do prazo definido pelo app e, depois disso, vira Aldeão comum.',
+  peso: 2,
+},
+
+{
+  id: 'missao-partida',
+  nome: 'Missão Partida',
+  descricao: 'Recebe duas missões, escolhe uma e entrega a outra a um jogador aleatório, que vira um segundo Coringa e pode vencer sozinho.',
+  peso: 2,
+},
+
+// ============================================================
+// SOBREVIVENTE
+// ============================================================
+
+{
+  id: 'sobrevivente-invisivel',
+  nome: 'Sobrevivente Invisível',
+  descricao: 'Enquanto não receber nenhum voto durante o dia, não pode ser alvo de ataques noturnos.',
+  peso: 1,
+},
+
+{
+  id: 'sobrevivente-teimoso',
+  nome: 'Sobrevivente Teimoso',
+  descricao: 'Se for escolhido para morrer pela votação da Vila, não morre e continua vivo na partida.',
+  peso: 1,
+},
+
+{
+  id: 'a-qualquer-custo',
+  nome: 'A Qualquer Custo',
+  descricao: 'Se sobreviver a uma tentativa de morte noturna, passa a poder matar um jogador à noite como um Lobo.',
+  peso: 1,
+  etapa: 'ataque',
+},
+
+// ============================================================
+// BOBO
+// ============================================================
+
+{
+  id: 'bobo-desesperado',
+  nome: 'Bobo Desesperado',
+  descricao: 'Se passar duas votações seguidas sem receber nenhum voto, perde sua vitória própria e vira Aldeão comum.',
+  peso: 1,
+},
+
+{
+  id: 'bobo-acusado',
+  nome: 'Bobo Acusado',
+  descricao: 'Se votar em um jogador que também votar nele, os dois votos são anulados.',
+  peso: 1,
+},
+
+{
+  id: 'bobo-da-forca',
+  nome: 'Bobo da Forca',
+  descricao: 'Escolhe uma noite para marcar a próxima votação e, se receber pelo menos um voto nessa votação, vence; caso contrário, vira Aldeão comum.',
+  peso: 1,
+  etapa: 'informacao',
+  usoLimitado: { kind: 'por-partida', total: 1 },
+},
+
+// ============================================================
+// VINGADOR
+// ============================================================
+
+{
+  id: 'laco-de-sangue',
+  nome: 'Laço de Sangue',
+  descricao: 'Se o Vingador morrer por qualquer causa, seu alvo também morre imediatamente.',
+  peso: 1,
+  etapa: 'resolucao-mortes',
+},
+
+{
+  id: 'maldicao-do-vingador',
+  nome: 'Maldição do Vingador',
+  descricao: 'Enquanto o Vingador estiver vivo, seu alvo não pode ser protegido ou curado por nenhuma habilidade.',
+  peso: 1,
+  etapa: 'protecao',
+},
+
+{
+  id: 'vinganca-da-praca',
+  nome: 'Vingança da Praça',
+  descricao: 'O Vingador só vence se seu alvo for morto pela votação da Vila.',
+  peso: 1,
+},

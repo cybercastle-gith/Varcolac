@@ -24,25 +24,29 @@ const deixarVivos = (estado: GameState, ids: string[]): GameState => ({
 describe('condições de vitória', () => {
   it('a vila vence quando não sobra ameaça', () => {
     const { estado, id } = montar(['aldeao', 'vidente', 'medico', 'lobo']);
-    const r = verificarVitoria(
-      deixarVivos(estado, [id('aldeao'), id('vidente'), id('medico')]),
-    );
+    const r = verificarVitoria(deixarVivos(estado, [id('aldeao'), id('vidente'), id('medico')]));
     expect(r.encerrada).toBe(true);
     expect(r.camadas[0]!.camada).toBe('vila');
   });
 
-  it('os lobos vencem ao IGUALAR a vila, não só ao superar', () => {
+  // Mudou em 2026-09-25, a pedido do usuário: igualar NÃO basta mais.
+  // O empate numérico devolve à vila o dia de votação que ela ainda tinha.
+  it('empate numérico NÃO encerra: a vila ainda tem o dia', () => {
     const { estado, id } = montar(['aldeao', 'vidente', 'medico', 'lobo']);
     const r = verificarVitoria(deixarVivos(estado, [id('aldeao'), id('lobo')]));
+    expect(r.encerrada).toBe(false);
+  });
+
+  it('os lobos vencem ao SUPERAR a vila', () => {
+    const { estado, id } = montar(['aldeao', 'vidente', 'lobo', 'alfa']);
+    const r = verificarVitoria(deixarVivos(estado, [id('aldeao'), id('lobo'), id('alfa')]));
     expect(r.encerrada).toBe(true);
     expect(r.camadas[0]!.camada).toBe('lobos');
   });
 
   it('a partida continua enquanto a vila supera a matilha', () => {
     const { estado, id } = montar(['aldeao', 'vidente', 'medico', 'lobo']);
-    const r = verificarVitoria(
-      deixarVivos(estado, [id('aldeao'), id('vidente'), id('lobo')]),
-    );
+    const r = verificarVitoria(deixarVivos(estado, [id('aldeao'), id('vidente'), id('lobo')]));
     expect(r.encerrada).toBe(false);
   });
 
@@ -54,7 +58,6 @@ describe('condições de vitória', () => {
     expect(r.camadas.some((c) => c.vencedores.includes(id('sobrevivente')))).toBe(true);
   });
 
-
   it('o Vingador vence se o alvo dele morreu, por qualquer causa', () => {
     const { estado, id } = montar(['aldeao', 'vingador', 'medico', 'lobo']);
     const alvo = estado.objetivosSecretos[id('vingador')]!;
@@ -64,8 +67,9 @@ describe('condições de vitória', () => {
   });
 
   it('o Lobo Branco sozinho vence sem a matilha', () => {
+    // Precisa SUPERAR: sobra ele e nenhum aldeão vivo.
     const { estado, id } = montar(['aldeao', 'vidente', 'lobo-branco', 'lobo']);
-    const r = verificarVitoria(deixarVivos(estado, [id('aldeao'), id('lobo-branco')]));
+    const r = verificarVitoria(deixarVivos(estado, [id('lobo-branco')]));
     expect(r.camadas[0]!.camada).toBe('lobos');
     expect(r.camadas[0]!.motivo).toMatch(/sozinho/);
   });
@@ -76,7 +80,10 @@ describe('condições de vitória', () => {
       ...estado,
       objetivosSecretos: { ...estado.objetivosSecretos, [id('bruxa')]: 'pocao-morte' },
     };
-    const r = verificarVitoria(deixarVivos(comPocaoDaMorte, [id('aldeao'), id('bruxa')]));
+    // Bruxa + lobo = 2 contra 1 aldeão: superam.
+    const r = verificarVitoria(
+      deixarVivos(comPocaoDaMorte, [id('aldeao'), id('bruxa'), id('lobo')]),
+    );
     expect(r.encerrada).toBe(true);
     expect(r.camadas[0]!.camada).toBe('lobos');
   });

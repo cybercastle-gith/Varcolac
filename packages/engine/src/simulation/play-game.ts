@@ -2,7 +2,7 @@ import type { Deck, GameConfig } from '../types/config';
 import type { GameState } from '../types/game-state';
 import type { JogadorInicial } from '../setup/create-game';
 import { criarPartida } from '../setup/create-game';
-import { resolverNoite } from '../resolution/night-pipeline';
+import { prepararNoite, resolverNoite } from '../resolution/night-pipeline';
 import { resolverDia } from '../day/voting';
 import { verificarVitoria, type VictoryResult } from '../victory/win-conditions';
 import { modo } from '../data/modes/index';
@@ -86,7 +86,9 @@ export function jogarPartida(
     vitoria = verificarVitoria(estado);
     if (vitoria.encerrada) return fim(estado, vitoria, noites);
 
-    estado = { ...estado, rodada: estado.rodada + 1, fase: 'noite' };
+    // `prepararNoite` e não incremento na mão: é ele que limpa as marcas da
+    // noite anterior e promove o evento anunciado a evento em vigor.
+    estado = prepararNoite(estado);
   }
 
   return {

@@ -48,13 +48,7 @@ export const MARCA: Trama = [
 ];
 
 /** O mesmo losango, cheio — para uso pequeno, onde o vazado some. */
-export const SELO: Trama = [
-  '..r..',
-  '.rrr.',
-  'rrcrr',
-  '.rrr.',
-  '..r..',
-];
+export const SELO: Trama = ['..r..', '.rrr.', 'rrcrr', '.rrr.', '..r..'];
 
 /**
  * A unidade que se repete numa faixa de barra.
@@ -133,8 +127,18 @@ export function MarcaViva({ ponto = 8 }: { ponto?: number }) {
   useEffect(() => {
     const laco = Animated.loop(
       Animated.sequence([
-        Animated.timing(luz, { toValue: 0.9, duration: 2200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(luz, { toValue: 1, duration: 2600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(luz, {
+          toValue: 0.9,
+          duration: 2200,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(luz, {
+          toValue: 1,
+          duration: 2600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
       ]),
     );
     laco.start();

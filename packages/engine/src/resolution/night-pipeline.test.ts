@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG, type Deck } from '../types/config';
 import type { NightAction, NightSubmission } from '../types/action';
 import { criarPartida } from '../setup/create-game';
-import { ORDEM_DAS_ETAPAS, resolverNoite } from './night-pipeline';
+import { ORDEM_DAS_ETAPAS, prepararNoite, resolverNoite } from './night-pipeline';
 
 /** p1 Vidente · p2 Médico · p3 Padre · p4 Xerife · p5 Lobo · p6 Feiticeiro */
 const deck: Deck = {
@@ -34,6 +34,8 @@ const acao = (a: Partial<NightAction> & Pick<NightAction, 'actorId' | 'etapa'>):
 
 const noite = (acoes: NightAction[]): NightSubmission => ({ rodada: 1, acoes });
 
+const noiteDe = (rodada: number, acoes: NightAction[]): NightSubmission => ({ rodada, acoes });
+
 describe('pipeline noturno', () => {
   it('registra as 11 etapas, sempre na mesma ordem', () => {
     const { estado } = partida();
@@ -47,7 +49,9 @@ describe('pipeline noturno', () => {
     const { estado, id } = partida();
     const r = resolverNoite(
       estado,
-      noite([acao({ actorId: id('lobo'), etapa: 'ataque', kind: 'atacar', alvos: [id('vidente')] })]),
+      noite([
+        acao({ actorId: id('lobo'), etapa: 'ataque', kind: 'atacar', alvos: [id('vidente')] }),
+      ]),
     );
     expect(r.estado.players.find((p) => p.roleId === 'vidente')!.status).toBe('morto');
   });
@@ -57,7 +61,12 @@ describe('pipeline noturno', () => {
     const r = resolverNoite(
       estado,
       noite([
-        acao({ actorId: id('medico'), etapa: 'protecao', kind: 'proteger', alvos: [id('vidente')] }),
+        acao({
+          actorId: id('medico'),
+          etapa: 'protecao',
+          kind: 'proteger',
+          alvos: [id('vidente')],
+        }),
         acao({ actorId: id('lobo'), etapa: 'ataque', kind: 'atacar', alvos: [id('vidente')] }),
       ]),
     );
@@ -69,7 +78,12 @@ describe('pipeline noturno', () => {
     const r = resolverNoite(
       estado,
       noite([
-        acao({ actorId: id('medico'), etapa: 'protecao', kind: 'proteger', alvos: [id('vidente')] }),
+        acao({
+          actorId: id('medico'),
+          etapa: 'protecao',
+          kind: 'proteger',
+          alvos: [id('vidente')],
+        }),
         acao({
           actorId: id('feiticeiro'),
           etapa: 'perfuracao',
@@ -103,29 +117,104 @@ describe('pipeline noturno', () => {
     expect(mortes.motivo).toMatch(/[Cc]ancelada pelo evento|Padre/);
   });
 
-  it('o Xerife que prende o Médico anula a cura daquela noite', () => {
+  /*
+   * BLOQUEIO VALE NA NOITE SEGUINTE — mudou em 2026-09-25.
+   *
+   * O celular passa de um em um e a leitura da Vidente aparece na própria
+   * passagem, então bloqueio "nesta noite" só alcançava quem ainda não tinha
+   * passado. Declarado hoje, aplicado por `prepararNoite`, valendo amanhã.
+   */
+  it('o bloqueio do Xerife NÃO vale na noite em que foi declarado', () => {
     const { estado, id } = partida();
     const r = resolverNoite(
       estado,
       noite([
         acao({ actorId: id('xerife'), etapa: 'bloqueio', kind: 'bloquear', alvos: [id('medico')] }),
-        acao({ actorId: id('medico'), etapa: 'protecao', kind: 'proteger', alvos: [id('vidente')] }),
+        acao({
+          actorId: id('medico'),
+          etapa: 'protecao',
+          kind: 'proteger',
+          alvos: [id('vidente')],
+        }),
+        acao({ actorId: id('lobo'), etapa: 'ataque', kind: 'atacar', alvos: [id('vidente')] }),
+      ]),
+    );
+    // A cura do Médico funciona: o bloqueio só entra em vigor amanhã.
+    expect(r.estado.players.find((p) => p.roleId === 'vidente')!.status).toBe('vivo');
+  });
+
+  it('o Xerife que prende o Médico anula a cura da noite SEGUINTE', () => {
+    const { estado, id } = partida();
+    const noite1 = resolverNoite(
+      estado,
+      noite([
+        acao({ actorId: id('xerife'), etapa: 'bloqueio', kind: 'bloquear', alvos: [id('medico')] }),
+      ]),
+    ).estado;
+
+    const noite2 = prepararNoite(noite1);
+    expect(noite2.players.find((p) => p.roleId === 'medico')!.flags.bloqueado).toBe(true);
+
+    const r = resolverNoite(
+      noite2,
+      noiteDe(noite2.rodada, [
+        acao({
+          actorId: id('medico'),
+          etapa: 'protecao',
+          kind: 'proteger',
+          alvos: [id('vidente')],
+        }),
         acao({ actorId: id('lobo'), etapa: 'ataque', kind: 'atacar', alvos: [id('vidente')] }),
       ]),
     );
     expect(r.estado.players.find((p) => p.roleId === 'vidente')!.status).toBe('morto');
   });
 
-  it('quem está preso pelo Xerife não morre', () => {
+  it('quem está preso pelo Xerife não morre — na noite seguinte', () => {
     const { estado, id } = partida();
-    const r = resolverNoite(
+    const noite1 = resolverNoite(
       estado,
       noite([
-        acao({ actorId: id('xerife'), etapa: 'bloqueio', kind: 'bloquear', alvos: [id('vidente')] }),
+        acao({
+          actorId: id('xerife'),
+          etapa: 'bloqueio',
+          kind: 'bloquear',
+          alvos: [id('vidente')],
+        }),
+      ]),
+    ).estado;
+
+    const noite2 = prepararNoite(noite1);
+    const r = resolverNoite(
+      noite2,
+      noiteDe(noite2.rodada, [
         acao({ actorId: id('lobo'), etapa: 'ataque', kind: 'atacar', alvos: [id('vidente')] }),
       ]),
     );
     expect(r.estado.players.find((p) => p.roleId === 'vidente')!.status).toBe('vivo');
+  });
+
+  it('prepararNoite limpa as marcas da noite anterior', () => {
+    const { estado, id } = partida();
+    const depois = resolverNoite(
+      estado,
+      noite([
+        acao({
+          actorId: id('medico'),
+          etapa: 'protecao',
+          kind: 'proteger',
+          alvos: [id('vidente')],
+        }),
+      ]),
+    ).estado;
+
+    const proxima = prepararNoite(depois);
+    for (const p of proxima.players) {
+      expect(p.flags.protegido, `${p.nome} continuou protegido`).toBe(false);
+      expect(p.flags.perfurado).toBe(false);
+    }
+    expect(proxima.rodada).toBe(depois.rodada + 1);
+    expect(proxima.eventoDaNoite).toBeNull();
   });
 
   it('as marcas voláteis somem no amanhecer', () => {
@@ -133,7 +222,12 @@ describe('pipeline noturno', () => {
     const r = resolverNoite(
       estado,
       noite([
-        acao({ actorId: id('medico'), etapa: 'protecao', kind: 'proteger', alvos: [id('vidente')] }),
+        acao({
+          actorId: id('medico'),
+          etapa: 'protecao',
+          kind: 'proteger',
+          alvos: [id('vidente')],
+        }),
       ]),
     );
     expect(r.estado.players.every((p) => !p.flags.protegido)).toBe(true);

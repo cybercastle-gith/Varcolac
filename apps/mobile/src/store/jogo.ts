@@ -6,7 +6,9 @@ import {
   criarPartida,
   gerarBaralho,
   modo as ganchosDoModo,
+  prepararNoite,
   resolverDia,
+  role,
   resolverNoite,
   retomarRng,
   roteiroDaNoite,
@@ -66,6 +68,16 @@ interface JogoStore {
   deck: Deck;
   equilibrio: BalanceResult | null;
 
+  /**
+   * As funções que o host marcou como permitidas para o sorteio.
+   *
+   * Não é o baralho: é o VOCABULÁRIO do baralho. O host diz quais cartas topa
+   * ver na mesa, sem dizer quantas de cada, e o app sorteia uma composição
+   * válida só com elas. É o meio-termo entre montar carta a carta e aceitar o
+   * Baralho Surpresa inteiro.
+   */
+  permitidas: RoleId[];
+
   // ── Partida ──
   estado: GameState | null;
   vitoria: VictoryResult | null;
@@ -82,9 +94,13 @@ interface JogoStore {
   adicionarJogador: (nome: string) => void;
   removerJogador: (indice: number) => void;
   renomearJogador: (indice: number, nome: string) => void;
+  reordenarJogadores: (de: number, para: number) => void;
   setEstilo: (e: DeckStyle) => void;
   setConfig: (patch: Partial<GameConfig>) => void;
   baralhoSurpresa: () => void;
+  alternarPermitida: (roleId: RoleId) => void;
+  limparPermitidas: () => void;
+  sortearEntrePermitidas: () => void;
   /** Construtor manual: quantas cartas de cada role o host escolheu. */
   contarRole: (roleId: RoleId) => number;
   ajustarRole: (roleId: RoleId, delta: number) => void;
@@ -115,6 +131,7 @@ export const useJogo = create<JogoStore>((set, get) => ({
     cor: CORES_DE_JOGADOR[i]!,
   })),
   estilo: 'classico',
+  permitidas: [],
   config: { ...DEFAULT_CONFIG, semente: sementeAleatoria() },
   deck: baralhoDeFabrica('classico', 6),
   equilibrio: null,
@@ -156,6 +173,25 @@ export const useJogo = create<JogoStore>((set, get) => ({
       jogadores: get().jogadores.map((j, i) => (i === indice ? { ...j, nome } : j)),
     }),
 
+  /**
+   * Move um jogador de posição.
+   *
+   * A ordem importa de verdade: é a ordem em que o celular circula na mesa. Se
+   * ela não bate com a ordem em que as pessoas estão sentadas, o aparelho
+   * atravessa a roda a cada passagem e a partida arrasta.
+   *
+   * A COR acompanha o nome, e não a posição — ela é o que identifica a pessoa
+   * na votação e no amanhecer. Trocar a cor ao reordenar renomearia todo mundo
+   * em silêncio.
+   */
+  reordenarJogadores: (de, para) => {
+    const atual = [...get().jogadores];
+    const [movido] = atual.splice(de, 1);
+    if (!movido) return;
+    atual.splice(para, 0, movido);
+    set({ jogadores: atual });
+  },
+
   setEstilo: (estilo) => {
     set({ estilo, deck: baralhoDeFabrica(estilo, get().jogadores.length) });
     get().recalcular();
@@ -172,7 +208,41 @@ export const useJogo = create<JogoStore>((set, get) => ({
     // O Baralho Surpresa só é possível porque a calculadora de peso existe: ela
     // deixou de ser um extra e virou infraestrutura.
     const { deck } = gerarBaralho({ jogadores: jogadores.length, config }, rng);
-    set({ deck });
+    // Surpresa de verdade: ninguém na mesa vê a composição. O host pode
+    // desligar no mesmo painel, se quiser revisar antes de começar.
+    set({ deck, config: { ...config, composicaoOculta: true } });
+    get().recalcular();
+  },
+
+  alternarPermitida: (roleId) => {
+    const atual = get().permitidas;
+    set({
+      permitidas: atual.includes(roleId)
+        ? atual.filter((x) => x !== roleId)
+        : [...atual, roleId],
+    });
+  },
+
+  limparPermitidas: () => set({ permitidas: [] }),
+
+  /**
+   * Sorteia a mesa inteira usando só o que o host permitiu.
+   *
+   * Semente nova a cada toque, de propósito: o host toca de novo até gostar do
+   * que viu, e repetir a mesma composição não serviria para nada. A semente da
+   * PARTIDA é outra, e continua vindo do setup.
+   */
+  sortearEntrePermitidas: () => {
+    const { config, jogadores, permitidas } = get();
+    if (permitidas.length === 0) return;
+    const rng = retomarRng({ semente: sementeAleatoria(), passo: 0 });
+    const { deck } = gerarBaralho(
+      { jogadores: jogadores.length, config, permitidas },
+      rng,
+    );
+    // O host escolheu o vocabulário, não a composição — então a composição é
+    // surpresa para ele também.
+    set({ deck, config: { ...config, composicaoOculta: true } });
     get().recalcular();
   },
 
@@ -280,9 +350,32 @@ export const useJogo = create<JogoStore>((set, get) => ({
     if (!estado) return;
 
     const { estado: depois } = resolverNoite(estado, { rodada: estado.rodada, acoes });
-    const vitoria = verificarVitoria(depois);
-
     const ganchos = ganchosDoModo(depois.config.modo);
+
+    /**
+     * A derrota por regra do MODO é avaliada aqui.
+     *
+     * O gancho `derrotaDaVila` existia desde sempre e só era chamado na
+     * simulação (`play-game.ts`) — nunca numa partida de verdade. Resultado: a
+     * Vila Amaldiçoada sorteava agravamentos bonitos e o prazo nunca vencia.
+     * O modo inteiro não fazia nada além de narrar.
+     */
+    const prazoVenceu = ganchos.derrotaDaVila?.(depois) ?? false;
+    const vitoria = prazoVenceu
+      ? {
+          encerrada: true,
+          camadas: [
+            {
+              camada: 'lobos' as const,
+              vencedores: depois.players
+                .filter((p) => role(p.roleId).faccao === 'lobos')
+                .map((p) => p.id),
+              motivo: 'A maldição venceu o prazo: a vila inteira se perdeu.',
+            },
+          ],
+        }
+      : verificarVitoria(depois);
+
     let comModo = depois;
     if (ganchos.aoAmanhecer && !vitoria.encerrada) {
       const rng = retomarRng(depois.rng);
@@ -329,7 +422,16 @@ export const useJogo = create<JogoStore>((set, get) => ({
   seguirParaNoite: () => {
     const { estado } = get();
     if (!estado || estado.fase === 'fim') return;
-    const proxima: GameState = { ...estado, rodada: estado.rodada + 1, fase: 'noite' };
+    /**
+     * `prepararNoite` e não `{ ...estado, rodada: rodada + 1 }`.
+     *
+     * Ele limpa as marcas da noite anterior e APLICA o que estava engatilhado —
+     * bloqueio do Xerife e do Taverneiro, esconderijo do Lobo Sombra — antes de
+     * o roteiro ser montado. Tem que ser antes: a leitura da Vidente aparece na
+     * própria passagem, então a imunidade precisa já estar valendo quando o
+     * aparelho começa a circular.
+     */
+    const proxima = prepararNoite(estado);
     set({ estado: proxima, roteiro: roteiroDaNoite(proxima), indice: 0, acoes: [] });
   },
 

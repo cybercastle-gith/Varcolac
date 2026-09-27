@@ -3,7 +3,14 @@ import type { NightStepId } from './action';
 export type EventId = string;
 
 /** Família 3 (destravamento) está registrada mas fora do v1. */
-export type EventFamily = 'sorte' | 'gatilho' | 'destravamento';
+/**
+ * Só existe `sorte`.
+ *
+ * A família `gatilho` (eventos que disparavam quando a partida chegava a um
+ * estado) foi removida em 2026-09-25 a pedido do usuário: todos os eventos
+ * passaram a ser sorteados. `destravamento` nunca teve nenhum membro.
+ */
+export type EventFamily = 'sorte';
 
 export type EventVisibility = 'narrado' | 'silencioso';
 
@@ -45,11 +52,7 @@ export type EventEffect =
   | {
       readonly kind: 'adia';
       readonly efeito:
-        | 'lincha-dois'
-        | 'aldeoes-sem-voto'
-        | 'protecao-coletiva'
-        | 'sem-votacao'
-        | 'matilha-mata-n';
+        'lincha-dois' | 'aldeoes-sem-voto' | 'protecao-coletiva' | 'sem-votacao' | 'matilha-mata-n';
       readonly n?: number;
     }
   /** A Corda Escolhe: o app sorteia entre os empatados. */

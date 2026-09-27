@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { elegiveisParaVotar, temEfeito, type PlayerId } from '@jogo/engine';
+import { elegiveisParaVotar, temEfeito, votoTrava, type PlayerId } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { Botao, Titulo, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
@@ -66,7 +66,9 @@ export function VotacaoScreen({ navigation }: Props) {
       return (
         <Ambiente clima="dia">
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <Revelacao><Titulo>Todos votaram.</Titulo></Revelacao>
+            <Revelacao>
+              <Titulo>Todos votaram.</Titulo>
+            </Revelacao>
           </View>
           <View style={{ padding: espaco.lg }}>
             <Botao onPress={encerrar}>Revelar o resultado</Botao>
@@ -79,7 +81,9 @@ export function VotacaoScreen({ navigation }: Props) {
       return (
         <Pressable style={{ flex: 1 }} onPress={() => setMostrandoEntrega(false)}>
           <Ambiente clima="noite">
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: espaco.md }}>
+            <View
+              style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: espaco.md }}
+            >
               <Revelacao>
                 <View style={{ alignItems: 'center', gap: espaco.sm }}>
                   <Rotulo>Voto secreto · passe para</Rotulo>
@@ -95,6 +99,8 @@ export function VotacaoScreen({ navigation }: Props) {
       );
     }
 
+    const travado = estado ? votoTrava(estado, votanteId) : false;
+
     return (
       <Ambiente clima="dia" tremula={false}>
         <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
@@ -109,7 +115,17 @@ export function VotacaoScreen({ navigation }: Props) {
                   nome={p.nome}
                   corDoPonto={p.cor}
                   selecionado={votos[votanteId] === p.id}
+                  /*
+                   * Aldeão Teimoso: o voto trava quando é declarado.
+                   *
+                   * A regra vem do engine (`votoTrava`) e não de uma checagem
+                   * escrita aqui: a apuração recebe a votação fechada e não tem
+                   * como saber que alguém mudou de ideia, então esta tela é o
+                   * único lugar do jogo capaz de cumprir a carta.
+                   */
+                  desabilitado={travado && votos[votanteId] !== undefined}
                   onPress={() => {
+                    if (travado && votos[votanteId] !== undefined) return;
                     void Haptics.selectionAsync();
                     votar(votanteId, p.id);
                   }}
@@ -118,8 +134,17 @@ export function VotacaoScreen({ navigation }: Props) {
             <ItemJogador
               nome="Abster-se"
               selecionado={votos[votanteId] === null}
-              onPress={() => votar(votanteId, null)}
+              desabilitado={travado && votos[votanteId] !== undefined}
+              onPress={() => {
+                if (travado && votos[votanteId] !== undefined) return;
+                votar(votanteId, null);
+              }}
             />
+            {travado && (
+              <Pequeno cor={cores.ferrugem}>
+                Você é Teimoso: o primeiro voto é o definitivo.
+              </Pequeno>
+            )}
           </View>
         </ScrollView>
         <View style={{ padding: espaco.lg }}>

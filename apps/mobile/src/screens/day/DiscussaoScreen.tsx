@@ -72,7 +72,13 @@ export function DiscussaoScreen({ navigation }: Props) {
         <Pequeno>{contagemDeLobosVisivel(estado)}</Pequeno>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: espaco.lg, gap: espaco.xs, paddingBottom: espaco.md }}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: espaco.lg,
+          gap: espaco.xs,
+          paddingBottom: espaco.md,
+        }}
+      >
         <Rotulo>Vivos · {vivos.length}</Rotulo>
         {vivos.map((p, i) => (
           <Aparicao key={p.id} atraso={i * 25}>

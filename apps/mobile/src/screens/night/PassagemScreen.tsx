@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { contagemDeLobosVisivel, type PlayerId } from '@jogo/engine';
+import {
+  EVENTOS_POR_ID,
+  contagemDeLobosVisivel,
+  respostaImediata,
+  type PlayerId,
+  type RespostaImediata,
+} from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { useTelaAcesa } from '../../hooks/useTelaAcesa';
@@ -17,7 +23,7 @@ import { cores, espaco, tipografia } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Passagem'>;
 
-type Etapa = 'entregar' | 'revelar' | 'agir';
+type Etapa = 'entregar' | 'revelar' | 'agir' | 'resultado';
 
 /**
  * A passagem completa do celular.
@@ -35,18 +41,52 @@ export function PassagemScreen({ navigation }: Props) {
   const { estado, roteiro, indice, registrarAcao, proximaPassagem } = useJogo();
   const [etapa, setEtapa] = useState<Etapa>('entregar');
   const [alvos, setAlvos] = useState<PlayerId[]>([]);
+  /** Qual das duas habilidades a role de escolha dupla vai usar esta noite. */
+  const [opcao, setOpcao] = useState<string | null>(null);
+  /** A leitura do investigador, mostrada na MESMA passagem. */
+  const [resposta, setResposta] = useState<RespostaImediata | null>(null);
 
   const passagem = roteiro[indice];
 
-  useEffect(() => {
+  /**
+   * VAZAMENTO DE INFORMAÇÃO — o defeito mais grave que este app já teve.
+   *
+   * Isto era um `useEffect` com `[indice]`. Efeito roda DEPOIS da renderização:
+   * quando o índice mudava, o React desenhava um quadro com a passagem NOVA e
+   * a etapa ANTIGA (`agir`) — e a tela de agir mostra o ícone da função de quem
+   * está com o aparelho. Resultado: ao passar o celular, o símbolo da função do
+   * PRÓXIMO jogador piscava por um quadro para quem ainda estava segurando.
+   *
+   * Relatado em jogo real: "piscou rapidamente o símbolo do Uivador, que a
+   * Elza era realmente". Num jogo de dedução social isso não é um glitch
+   * visual, é o jogo inteiro perdido.
+   *
+   * O conserto é ajustar o estado DURANTE a renderização, que é o padrão
+   * documentado do React para "derivar estado de props que mudaram". O React
+   * descarta a saída e re-renderiza na hora, sem nunca pintar o quadro
+   * intermediário. Não existe frame em que os dois se misturam.
+   *
+   * NÃO troque isto por `useEffect` de novo, por mais que o lint peça.
+   */
+  const [indiceDesenhado, setIndiceDesenhado] = useState(indice);
+  if (indiceDesenhado !== indice) {
+    setIndiceDesenhado(indice);
     setEtapa('entregar');
     setAlvos([]);
-  }, [indice]);
+    setOpcao(null);
+    setResposta(null);
+  }
 
   useEffect(() => {
-    if (estado && estado.fase !== 'noite') {
-      navigation.reset({ index: 0, routes: [{ name: 'Amanhecer' }] });
-    }
+    if (!estado || estado.fase === 'noite') return;
+    /**
+     * Evento narrado tem tela própria, ANTES das mortes.
+     * A `EventoScreen` se encarrega de seguir para o Amanhecer — inclusive se
+     * o evento for silencioso, caso em que ela nem chega a desenhar.
+     */
+    const ev = estado.eventoAnunciado ? EVENTOS_POR_ID.get(estado.eventoAnunciado) : undefined;
+    const destino = ev?.visibilidade === 'narrado' ? 'Evento' : 'Amanhecer';
+    navigation.reset({ index: 0, routes: [{ name: destino }] });
   }, [estado, navigation]);
 
   if (!estado || !passagem) return <Ambiente clima="noite" />;
@@ -62,15 +102,36 @@ export function PassagemScreen({ navigation }: Props) {
 
   const confirmarAcao = () => {
     const { pergunta } = passagem;
-    if (!pergunta.falsa && alvos.length > 0 && pergunta.etapa) {
+    const escolhida = pergunta.opcoes?.find((o) => o.valor === opcao);
+    // Numa escolha dupla, quem manda na etapa é a OPÇÃO: atravessar perfura,
+    // caçar ataca. Nas demais, a etapa da própria pergunta.
+    const etapaDaAcao = escolhida?.etapa ?? pergunta.etapa;
+
+    if (!pergunta.falsa && etapaDaAcao && (alvos.length > 0 || escolhida?.pedeAlvo === false)) {
       registrarAcao({
         actorId: p.id,
         kind: pergunta.kind,
-        etapa: pergunta.etapa,
+        etapa: etapaDaAcao,
         alvos,
+        ...(opcao ? { escolha: opcao } : {}),
         falsa: false,
       });
     }
+
+    /**
+     * A leitura aparece AGORA, e não na noite seguinte.
+     *
+     * O estado ainda é o do início da noite — nada foi resolvido — então esta é
+     * exatamente a mesma leitura que a etapa 11 vai gravar no log. Ver
+     * `packages/engine/src/turn/leitura.ts`.
+     */
+    const r = estado ? respostaImediata(estado, p.id, alvos) : null;
+    if (r) {
+      setResposta(r);
+      setEtapa('resultado');
+      return;
+    }
+
     seguir();
   };
 
@@ -125,7 +186,7 @@ export function PassagemScreen({ navigation }: Props) {
     return (
       <Ambiente clima="noite">
         <View style={{ flex: 1 }}>
-          <SegurarParaRevelar >
+          <SegurarParaRevelar>
             <Revelacao>
               <View style={{ alignItems: 'center', gap: espaco.md }}>
                 <CartaDeRole roleId={p.roleId} varianteId={p.varianteId} largura={230} />
@@ -161,10 +222,54 @@ export function PassagemScreen({ navigation }: Props) {
     );
   }
 
+  // ── O que o investigador viu, na mesma passagem ───────────────────────────
+  if (etapa === 'resultado' && resposta) {
+    return (
+      <Ambiente clima="noite" tremula={false}>
+        <View style={{ flex: 1, justifyContent: 'center', padding: espaco.lg, gap: espaco.lg }}>
+          <Revelacao>
+            <View style={{ alignItems: 'center', gap: espaco.md }}>
+              <IconeDeRole roleId={p.roleId} varianteId={p.varianteId} tamanho={64} cor={cor} />
+              <Rotulo cor={resposta.adiada ? cores.nogueira : cores.cera}>
+                {resposta.adiada ? 'Ainda não' : 'Você viu'}
+              </Rotulo>
+              <Text
+                style={[
+                  tipografia.corpoSerif,
+                  { color: cores.linhoCru, fontSize: 22, textAlign: 'center' },
+                ]}
+              >
+                {resposta.texto}
+              </Text>
+              {resposta.segunda && <Pequeno cor={cores.ferrugem}>{resposta.segunda}</Pequeno>}
+            </View>
+          </Revelacao>
+        </View>
+
+        <View style={{ padding: espaco.lg, gap: espaco.sm }}>
+          <Pequeno cor={cores.nogueira}>Guarde para você. Passe o aparelho adiante.</Pequeno>
+          <Botao onPress={seguir}>Passar adiante</Botao>
+        </View>
+      </Ambiente>
+    );
+  }
+
   // ── Agir (ou toque falso) ──────────────────────────────────────────────────
   const { pergunta } = passagem;
-  const precisaDe = pergunta.tipo === 'dois-alvos' ? 2 : pergunta.tipo === 'alvo' ? 1 : 0;
-  const completo = pergunta.opcional || alvos.length >= precisaDe;
+  const opcaoEscolhida = pergunta.opcoes?.find((o) => o.valor === opcao);
+  const alvosVisiveis = pergunta.alvosPorOpcao?.[opcao ?? ''] ?? pergunta.alvos;
+  const precisaDe =
+    pergunta.tipo === 'dois-alvos'
+      ? 2
+      : pergunta.tipo === 'alvo'
+        ? 1
+        : pergunta.tipo === 'opcao-e-alvo' && opcaoEscolhida?.pedeAlvo
+          ? 1
+          : 0;
+  const completo =
+    pergunta.tipo === 'opcao-e-alvo'
+      ? !!opcaoEscolhida && alvos.length >= precisaDe
+      : pergunta.opcional || alvos.length >= precisaDe;
 
   const alternar = (id: PlayerId) => {
     void Haptics.selectionAsync();
@@ -194,6 +299,30 @@ export function PassagemScreen({ navigation }: Props) {
         </Aparicao>
 
         <Corpo cor={cores.ferrugem}>{pergunta.detalhe}</Corpo>
+
+        {/*
+          O segredo do jogador: missão do Coringa, poção da Bruxa, role roubada.
+          Existia no estado desde sempre e nunca chegava à tela — o Coringa
+          jogava a partida inteira sem saber qual era a missão dele.
+        */}
+        {passagem.segredo && (
+          <Aparicao atraso={40}>
+            <View
+              style={{
+                backgroundColor: '#221B17',
+                borderLeftWidth: 2,
+                borderLeftColor: cores.folhaDeOuro,
+                padding: espaco.md,
+                gap: 4,
+              }}
+            >
+              <Text style={[tipografia.rotulo, { color: cores.folhaDeOuro }]}>Só você sabe</Text>
+              <Text style={[tipografia.corpoSerif, { color: cores.linhoCru }]}>
+                {passagem.segredo}
+              </Text>
+            </View>
+          </Aparicao>
+        )}
 
         {passagem.recebido.length > 0 && (
           <Aparicao atraso={60}>
@@ -241,9 +370,40 @@ export function PassagemScreen({ navigation }: Props) {
           </View>
         )}
 
-        {(pergunta.tipo === 'alvo' || pergunta.tipo === 'dois-alvos') && (
+        {/*
+          Escolha dupla: primeiro COMO, depois EM QUEM.
+          A lista de alvos só aparece quando a opção escolhida pede alvo — "ficar
+          imune a investigação" não tem em quem.
+        */}
+        {pergunta.tipo === 'opcao-e-alvo' && (
+          <View style={{ gap: espaco.sm }}>
+            {pergunta.opcoes?.map((o) => (
+              <Botao
+                key={o.valor}
+                tom={opcao === o.valor ? 'primario' : 'secundario'}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  setOpcao(o.valor);
+                  setAlvos([]);
+                }}
+              >
+                {o.rotulo}
+              </Botao>
+            ))}
+          </View>
+        )}
+
+        {(pergunta.tipo === 'alvo' ||
+          pergunta.tipo === 'dois-alvos' ||
+          (pergunta.tipo === 'opcao-e-alvo' &&
+            pergunta.opcoes?.find((o) => o.valor === opcao)?.pedeAlvo === true)) && (
           <View style={{ gap: espaco.xs }}>
-            {pergunta.alvos.map((id, i) => {
+            {/*
+              A opção pode mirar um grupo diferente: o Uivador DELATA um lobo,
+              e a mesma role, escolhendo caçar, mira fora da matilha. Sem isto
+              ele só conseguiria delatar quem não é lobo — o oposto da carta.
+            */}
+            {(pergunta.alvosPorOpcao?.[opcao ?? ''] ?? pergunta.alvos).map((id, i) => {
               const alvo = estado.players.find((x) => x.id === id)!;
               return (
                 <Aparicao key={id} atraso={i * 25}>
@@ -282,9 +442,13 @@ export function PassagemScreen({ navigation }: Props) {
               ? 'Passar adiante'
               : alvos.length > 0
                 ? `Confirmar ${alvos.map(nomeDe).join(' e ')}`
-                : pergunta.opcional
-                  ? 'Não usar esta noite'
-                  : `Escolha ${precisaDe}`}
+                : pergunta.tipo === 'opcao-e-alvo' && !opcaoEscolhida
+                  ? 'Escolha o que fazer'
+                  : pergunta.tipo === 'opcao-e-alvo' && opcaoEscolhida
+                    ? `Confirmar: ${opcaoEscolhida.rotulo}`
+                    : pergunta.opcional
+                      ? 'Não usar esta noite'
+                      : `Escolha ${precisaDe}`}
           </Botao>
         )}
       </View>

@@ -64,32 +64,4 @@ export const EVENTOS_SORTE: readonly GameEvent[] = [
     ],
     descricao: 'Nenhum poder funciona. Só a matilha age.',
   },
-  {
-    id: 'ossos-na-encruzilhada',
-    nome: 'Ossos na Encruzilhada',
-    familia: 'sorte',
-    visibilidade: 'narrado',
-    narracao: 'Acharam ossos na encruzilhada, e eles falaram.',
-    efeitos: [{ kind: 'revela-role-de-morto' }],
-    descricao: 'O app revela a role de um morto sorteado.',
-  },
-  {
-    id: 'fogo-fatuo',
-    nome: 'Fogo-fátuo',
-    familia: 'sorte',
-    visibilidade: 'silencioso',
-    efeitos: [{ kind: 'informacao-falsa' }],
-    descricao: 'Um jogador vivo recebe uma informação falsa como se fosse verdadeira.',
-  },
-  {
-    id: 'pressagio',
-    nome: 'Presságio',
-    familia: 'sorte',
-    visibilidade: 'narrado',
-    narracao: 'A vila sonhou com {nome} esta noite.',
-    // Não faz nada mecanicamente, e provavelmente é o evento mais devastador
-    // do jogo: a mesa preenche o silêncio sozinha.
-    efeitos: [{ kind: 'nomeia-alguem' }],
-    descricao: 'O app diz o nome de um jogador em voz alta. E não explica.',
-  },
 ];

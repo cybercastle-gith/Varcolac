@@ -84,7 +84,12 @@ export function FimScreen({ navigation }: Props) {
                     (missao ? ` · missão: ${missao.texto}` : '')
                   }
                   direita={
-                    <IconeDeRole roleId={p.roleId} varianteId={p.varianteId} tamanho={30} cor={cor} />
+                    <IconeDeRole
+                      roleId={p.roleId}
+                      varianteId={p.varianteId}
+                      tamanho={30}
+                      cor={cor}
+                    />
                   }
                 />
               </Aparicao>

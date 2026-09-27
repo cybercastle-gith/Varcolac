@@ -94,6 +94,7 @@ código e os testes rodarem em Node, em milissegundos.
 | `docs/CONTEUDO_DO_JOGO.md` | todo o conteúdo do jogo num arquivo, para entregar a uma IA junto de um pedido de conteúdo novo |
 | `docs/ASSETS_A_GERAR.md` | as folhas de imagem a produzir, com prompt pronto e a decisão de cada item |
 | `docs/SETUP_PROJETO_WEREWOLF.md` | por que cada etapa do setup existe e o que fazer quando falha |
+| `docs/EVENTOS.md` | os 16 eventos listados para peneirar, com gatilho, efeito e narração |
 | `docs/VARIANTES_A_CRIAR.md` | prompt pronto para outra IA criar as variantes das 17 funções que não têm |
 | `docs/stack.md` | decisões de stack e fluxo de desenvolvimento |
 | **este arquivo** | memória operacional entre IAs |
@@ -293,6 +294,13 @@ O `SafeAreaProvider` existia desde o começo **sem nenhum consumidor**. O rodap�
 da Home ficava por baixo da barra de navegação do Android. Conserto no
 `Ambiente`, uma vez, para todas: o fundo segue sangrando até a borda física, só o
 conteúdo recua.
+
+### 4.14-B Ícone da função do PRÓXIMO jogador piscando na passagem
+`useEffect` com `[indice]` resetava a etapa DEPOIS da renderização, e o React
+pintava um quadro com a passagem nova e a etapa antiga (`agir`) — que mostra o
+ícone da função. Quem segurava o celular via a função do próximo por um quadro.
+Conserto: ajustar o estado DURANTE a renderização (padrão do React para derivar
+estado de props). **Não volte para `useEffect`.**
 
 ### 4.14 `width: undefined` numa `Image` (só no navegador)
 No `react-native-web` a imagem cai no tamanho intrínseco do arquivo. O papel
@@ -1077,6 +1085,498 @@ depois de mexer no engine estoura o tempo da navegação: `curl` no
 - As variantes ainda não existem: o documento é o pedido, não a entrega.
 - Recalibragem do balanceamento depois que elas chegarem.
 - Nada foi conferido no aparelho (`adb devices` vazio).
+
+### 2026-09-25 — patch de regras: 11 dos 14 itens do pedido
+
+O usuário mandou uma lista de 14 melhorias. Este bloco cobre 11; os 3 que
+faltam estão no fim, nomeados.
+
+**Uma regra do dossiê foi MUDADA por decisão do usuário**
+
+`victory/win-conditions.ts`: os lobos agora vencem ao **superar** a vila, não
+ao igualar. O dossiê dizia "igualar ou superar". Empate numérico encerrava a
+partida cedo demais e tirava da vila o dia de votação que ela ainda tinha.
+
+Não gera partida infinita: no 1 × 1 a noite seguinte resolve. Três testes
+afirmavam a regra antiga e foram reescritos para a nova — não silenciados.
+
+**Causas-raiz encontradas, uma por item**
+
+| O que o usuário viu | A causa real |
+|---|---|
+| Coringa não recebe missão | A missão ERA sorteada em `criarPartida` e **nunca chegava à tela**. `objetivosSecretos` não tinha nenhum consumidor na interface |
+| Vingador não escolhe na noite 1 | `perguntarA` devolve toque falso para `etapa === 'estado-inicial'`, e `criarPartida` sorteava o alvo em silêncio. A role existia sem nenhuma decisão |
+| Vila Amaldiçoada não funciona | O gancho `derrotaDaVila` só era chamado em `simulation/play-game.ts`. **Nunca no app.** O prazo jamais vencia numa partida de verdade |
+| Traição começa com lobos | O modo não tinha `aoCriarPartida`: herdava o baralho normal, com matilha completa. "Todos começam na vila" era falso |
+| Detetive pisca uma tela e some | A informação era entregue com `rodada` e lida na passagem da rodada SEGUINTE. Chegava um dia depois de a Vidente ter pago o voto por ela |
+| Revisão bugada | A tela calculava `largura` para a barra do índice e **não desenhava a barra** — variável morta. E nome + descrição lado a lado se espremiam em coluna de poucos caracteres |
+| Sombra esquisita no baralho | `backgroundColor: dentro ? '' : '#1A1613'` — string vazia não é cor. Sem superfície opaca, o `elevation` do Android desenha a sombra solta e deslocada (ele ignora `shadowOffset`) |
+| Baralho Surpresa não mostra roles | A composição trocava em silêncio: só o contador no topo mudava |
+| Carta some ao soltar o dedo | `soltar()` fazia `setRevelado(false)` sem condição |
+
+**Bug que ninguém tinha reportado e estava lá**
+
+`eventoDaNoite` **nunca era zerado**. O evento sorteado na noite 1 continuava
+valendo em todas as noites seguintes — cinco etapas leem esse campo (cota da
+matilha, anula-protecoes, silencia-role, cancela-etapas). Uma matilha que
+pegasse "Noite Sem Lua" na noite 1 ficaria sem matar a partida inteira. Agora a
+etapa 1 limpa, que é literalmente o trabalho dela.
+
+**A escolha dupla dos lobos (Feiticeiro, Alfa, Lobo Sombra)**
+
+Tipo de pergunta novo: `opcao-e-alvo`. O jogador escolhe COMO agir e, quando a
+opção pede, EM QUEM. Cada opção carrega a própria `etapa` — atravessar perfura,
+caçar ataca — porque são etapas diferentes do pipeline.
+
+- **Feiticeiro**: atravessar a cura **mata de uma vez**. A perfuração dele
+  passou a contar como ataque da matilha em `08-resolucao-mortes.ts`; sem isso
+  escolher atravessar removia a proteção e **ninguém morria** — o poder custava
+  a noite e não fazia nada.
+- **Alfa**: converter ou caçar.
+- **Lobo Sombra**: ficar imune a investigação ou caçar.
+- Gasto o poder de uma vez por partida, sobra caçar como qualquer lobo — antes
+  a role virava toque falso.
+
+**A cota de uma morte por noite JÁ estava certa.** `alvosDaMatilha` agrega os
+votos dos lobos, o mais votado morre e o empate vai a sorteio pelo RNG semeado.
+Conferi antes de mexer; não precisou de mudança.
+
+**Leitura na mesma noite — e por que não fura a invariante**
+
+Módulo novo `turn/leitura.ts`, com `leituraDeFaccao` e `respostaImediata`. A
+etapa 11 passou a importar a mesma `leituraDeFaccao` — **uma implementação
+só**, porque duas divergiriam e a divergência seria invisível (o jogador veria
+uma coisa, o log registraria outra).
+
+É correto porque a etapa 11 lê o estado do INÍCIO da noite e, no instante da
+passagem, nada foi resolvido ainda: o estado atual É o estado inicial. Quem
+atrasa de propósito continua atrasando — Vidente dos Sonhos e o Delegado
+(revista pública, anunciada no amanhecer).
+
+**Verificado na tela** (`dev:web`, partida real até a noite 1)
+
+- Revisão: `+2.6 EQUILIBRADO` com a barra e o centro marcado; cartas legíveis.
+- Baralho: sombra deslocada sumiu; Surpresa lista as cartas.
+- Detetive Elza comparou Ana e Davi → **"Ana e Davi não são da mesma facção"**,
+  na mesma tela, e correto (Davi é o Lobo Branco).
+- `pnpm -r typecheck` limpo; **62 testes do engine + 11 do app** passando.
+
+**Vazamento de estado entre testes, descoberto de brinde**
+
+`zerar()` em `apps/mobile/src/store/jogo.test.ts` não zerava o MODO — e o modo
+vive em `config`. O teste da Traição deixava `modo: 'traicao'` ligado para todos
+os que vinham depois. Ficou invisível enquanto a Traição tinha lobos; quando ela
+passou a começar sem nenhum, o teste seguinte quebrou com
+`Cannot read properties of undefined`. Agora `zerar()` força `modo: 'classico'`.
+
+**Não verificado na tela, só por tipos e testes**
+
+O baralho sorteado não tinha Feiticeiro, Alfa, Lobo Sombra, Coringa nem
+Vingador, então a escolha dupla, o segredo do Coringa e o juramento do Vingador
+**não foram vistos rodando**. Vila Amaldiçoada e Traição também não foram
+jogadas. Quem pegar isto: monte o baralho à mão com essas funções.
+
+**Os 3 itens que NÃO foram feitos**
+
+1. **Arrastar jogadores para reordenar.** Precisa de gesto de arrastar em lista
+   — `react-native-gesture-handler` já está instalado, mas a lista atual é um
+   `ScrollView` simples e virar lista arrastável é refatoração, não ajuste.
+2. **Multi-seleção no "Montar o meu"** (marcar funções permitidas sem definir
+   número, e o app sortear 6 entre elas). Precisa de um estado novo no store
+   (um conjunto de "permitidas") e de um gerador que respeite o conjunto —
+   `gerarBaralho` hoje não aceita restrição de catálogo.
+3. **Eventos toda manhã, em tela própria antes das mortes.** O sorteio já
+   funciona e o `eventoDaNoite` agora é limpo a cada noite, mas a tela separada
+   e a garantia de "toda manhã" não foram feitas. Hoje a frequência vem de
+   `config.frequenciaEventos` (o padrão é `raro`) e o anúncio se mistura ao
+   Amanhecer.
+
+**Tom do `VARIANTES_A_CRIAR.md` mudado a pedido**
+
+De entrega para **colaboração**: a IA propõe 3 variantes por função, espera
+aprovação, e o que for reprovado volta com alavanca diferente. Ela não escreve
+o catálogo final; pergunta antes de inventar; pode discordar uma vez.
+
+### 2026-09-25 (continuação) — os 3 itens que tinham ficado para trás
+
+Eu havia deixado três itens de fora alegando que eram refatoração. O usuário
+mandou fazer. Estão feitos.
+
+**1. Arrastar jogadores para reordenar**
+
+`components/ListaArrastavel.tsx`, novo, genérico, sem dependência nova.
+
+`PanResponder` + `Animated` do próprio React Native, e **não**
+`react-native-gesture-handler` — que está instalado, mas exige `GestureDetector`
+em árvore própria e não se comporta igual no `react-native-web`. Esta é tela de
+setup, e 80% do trabalho aqui acontece no navegador.
+
+A conta toda depende de uma suposição: **todas as linhas têm a mesma altura**.
+Com altura fixa, o destino é `round(dy / altura)` e não é preciso medir nada
+durante o arrasto — que é o que costuma travar lista arrastável em aparelho
+fraco. `ALTURA_DA_LINHA = 56` na tela de jogadores (48 de alvo + 8 de respiro);
+**se mudar a altura da linha, mude a constante junto** ou o arrasto passa a
+errar o destino.
+
+A **cor acompanha o nome, não a posição** — ela é o que identifica a pessoa na
+votação e no amanhecer. Trocar a cor ao reordenar renomearia todo mundo em
+silêncio.
+
+O detalhe da linha virou `1º a receber o aparelho` em vez de `Jogador 1`: a
+ordem não é enfeite, é a ordem em que o celular circula na mesa.
+
+**Verificado de verdade:** arrastei Ana duas posições para baixo no `dev:web` e
+a ordem virou Bruno, Célia, Ana, Davi, Elza, Fábio.
+
+**2. Sortear entre as funções escolhidas**
+
+Três camadas:
+
+- `gerarBaralho` ganhou `permitidas?: readonly string[]`. Cada grupo (lobos,
+  solitários, vila) cai para o que o host permitiu; **grupo que ficaria vazio
+  volta ao catálogo inteiro daquele grupo**, de propósito: sem nenhum lobo
+  permitido não existe partida, e o app prefere desobedecer a restrição a
+  entregar mesa impossível. Sem solitário marcado, nenhum é forçado.
+- Store: `permitidas`, `alternarPermitida`, `limparPermitidas`,
+  `sortearEntrePermitidas`. Semente nova a cada toque — o host toca até gostar,
+  e repetir a mesma composição não serviria de nada. A semente da PARTIDA é
+  outra e continua vindo do setup.
+- Tela: losango marcador em cada linha (alvo de 44px, desenho de 16px) e o
+  painel "Sortear entre as escolhidas" acima do Limpar.
+
+**Verificado:** marquei Aldeão, Vidente, Médico, Caçador, Lobo, Alfa e Bruxa;
+o sorteio devolveu Lobo ×2, Aldeão, Médico ×2, Vidente — tudo dentro do
+conjunto, nada de fora, com a leitura "Matilha forte" no topo.
+
+**3. Evento em tela própria, antes das mortes**
+
+`screens/day/EventoScreen.tsx` + rota `Evento`. A passagem manda para lá quando
+a noite teve evento **narrado**; a própria tela segue para o Amanhecer se não
+houver.
+
+**Só evento narrado tem tela.** Dos dezesseis, dois são silenciosos de
+propósito — a Névoa Cerrada cala a Vidente sem avisar ninguém — e mostrá-los
+destruiria a razão de existirem: é a mistura de narrado e silencioso que impede
+a mesa de deduzir o evento pelo efeito.
+
+Por que separado do Amanhecer, e não mais uma seção nele: o evento é a **regra
+que mudou**, a morte é a **consequência**. Empilhados, a frase do evento virava
+rodapé de uma tela que já tinha um nome próprio gritando no meio. Em separado, a
+mesa ouve a regra antes de saber o preço.
+
+O Amanhecer passou a filtrar `origem !== 'evento'` dos anúncios: sem isso a
+mesma frase apareceria duas vezes seguidas, e a segunda rouba o peso da
+primeira.
+
+**`DEFAULT_CONFIG.frequenciaEventos` mudou de `raro` para `frequente`**
+(20% → 45%). Com `raro`, quatro em cada cinco manhãs não tinham evento e o
+sistema inteiro — dezesseis eventos, efeitos que atravessam cinco etapas —
+parecia desligado para quem joga. A calculadora de peso já compensa a
+frequência (`ajusteDeConfiguracao`), então isto não desequilibra a mesa.
+Continua ajustável no setup.
+
+**Bug de dados encontrado PELO TESTE novo**
+
+`evento.test.ts` exige narração em todo evento marcado como narrado. O evento
+**`delacao` era narrado e não tinha narração nenhuma** — não existia frase para
+alguém ler em voz alta, e a tela cairia no texto de regra. Corrigido.
+
+O mesmo arquivo cobre o vazamento de `eventoDaNoite` entre noites, que eu havia
+consertado na sessão anterior **sem teste**. Agora tem.
+
+> **Teste instável é pior que teste nenhum.** A primeira versão do teste de
+> vazamento dependia de o sorteio acertar (0.8 de chance) e falhava uma vez a
+> cada cinco execuções. Foi reescrito pondo o evento à mão. Teste que falha por
+> azar ensina a ignorar o vermelho.
+
+**Estado final**
+
+`pnpm -r typecheck` limpo · **66 testes do engine + 11 do app**.
+
+**O que continua sem verificação visual:** Feiticeiro, Alfa, Lobo Sombra,
+Coringa e Vingador (o baralho sorteado nunca os trouxe juntos), Vila
+Amaldiçoada e Traição em partida real, e a `EventoScreen` desenhada — a cadeia
+de dados dela está coberta por teste, a tela em si não. Monte o baralho à mão
+com essas funções para fechar.
+
+### 2026-09-25 (terceira leva) — vazamento de informação, poderes adiados, composição oculta
+
+**O defeito mais grave que este app já teve, e era meu**
+
+Relato do usuário, jogando de verdade: *"na passagem de celular piscou
+rapidamente o símbolo do Uivador, que a Elza era realmente"*.
+
+Causa: em `PassagemScreen`, o reset da etapa era um `useEffect` com `[indice]`.
+**Efeito roda depois da renderização.** Quando o índice mudava, o React pintava
+um quadro com a passagem NOVA e a etapa ANTIGA (`agir`) — e a tela de agir
+mostra o ícone da função de quem está com o aparelho. Quem ainda segurava o
+celular via, por um quadro, a função do próximo.
+
+Num jogo de dedução social isso não é glitch visual: é a partida inteira.
+
+Conserto: **ajustar o estado durante a renderização**, o padrão documentado do
+React para derivar estado de props que mudaram. O React descarta a saída e
+re-renderiza na hora, sem nunca pintar o quadro intermediário.
+
+> **NÃO troque de volta por `useEffect`, por mais que o lint peça.** O comentário
+> no arquivo diz isso, e está lá por este motivo.
+
+Verificado: uma leitura do DOM **imediatamente após o clique de confirmar**, sem
+espera nenhuma, já devolve "PASSE O APARELHO PARA Bruno" — nunca a tela de ação
+dele.
+
+**Poderes de estado passaram a valer na NOITE SEGUINTE**
+
+Xerife, Taverneiro (bloqueio) e Lobo Sombra (imunidade a investigação).
+
+A razão é a ordem real do jogo: **as passagens acontecem antes de
+`resolverNoite`**, e a leitura da Vidente e do Detetive agora aparece na própria
+passagem. Um poder aplicado "nesta noite" só alcançava quem ainda não tinha
+passado — quem já viu a resposta, já viu. O Lobo Sombra sendo o último a receber
+o aparelho tinha uma imunidade que não protegia de nada.
+
+Implementação:
+
+- Dois efeitos adiados novos em `types/effect.ts`: `bloqueado-na-noite` e
+  `imune-investigacao`.
+- **`prepararNoite(estado)`**, novo, em `night-pipeline.ts`: avança a rodada,
+  **limpa as marcas da noite anterior** e **aplica o que estava engatilhado** —
+  tudo antes de o roteiro ser montado. O store chamava
+  `{ ...estado, rodada: rodada + 1 }` na mão, e era por isso que marcas
+  sobreviviam de uma noite para a outra.
+- As etapas 3 e 5 passaram a `agendar` em vez de `marcar`.
+
+> **Quem for mexer em rodada: use `prepararNoite`.** Incrementar `rodada` na mão
+> pula a limpeza das marcas e a aplicação dos efeitos.
+
+**O Lobo Sombra se escondia todas as noites**
+
+`usoLimitado` dele sempre foi `por-partida: 1`, mas **`gastarUso` só era chamado
+nas etapas 4, 5 e 10**. Quando eu roteei o `esconder` dele para a etapa
+`informacao` (sessão anterior), o uso deixou de ser consumido e o poder virou
+ilimitado. Agora o esconderijo resolve na etapa 5 e gasta o uso lá.
+
+> Cuidado ao dar etapa nova a uma role com uso limitado: **confira se a etapa de
+> destino chama `gastarUso`.** Hoje só 4, 5 e 10 chamam.
+
+**O Uivador ganhou a segunda opção que a carta sempre prometeu**
+
+A carta dizia "revela publicamente um lobo — ou a si mesmo" e **não havia como
+escolher isso**: o app só perguntava em quem a matilha matava. Agora ele escolhe
+entre uivar e caçar; o uivo substitui a caçada, anuncia à mesa e agenda
+`matilha-mata-n: 2` para a noite seguinte, que é o preço escrito na carta.
+
+Isso exigiu `alvosPorOpcao` na `Pergunta`: o Uivador delata um **lobo**, e a
+mesma role, escolhendo caçar, mira **fora** da matilha. Sem isso ele só
+conseguiria delatar quem não é lobo.
+
+**Cartas que descreviam outra role**
+
+`lobo-sombra.descricaoLonga` dizia *"Na noite seguinte, a matilha não mata"* —
+não tem nada a ver com imunidade a investigação. Era texto de outra role,
+copiado. Reescrita, junto com a do Uivador.
+
+**Composição oculta**
+
+`config.composicaoOculta`. Com ela ligada o setup mostra `?` no lugar das
+contagens, a revisão não lista as cartas (mas **continua mostrando o índice de
+equilíbrio** — ele é sobre balanço, não sobre quem é quem), e cada um descobre
+só a própria função na noite 1.
+
+O Baralho Surpresa e o "Sortear entre as escolhidas" **acendem a opção
+sozinhos**: é literalmente o que "surpresa" quer dizer. O host pode desligar no
+mesmo painel.
+
+Muda o jogo de verdade — sem a composição, a mesa não conta quantos lobos faltam
+nem deduz por eliminação. Por isso é escolha, não padrão.
+
+**`docs/EVENTOS.md`**
+
+Os 16 eventos listados para o usuário peneirar, com família, gatilho,
+visibilidade, efeito e narração. Inclui uma seção de onde a mecânica briga com o
+resto do jogo (duas noites "mortas", dois eventos que punem a vila pelo mesmo
+comportamento, um que só dispara se alguém provocar).
+
+**Testes reescritos, não silenciados**
+
+Dois testes do pipeline afirmavam bloqueio na mesma noite. Viraram três: um que
+prova que **não** vale na noite da declaração, um que prova que vale na
+seguinte, e um novo para `prepararNoite` limpar as marcas.
+
+**Estado final:** `pnpm -r typecheck` limpo · **68 testes do engine + 11 do app**.
+
+**O que continua sem verificação visual:** Feiticeiro, Alfa, Lobo Sombra,
+Uivador, Coringa, Vingador, Vila Amaldiçoada, Traição e a `EventoScreen`
+desenhada. O baralho sorteado nunca trouxe essas funções juntas — monte à mão
+para fechar.
+
+### 2026-09-26 — as 61 variantes que eram só texto, e os cinco poderes-base quebrados que elas revelaram
+
+**O pedido:** "você falou que implementou as variantes mas não funcionam? isso é
+inútil, faça todas elas estarem corretas e funcionando perfeitamente."
+
+Estava certo. Na sessão anterior 51 variantes entraram no catálogo como DADO —
+nome, descrição, peso, ícone — e nenhuma tinha comportamento. Somadas às 22 que
+já existiam, eram **73 variantes e 12 mecânicas**.
+
+#### O que isso escondia: cinco poderes BASE que nunca funcionaram
+
+Implementar as variantes obrigou a ler cada etapa linha a linha, e foi aí que
+apareceu o que nenhum teste pegava. Não são regressões desta sessão — são
+defeitos antigos que ninguém tinha motivo para procurar:
+
+1. **A conversão do Alfa não existia.** O roteiro oferecia "Converter" e
+   NENHUMA etapa lia `escolha === 'converter'`. A carta mais cara da matilha
+   (peso 4, uma vez por partida) gastava a noite e não fazia nada. A marca
+   `'convertido'` em `objetivosSecretos` era escrita pelo modo Traição e não era
+   lida por ninguém para decidir de que lado a pessoa estava.
+2. **A poção da VIDA da Bruxa matava.** A etapa 7 tratava a Bruxa como atacante
+   sem olhar qual poção ela tinha. Metade da role fazia o oposto da carta.
+3. **O efeito `expira` era agendado e nunca consumido.** O Guarda-costas Escudo
+   absorvia o ataque e não morria nunca — proteção infinita e de graça. O
+   Carniçal, idem: imortal.
+4. **`silenciado` nunca era posto em lugar nenhum.** A carta do Xerife diz "não
+   age, não morre e **não fala** no dia seguinte" desde sempre; o preso falava e
+   votava normalmente. `voting.ts` já sabia rejeitar `silenciado` — ninguém
+   marcava.
+5. **`resolverDia` saía cedo em três caminhos** (dia sem votação, nenhum voto
+   válido, empate não desfeito) e o fim do dia nunca acontecia nesses casos.
+
+> **A lição, e ela vale para o resto do repositório:** quatro desses cinco eram
+> "alguém agenda e ninguém consome" ou "alguém oferece e ninguém resolve". O
+> `grep` que os encontra é curto — procure o `kind` de cada `EfeitoAdiado` e
+> cada `escolha` do roteiro e confirme que existe um leitor. Faça isso antes de
+> escrever mecânica nova.
+
+#### As primitivas novas
+
+- **`types/marcas.ts`** — `Player.marcas`, estado PERSISTENTE. É o par oposto de
+  `PlayerFlags`, que `fecharNoite` zera toda madrugada. Quando uma variante diz
+  "pelo resto da partida", "para sempre" ou "até fulano morrer", é aqui.
+  **Cuidado:** `marcar()` mexe nas flags voláteis e `gravar()` nas marcas
+  persistentes. Os nomes são parecidos de propósito e usar o errado é o defeito
+  mais provável desta área.
+- **`turn/faccao.ts` · `faccaoEfetiva()`** — a facção que vale AGORA. Lê a marca
+  `'convertido'`. Substituiu `role(p.roleId).faccao` na vitória, na leitura da
+  Vidente, na lista de companheiros e na mira da matilha.
+- **`steps/_mortes.ts` · `ecosDaMorte()`** — o que dispara quando alguém morre e
+  não é estertor da própria role (Sangue Marcado, Última Carne, Sangue
+  Acumulado). Chamado da noite E do linchamento, porque nenhuma das três cartas
+  diz "à noite".
+- **`steps/_protecao.ts` · `protecaoBloqueada()`** — devolve o MOTIVO de a
+  proteção falhar, não um booleano: o log tem de dizer à mesa por que a cura não
+  pegou, senão o host acha que o app bugou.
+- **`_helpers.ts` · `roleEfetivaId()`** — a role que vale para AGIR, que nem
+  sempre é `p.roleId` (Incorporação, Sombra de Alguém, Herança Amarga).
+
+#### Etapas erradas no catálogo, que tornavam variantes inalcançáveis
+
+Quatro variantes nunca receberiam pergunta nenhuma por causa do campo `etapa`:
+
+- As três do **Uivador** estavam em `informacao`; o uivo é resolvido em
+  `ataque`, junto da escolha entre uivar e caçar. Com `informacao`, a tela de
+  duas opções não aparecia.
+- Duas do **Vingador** sobrescreviam a etapa para `resolucao-mortes` e
+  `protecao`. **A etapa em que o EFEITO aparece não é a etapa em que o jogador
+  age** — o juramento continua sendo declarado na etapa 1, na noite 1.
+- **Aldeão** Herdeiro e Testemunha agem à noite e o Aldeão base não tem etapa:
+  sem uma etapa própria na variante, toque falso para sempre.
+- **Anciã** Testamento e Herança Amarga precisavam de `estertores` para poderem
+  declarar o alvo EM VIDA. "Ao morrer, escolhe" é impossível num pass-and-play:
+  o morto não recebe mais o aparelho.
+
+Também: `podeAgir()` lia só `role.usoLimitado` e ignorava o da variante — por
+isso o Detetive Cansado agia todas as noites em vez de só nas ímpares.
+
+#### O registro de honestidade mudou de forma
+
+`data/variantes-implementadas.ts` era uma lista do que FUNCIONA. Virou
+`VARIANTES_PENDENTES`, um mapa do que **não** funciona **com o motivo escrito** —
+porque sobraram três, e "regra ainda não implementada" genérico não diz ao host
+se aquilo vira a função base, uma aproximação ou nada. O app mostra o motivo
+inteiro na Biblioteca.
+
+Sobraram três, todas travadas numa pergunta de regra — e o usuário respondeu as
+três na mesma sessão. **O mapa está VAZIO: as 73 variantes funcionam.**
+
+#### As quatro decisões do usuário, 2026-09-26
+
+| Pergunta | Decisão |
+|---|---|
+| Padre **Exorcista** repetia o Padre base | **Regra nova:** benze um jogador numa noite à escolha. Acertou um lobo, o lobo morre; errou, o Padre perde a moral e vira Aldeão comum. Peso 2 → 3. Resolvido na etapa 8, então proteção sobre o lobo ainda o salva — a benza não perfura. |
+| Xerife **Boca Calada** repetia o Xerife base | **O Xerife BASE deixou de silenciar.** O preso comum não age e não morre, mas fala e vota; só o preso do Boca Calada perde a voz. A carta do Xerife foi corrigida junto, e o efeito `bloqueado-na-noite` ganhou o campo `calaAVoz`. |
+| Ladrão **Troca com Mortos** era impossível na noite 1 | Age em **qualquer noite em que já exista um morto**. Saiu de `estado-inicial` para `informacao`, e o `case` dele em `create-game` agora não faz nada de propósito — ele começa a partida COM a carta de Ladrão. Troca a CARTA inteira, inclusive a facção. |
+| **Missão Sem Volta** sem prazo definido | O prazo varia por missão E por tamanho de mesa: `prazoEmRodadas()` em `data/missions.ts`. `curto` = ⌈n/3⌉, `medio` = ⌈n/2⌉, `fim` = sem prazo. A constante fixa `PRAZO_DA_MISSAO = 3` era quase impossível numa mesa de 6 e folgada numa de 12. |
+
+**Aldeão Teimoso**, a última que faltava, saiu por outro caminho: a regra é da
+TELA (o engine recebe a votação fechada e não vê ninguém mudar de ideia), então
+virou `votoTrava()` em `day/voting.ts` — **regra no engine, aplicação na tela**.
+`ItemJogador` ganhou a prop `desabilitado` para isso, distinta de `morto`: uma é
+estado da escolha, a outra é estado do jogador.
+
+#### Pesos recalibrados (só os indefensáveis, a pedido)
+
+| Variante | De → Para | Por quê |
+|---|---|---|
+| Vingança da Praça | 1 → **0** | A única variante estritamente mais DIFÍCIL que a própria base, com o mesmo peso. |
+| Laço de Sangue | 1 → **2** | Garante a vitória no pior cenário (morrer) e leva alguém junto. |
+| Sobrevivente Teimoso | 1 → **2** | Imunidade ao linchamento sem uso limitado. |
+| A Qualquer Custo | 1 → **2** | Um Sobrevivente que ganha ataque deixa de ser passivo. |
+| Bobo da Forca | 1 → **2** | Vence com UM voto e sem ser linchado. |
+| Sangue Novo | 4 → **3** | O Alfa base mantém a habilidade do convertido para sempre; este, uma noite. |
+| Morto-Vivo | 4 → **3** | O Carniçal base leva alguém junto ao morrer; este troca a morte por voz. |
+| Exorcista | 2 → **3** | Regra nova, e ela mata. |
+
+As outras 65 continuam como estavam — ver "o que ficou para trás".
+
+#### Adaptações que eu escolhi e podem ser revertidas
+
+Estão marcadas com comentário no código, mas ficam registradas aqui porque são
+interpretação minha e não estavam na carta:
+
+- **Alfa base** = convertido mantém a habilidade para sempre; **Sangue Novo** =
+  mantém por UMA noite e depois perde. Era a única leitura que separava a
+  variante da base.
+- **Missão Sem Volta** (Coringa): o "prazo definido pelo app" virou a rodada 3
+  (`PRAZO_DA_MISSAO`, em `night-pipeline.ts`).
+- **Incorporação** e **Herdeiro** dão o PODER, nunca a facção. Herdar a carta
+  inteira transformaria um Aldeão em lobo por acidente.
+- **Sangue Derramado** (Carniçal) não dispara no linchamento: "quem causou sua
+  morte" foi a mesa, e punir a mesa não significa nada.
+
+#### Testes
+
+- `resolution/variantes.test.ts` (novo, 28 casos) — um por mecânica, partida
+  inteira rodando.
+- `simulation/variantes-smoke.test.ts` (novo) — joga uma partida completa para
+  CADA variante do catálogo e dez com variante em toda a mesa, respondendo o que
+  o roteiro disser ser válido. Não verifica regra; pega o que o teste unitário
+  nunca pega — efeito agendado sem leitor, alvo que não existe, `!` num morto.
+  **Se o bot consegue jogar só lendo o roteiro, o app também consegue.**
+- `data/variantes-implementadas.test.ts` — reescrito. Um caso novo trava o
+  número de pendências em no máximo 5. Não protege contra nada hoje; protege
+  contra o padrão que já aconteceu uma vez.
+
+**Estado final:** `pnpm -r typecheck` limpo · **116 testes do engine + 11 do
+app** (eram 74 + 11). **73 de 73 variantes com mecânica** (eram 12).
+
+**Uma varredura que vale repetir:** um script curto comparou cada `id` do
+catálogo com o resto do código e listou os que não têm NENHUM leitor. Achou
+`jejum-forcado`, cuja marca `soLoboNaRodada` era lida na mira do Lobo Branco e
+não era escrita em lugar nenhum — meia variante que parecia inteira. Rode essa
+varredura depois de mexer no catálogo; ela custa trinta segundos.
+
+#### O que ficou para trás
+
+- **Verificação visual de tela para tela.** Só a Biblioteca foi conferida no
+  navegador (as três pendências aparecem com motivo; as outras 70, sem aviso).
+  Nenhuma das mecânicas novas foi vista numa partida de verdade no aparelho.
+- **65 pesos ainda não revisados.** Oito foram corrigidos (tabela acima), e o
+  resto continua com o peso que tinha quando a variante era só texto. A revisão
+  boa é uma sessão de balanceamento com partidas simuladas para MEDIR, e não
+  mais chutes — `simulation/batch-runner` já existe para isso.
+- **Os três eventos inertes** (A Corda Escolhe, Delação, Vingança dos Ossos)
+  continuam como estavam — ver `docs/EVENTOS.md`. Não foram tocados aqui.
 
 <!--
   PRÓXIMA SESSÃO: acrescente seu bloco aqui embaixo, no mesmo formato.

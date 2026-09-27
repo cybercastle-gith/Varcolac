@@ -38,36 +38,53 @@ function aplicarVinculos(
   const objetivos: Record<string, string> = {};
   let lista = [...players];
 
-  // Ladrão: troca de role com outro jogador, em silêncio.
-  const ladrao = lista.find((p) => p.roleId === 'ladrao');
-  if (ladrao) {
-    const outros = lista.filter((p) => p.id !== ladrao.id);
-    if (outros.length > 0) {
-      const alvo = rng.pick(outros);
-      lista = lista.map((p) => {
-        if (p.id === ladrao.id) return { ...p, roleId: alvo.roleId };
-        if (p.id === alvo.id) return { ...p, roleId: 'ladrao' };
-        return p;
-      });
-      objetivos[ladrao.id] = `roubou a role de ${alvo.nome}`;
-    }
-  }
+  /*
+   * O Ladrão NÃO troca nada aqui.
+   *
+   * A troca era sorteada em silêncio e o jogador só descobria depois qual carta
+   * tinha caído na mão dele — escolher de quem roubar É a role. Decisão do
+   * usuário em 2026-09-26: ele aponta o alvo na passagem da noite 1, e a etapa 1
+   * resolve. O mesmo vale para as variantes Troca Forçada e Contaminação, que
+   * também sorteavam.
+   */
 
-  // Vingador: escolhe um alvo na noite 1 e vence se ele morrer, por qualquer causa.
-  const vingador = lista.find((p) => p.roleId === 'vingador');
-  if (vingador) {
-    const outros = lista.filter((p) => p.id !== vingador.id);
-    if (outros.length > 0) objetivos[vingador.id] = rng.pick(outros).id;
-  }
+  // O Vingador NÃO é sorteado aqui.
+  //
+  // Ele escolhe o alvo na noite 1, e a escolha chega pela passagem do celular
+  // (ver `roteiro.ts`). Antes isto sorteava o alvo em silêncio e o jogador nunca
+  // era perguntado — a role existia sem nenhuma decisão, que é o oposto do que
+  // a carta promete.
 
   // Coringa: missão sorteada, nunca a mesma role duas vezes.
   const coringa = lista.find((p) => p.roleId === 'coringa');
-  if (coringa) objetivos[coringa.id] = rng.pick(MISSOES_DO_CORINGA).id;
+  if (coringa) {
+    const sorteadas = rng.shuffle([...MISSOES_DO_CORINGA]);
+    objetivos[coringa.id] = sorteadas[0]!.id;
 
-  // Bruxa: a poção define secretamente o lado (vida = bem, morte = mal).
-  const bruxa = lista.find((p) => p.roleId === 'bruxa');
-  if (bruxa) objetivos[bruxa.id] = rng.next() < 0.5 ? 'pocao-vida' : 'pocao-morte';
+    /**
+     * Missão Partida: a segunda missão vai para alguém que não pediu.
+     *
+     * O segundo Coringa não sabe que virou Coringa até ler o próprio segredo na
+     * passagem — e a partir daí tem uma condição de vitória própria que não
+     * combina com a facção da carta dele. É a variante que mais bagunça a mesa,
+     * porque cria um solitário onde a contagem de baralho não previa nenhum.
+     */
+    if (coringa.varianteId === 'missao-partida' && sorteadas[1]) {
+      const outros = lista.filter((p) => p.id !== coringa.id);
+      if (outros.length > 0) objetivos[rng.pick(outros).id] = sorteadas[1].id;
+    }
+  }
 
+  /*
+   * A Bruxa também NÃO tem a poção sorteada.
+   *
+   * A carta diz "escolhe no início entre poção da vida ou da morte", e o sorteio
+   * transformava a escolha em destino: ela abria a carta e descobria de que lado
+   * estava. Ela escolhe na passagem, e a escolha é gravada na etapa 8.
+   *
+   * A exceção é a variante Poção Misteriosa, cujo ponto é exatamente ela não
+   * saber — essa continua sorteando, na hora da resolução.
+   */
 
   return { players: lista, objetivos };
 }
@@ -84,17 +101,26 @@ export function criarPartida(
   jogadores: readonly JogadorInicial[],
 ): GameState {
   if (deck.roleIds.length !== jogadores.length) {
-    throw new Error(
-      `Baralho com ${deck.roleIds.length} roles para ${jogadores.length} jogadores`,
-    );
+    throw new Error(`Baralho com ${deck.roleIds.length} roles para ${jogadores.length} jogadores`);
   }
 
   const rng = criarRng(config.semente);
-  const roleIds = rng.shuffle(deck.roleIds);
+
+  /**
+   * Embaralha as POSIÇÕES, não as roles.
+   *
+   * A variante de cada carta vive num vetor paralelo a `roleIds`, então
+   * embaralhar as roles soltas separaria a carta da sua variante — um Xerife
+   * Boca Calada sortearia como Xerife comum e a variante iria para outra pessoa.
+   */
+  const posicoes = rng.shuffle(deck.roleIds.map((_, i) => i));
+  const roleIds = posicoes.map((i) => deck.roleIds[i]!);
+  const variantesDaCarta = posicoes.map((i) => deck.variantes?.[i]);
 
   const iniciais: Player[] = jogadores.map((j, i) => {
     const roleId = roleIds[i]!;
-    const varianteId = config.variantes[roleId];
+    // A variante da CARTA vem primeiro; `config.variantes` é o padrão por role.
+    const varianteId = variantesDaCarta[i] ?? config.variantes[roleId];
     return {
       id: `p${i + 1}`,
       nome: j.nome,
@@ -104,6 +130,7 @@ export function criarPartida(
       status: 'vivo',
       usosRestantes: usosIniciais(role(roleId).usoLimitado),
       flags: FLAGS_LIMPAS,
+      marcas: {},
       semVoto: false,
       silenciado: false,
     };
@@ -122,6 +149,7 @@ export function criarPartida(
     rodada: 1,
     fase: 'noite',
     eventoDaNoite: null,
+    eventoAnunciado: null,
     eventosUsados: [],
     historicoVotos: [],
     informacoes: [],

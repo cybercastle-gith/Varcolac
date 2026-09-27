@@ -100,16 +100,7 @@ describe('calcularEquilibrio', () => {
     // Vila 3+3 = 6 · Matilha 3+3 = 6 · M = 2,6 → 6 − 15,6 = −9,6.
     // O modelo antigo lia −3,6 ("matilha forte") com M 1,6; a calibragem por
     // medição endureceu a leitura de baralhos com a vila fraca.
-    const d = deck([
-      'vidente',
-      'medico',
-      'aldeao',
-      'aldeao',
-      'aldeao',
-      'aldeao',
-      'lobo',
-      'lobo',
-    ]);
+    const d = deck(['vidente', 'medico', 'aldeao', 'aldeao', 'aldeao', 'aldeao', 'lobo', 'lobo']);
     const r = calcularEquilibrio(d, cru, 8);
     expect(r.forcaVila).toBe(6);
     expect(r.forcaMatilha).toBe(6);

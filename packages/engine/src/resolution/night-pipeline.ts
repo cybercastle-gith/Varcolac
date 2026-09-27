@@ -1,10 +1,12 @@
 import { NIGHT_STEPS, type NightStepId, type NightSubmission } from '../types/action';
 import type { GameState } from '../types/game-state';
-import { limparEfeitosVencidos } from '../types/effect';
+import { efeitosDaRodada, limparEfeitosVencidos } from '../types/effect';
 import { FLAGS_LIMPAS } from '../setup/create-game';
 import { criarColetor, type LogCollector, type ResolutionLog } from './resolution-log';
 import { ETAPAS } from './steps/index';
 import { retomarRng, type Rng } from '../utils/rng';
+import { leituraDeFaccao } from '../turn/leitura';
+import { MISSOES_POR_ID, prazoEmRodadas } from '../data/missions';
 
 /**
  * Contexto que atravessa as 12 etapas. Cada etapa recebe o contexto, devolve um
@@ -107,6 +109,163 @@ export function fecharNoite(ctx: StepContext): GameState {
 }
 
 /** Roda a noite inteira, em ordem, e devolve estado novo + log auditável. */
+/**
+ * Abre a noite seguinte: avança a rodada e aplica o que estava engatilhado.
+ *
+ * Existe porque a ordem real do jogo é **passagens primeiro, resolução depois**.
+ * Um efeito aplicado dentro de `resolverNoite` só passa a valer para a noite
+ * seguinte na prática — e efeitos que mudam o que um jogador VÊ (bloqueio,
+ * imunidade a investigação) precisam estar valendo quando o celular começa a
+ * circular, senão dependem de quem passou antes de quem.
+ *
+ * Chame isto em vez de mexer em `rodada` na mão. O app fazia
+ * `{ ...estado, rodada: rodada + 1 }` e era por isso que as marcas da noite
+ * anterior sobreviviam.
+ */
+export function prepararNoite(estado: GameState): GameState {
+  const rodada = estado.rodada + 1;
+
+  // As marcas são de UMA noite. Sobreviver à noite seguinte é defeito, não
+  // mecânica: um protegido continuaria protegido para sempre.
+  const limpo = estado.players.map((p) => ({
+    ...p,
+    flags: {
+      ...p.flags,
+      protegido: false,
+      bloqueado: false,
+      perfurado: false,
+      preso: false,
+      imuneInvestigacao: false,
+      embriagado: false,
+    },
+  }));
+
+  const daRodada = efeitosDaRodada(estado.efeitos, rodada);
+
+  let players = limpo.map((p) => {
+    const bloqueio = daRodada.find((e) => e.kind === 'bloqueado-na-noite' && e.playerId === p.id);
+    const imune = daRodada.some((e) => e.kind === 'imune-investigacao' && e.playerId === p.id);
+    if (!bloqueio && !imune) return p;
+    return {
+      ...p,
+      /**
+       * O silêncio do preso é da variante Boca Calada, e só dela.
+       *
+       * Decisão do usuário em 2026-09-26: **o Xerife normal deixa a pessoa
+       * falar.** O preso comum não age e não morre; quem também perde a voz é
+       * o preso do Boca Calada, e é isso que faz a variante existir.
+       *
+       * O campo é consumido pela votação do dia que começa depois desta noite,
+       * que é exatamente o dia certo.
+       */
+      silenciado:
+        p.silenciado ||
+        (bloqueio?.kind === 'bloqueado-na-noite' && bloqueio.preso && bloqueio.calaAVoz === true),
+      flags: {
+        ...p.flags,
+        ...(bloqueio && bloqueio.kind === 'bloqueado-na-noite'
+          ? { bloqueado: true, preso: bloqueio.preso, embriagado: !bloqueio.preso }
+          : {}),
+        ...(imune ? { imuneInvestigacao: true } : {}),
+      },
+    };
+  });
+
+  /**
+   * Prazos que vencem quando a noite vira.
+   *
+   * Sangue Novo: o convertido tinha UMA noite com a habilidade antiga; passou a
+   * data, vira lobo comum e sem poder.
+   * Missão Sem Volta: o Coringa tinha até a rodada 3 para cumprir; depois disso
+   * a carta diz que ele vira Aldeão comum, e a marca é o que a checagem de
+   * vitória consulta.
+   */
+  const totalDeJogadores = estado.players.length;
+  players = players.map((p) => {
+    if (p.marcas.conservaPoderAte !== undefined && rodada > p.marcas.conservaPoderAte) {
+      return { ...p, marcas: { ...p.marcas, semPoder: true } };
+    }
+    if (p.roleId !== 'coringa' || p.varianteId !== 'missao-sem-volta') return p;
+    if (p.marcas.virouAldeao) return p;
+
+    /*
+     * O prazo sai da MISSÃO e do tamanho da mesa, não de uma constante.
+     *
+     * Era 3 para todas, o que é quase impossível numa mesa de 6 e folgado numa
+     * de 12 — e tratava "morra durante uma noite" e "esteja vivo no fim" como
+     * se tivessem a mesma urgência. Ver `prazoEmRodadas`.
+     */
+    const missao = MISSOES_POR_ID.get(estado.objetivosSecretos[p.id] ?? '');
+    if (!missao) return p;
+    if (rodada <= prazoEmRodadas(missao, totalDeJogadores)) return p;
+    return { ...p, marcas: { ...p.marcas, virouAldeao: true } };
+  });
+
+  /**
+   * `expira`: a morte que foi só adiada.
+   *
+   * O Guarda-costas Escudo absorve o ataque e "morre uma noite depois"; o
+   * Carniçal "não morre na hora" e expira na noite seguinte. Os dois agendavam
+   * este efeito desde sempre e **ninguém o consumia** — o Escudo simplesmente
+   * nunca morria, o que fazia dele uma proteção infinita e de graça, e o
+   * Carniçal virava imortal. Aqui a conta é cobrada, antes de o aparelho
+   * circular, para que a mesa veja o corpo no amanhecer seguinte.
+   */
+  let anuncios = estado.anuncios;
+  for (const e of daRodada) {
+    if (e.kind !== 'expira') continue;
+    const alvo = players.find((p) => p.id === e.playerId);
+    if (!alvo || alvo.status === 'morto') continue;
+    players = players.map((p) =>
+      p.id === e.playerId
+        ? { ...p, status: 'morto' as const, mortoNaRodada: rodada, causaMorte: 'estertor' as const }
+        : p,
+    );
+    anuncios = [
+      ...anuncios,
+      { rodada, texto: `${alvo.nome} não resistiu.`, origem: 'morte' as const },
+    ];
+  }
+
+  /**
+   * Testemunha da Cela: a soltura, com a facção lida em voz alta.
+   *
+   * O segundo dia de cela é o que a variante troca pela informação — e a
+   * informação é pública, diferente de qualquer outra leitura do jogo.
+   */
+  for (const e of daRodada) {
+    if (e.kind !== 'revelar-preso') continue;
+    const alvo = players.find((p) => p.id === e.playerId);
+    if (!alvo) continue;
+    const ehLobo = leituraDeFaccao({ ...estado, players }, alvo.id) === 'lobo';
+    anuncios = [
+      ...anuncios,
+      {
+        rodada,
+        texto: `A cela se abriu: ${alvo.nome} é ${ehLobo ? 'Lobo' : 'Aldeão'}.`,
+        origem: 'role' as const,
+      },
+    ];
+  }
+
+  return {
+    ...estado,
+    rodada,
+    fase: 'noite',
+    players,
+    anuncios,
+    /**
+     * O anunciado de ontem vira o que vigora hoje.
+     *
+     * É aqui que a promessa feita no amanhecer é cobrada. Note que o campo de
+     * anúncio é zerado: a etapa 2 desta noite vai sortear o próximo.
+     */
+    eventoDaNoite: estado.eventoAnunciado,
+    eventoAnunciado: null,
+    efeitos: limparEfeitosVencidos(estado.efeitos, rodada),
+  };
+}
+
 export function resolverNoite(estado: GameState, submissao: NightSubmission): NightResult {
   let ctx = iniciarNoite(estado, submissao);
   for (const etapa of ORDEM_DAS_ETAPAS) ctx = resolverEtapa(ctx, etapa);
