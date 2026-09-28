@@ -259,8 +259,8 @@ export const necromante: Role = {
       id: 'incorporacao',
       nome: 'Incorporação',
       descricao:
-        'Ressuscita um morto e utiliza sua habilidade até o fim da partida sem mudar ' +
-        'de facção ou de papel.',
+        'Toma de um morto a habilidade dele e a usa até o fim da partida. O morto NÃO ' +
+        'volta, e a sua facção não muda.',
       peso: 4,
       etapa: 'ressurreicao',
       usoLimitado: { kind: 'por-partida', total: 1 },

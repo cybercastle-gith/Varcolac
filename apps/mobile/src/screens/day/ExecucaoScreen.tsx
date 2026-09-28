@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { View, Text } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { role } from '@jogo/engine';
+import { role, nomeDaCarta } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { Botao, Titulo, Rotulo, Pequeno } from '../../components/ui';
@@ -32,7 +32,10 @@ export function ExecucaoScreen({ navigation }: Props) {
   const executados = estado.players.filter(
     (p) => p.status === 'morto' && p.mortoNaRodada === estado.rodada,
   );
-  const anuncios = estado.anuncios.filter((a) => a.rodada === estado.rodada);
+  const anuncios = estado.anuncios.filter(
+    // Só o que o DIA disse. O que a noite narrou já foi contado no Amanhecer.
+    (a) => a.rodada === estado.rodada && a.fase === 'dia',
+  );
 
   return (
     <Ambiente clima="morte">
@@ -70,7 +73,7 @@ export function ExecucaoScreen({ navigation }: Props) {
                         cor={corDaFaccao(p.roleId)}
                       />
                       <Text style={[tipografia.nomeDeRole, { color: cores.cera, fontSize: 20 }]}>
-                        {role(p.roleId).nome}
+                        {nomeDaCarta(role(p.roleId), p.varianteId)}
                       </Text>
                     </>
                   )}

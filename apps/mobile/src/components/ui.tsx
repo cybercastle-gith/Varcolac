@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import {
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -97,6 +98,34 @@ export function Pequeno({
 export type TomDeBotao = 'primario' | 'secundario' | 'destrutivo' | 'claro' | 'alternativo';
 
 /** Altura 48px, raio 4px, semibold — especificação da seção 9. */
+/**
+ * A mola de toque, para `Pressable` de verdade.
+ *
+ * **NÃO use `Animated.createAnimatedComponent(Pressable)`.** Ele não invoca
+ * `style` em formato de função — repassa a função como se fosse um objeto de
+ * estilo, e o resultado é um componente SEM ESTILO NENHUM. Foi o que deixou
+ * todos os botões do app invisíveis: o texto continuava no DOM (e por isso
+ * `get_page_text` não acusou nada), sem fundo, sem borda e sem altura.
+ *
+ * O padrão correto é o inverso: o `Pressable` fica nu, cuidando só do toque, e
+ * quem carrega a aparência e a transformação é um `Animated.View` por dentro.
+ */
+function useMolejo(ativo: boolean) {
+  const escala = useRef(new Animated.Value(1)).current;
+  const mover = (para: number) =>
+    Animated.spring(escala, {
+      toValue: para,
+      useNativeDriver: true,
+      speed: 40,
+      bounciness: 6,
+    }).start();
+  return {
+    escala,
+    aoApertar: () => ativo && mover(0.97),
+    aoSoltar: () => mover(1),
+  };
+}
+
 export function Botao({
   children,
   onPress,
@@ -125,41 +154,42 @@ export function Botao({
               '#C2453C';
   const texto = tom === 'secundario' ? cores.ferrugem : cores.linhoCru;
 
+  const { escala, aoApertar, aoSoltar } = useMolejo(!desabilitado);
+
   return (
     <Pressable
       onPress={desabilitado ? undefined : onPress}
-      style={({ pressed }) => [
-        estilos.botao,
-        { backgroundColor: fundo, borderColor: borda, borderWidth: 1 },
-        /*
-         * Afundar 1px em vez de so clarear.
-         * No escuro, com o aparelho passando de mao em mao, mudanca de opacidade
-         * quase nao se ve. Deslocamento se ve — e e a diferenca entre a pessoa
-         * saber que o toque pegou e tocar de novo.
-         */
-        pressed && !desabilitado && { opacity: 0.85, transform: [{ translateY: 1 }] },
-        desabilitado && { opacity: 0.35 },
-        style,
-      ]}
+      onPressIn={aoApertar}
+      onPressOut={aoSoltar}
+      style={style}
     >
-      {/*
+      <Animated.View
+        style={[
+          estilos.botao,
+          { backgroundColor: fundo, borderColor: borda, borderWidth: 1 },
+          { transform: [{ scale: escala }] },
+          desabilitado && { opacity: 0.35 },
+        ]}
+      >
+        {/*
         O fio de luz na aresta de cima.
         Um retangulo chapado nao tem materia. Uma linha clara no alto e escura
         embaixo diz que o objeto tem espessura e que a luz vem de cima — a mesma
         fonte unica do Ambiente, so que dentro do botao.
       */}
-      <View
-        pointerEvents="none"
-        style={[estilos.aresta, { opacity: tom === 'primario' ? 0.22 : 0.1 }]}
-      />
-      <Text
-        style={[
-          tipografia.interface,
-          { color: texto, letterSpacing: tom === 'primario' ? 0.8 : 0.4 },
-        ]}
-      >
-        {children}
-      </Text>
+        <View
+          pointerEvents="none"
+          style={[estilos.aresta, { opacity: tom === 'primario' ? 0.22 : 0.1 }]}
+        />
+        <Text
+          style={[
+            tipografia.interface,
+            { color: texto, letterSpacing: tom === 'primario' ? 0.8 : 0.4 },
+          ]}
+        >
+          {children}
+        </Text>
+      </Animated.View>
     </Pressable>
   );
 }
@@ -196,43 +226,54 @@ export function ItemJogador({
   desabilitado?: boolean | undefined;
 }) {
   const clicavel = !!onPress && !desabilitado;
+
+  /**
+   * A linha de jogador é o alvo mais tocado do jogo — escolher quem morre,
+   * quem é curado, em quem votar — e era o único que não respondia ao dedo.
+   * Só `opacity: 0.75`, que no escuro quase não se vê.
+   *
+   * A mola é menor que a do botão (0.985 contra 0.97): numa LISTA, uma escala
+   * forte faz as linhas vizinhas parecerem pular junto.
+   */
+  const { escala, aoApertar, aoSoltar } = useMolejo(clicavel);
+
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={!clicavel}
-      style={({ pressed }) => [
-        estilos.item,
-        selecionado && { borderColor: cores.garanca, backgroundColor: '#241A17' },
-        pressed && clicavel && { opacity: 0.75 },
-        morto && { opacity: 0.5 },
-        desabilitado && !selecionado && { opacity: 0.4 },
-      ]}
-    >
-      {/*
+    <Pressable onPress={onPress} disabled={!clicavel} onPressIn={aoApertar} onPressOut={aoSoltar}>
+      <Animated.View
+        style={[
+          estilos.item,
+          { transform: [{ scale: escala }] },
+          selecionado && { borderColor: cores.garanca, backgroundColor: '#241A17' },
+          morto && { opacity: 0.5 },
+          desabilitado && !selecionado && { opacity: 0.4 },
+        ]}
+      >
+        {/*
         O marcador de estado e um losango, nao um circulo.
         Circulo e vocabulario de aplicativo; losango e o motivo da regiao, o
         mesmo da marca e das barras bordadas. Custa uma rotacao e amarra a lista
         ao resto do jogo.
       */}
-      <View
-        style={[
-          estilos.ponto,
-          {
-            width: 15,
-            height: 15,
-            backgroundColor: morto ? cores.sangueSeco : (corDoPonto ?? cores.ferrugem),
-            borderColor: cores.linhoCru,
-            borderWidth: 0.25,
-          },
-        ]}
-      />
-      <View style={{ flex: 1 }}>
-        <Text style={[tipografia.corpo, { color: cores.folhaDeOuro }]}>{nome}</Text>
-        {detalhe ? <Pequeno cor={cores.linhoCru}>{detalhe}</Pequeno> : null}
-      </View>
-      {/* Nunca cor sozinha: o estado sempre vem com ícone ou texto. */}
-      {morto ? <Text style={{ color: cores.sangueSeco, fontSize: 16 }}>✝</Text> : null}
-      {direita}
+        <View
+          style={[
+            estilos.ponto,
+            {
+              width: 15,
+              height: 15,
+              backgroundColor: morto ? cores.sangueSeco : (corDoPonto ?? cores.ferrugem),
+              borderColor: cores.linhoCru,
+              borderWidth: 0.25,
+            },
+          ]}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={[tipografia.corpo, { color: cores.folhaDeOuro }]}>{nome}</Text>
+          {detalhe ? <Pequeno cor={cores.linhoCru}>{detalhe}</Pequeno> : null}
+        </View>
+        {/* Nunca cor sozinha: o estado sempre vem com ícone ou texto. */}
+        {morto ? <Text style={{ color: cores.sangueSeco, fontSize: 16 }}>✝</Text> : null}
+        {direita}
+      </Animated.View>
     </Pressable>
   );
 }

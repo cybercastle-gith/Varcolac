@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { View, Text } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { role } from '@jogo/engine';
+import { role, nomeDaCarta } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { Ambiente } from '../../components/Ambiente';
@@ -43,7 +43,10 @@ export function AmanhecerScreen({ navigation }: Props) {
    * seguidas, e a segunda vez rouba o peso da primeira.
    */
   const anuncios = estado.anuncios.filter(
-    (a) => a.rodada === estado.rodada && a.origem !== 'evento',
+    // `fase === 'noite'`: o Amanhecer conta a NOITE. Sem este filtro a tela de
+    // Execução repetia tudo isto horas depois, porque as duas metades da
+    // rodada compartilham o número dela.
+    (a) => a.rodada === estado.rodada && a.fase === 'noite' && a.origem !== 'evento',
   );
   const houveMorte = mortosDaNoite.length > 0;
 
@@ -63,7 +66,15 @@ export function AmanhecerScreen({ navigation }: Props) {
             <Text style={{ color: houveMorte ? cores.sangueSeco : cores.cera, fontSize: 26 }}>
               {houveMorte ? '✝' : '☉'}
             </Text>
-            <Rotulo>Noite {estado.rodada} · amanheceu</Rotulo>
+            <Rotulo>
+              {/*
+                Na Vila Amaldiçoada o cabeçalho vira contador: "Noite 3 de 5".
+                A mesa precisa da conta no lugar onde ela já olha todo dia, e
+                não escondida no meio dos anúncios.
+              */}
+              Noite {estado.rodada}
+              {estado.prazoDaMaldicao !== null ? ` de ${estado.prazoDaMaldicao}` : ''} · amanheceu
+            </Rotulo>
           </View>
         </Revelacao>
 
@@ -90,7 +101,7 @@ export function AmanhecerScreen({ navigation }: Props) {
                   <Text style={[tipografia.titulo, { color: cores.linhoCru }]}>{p.nome}</Text>
                   {estado.config.revelarRoleAoMorrer && (
                     <Text style={[tipografia.nomeDeRole, { color: cores.ferrugem, fontSize: 18 }]}>
-                      era {role(p.roleId).nome}
+                      era {nomeDaCarta(role(p.roleId), p.varianteId)}
                     </Text>
                   )}
                 </View>
@@ -102,17 +113,57 @@ export function AmanhecerScreen({ navigation }: Props) {
         {anuncios.length > 0 && (
           <Revelacao atraso={600}>
             <View style={{ marginTop: espaco.lg, gap: espaco.sm, alignItems: 'center' }}>
-              {anuncios.map((a, i) => (
-                <Text
-                  key={i}
-                  style={[
-                    tipografia.corpoSerif,
-                    { fontFamily: familia.serifItalico, color: cores.cera, textAlign: 'center' },
-                  ]}
-                >
-                  {a.texto}
-                </Text>
-              ))}
+              {/*
+                Dois pesos, e a diferença é a do sussurro para o pregão.
+
+                A pilha de frases em itálico está certa para o clima da noite —
+                "a vila velou o corpo a noite toda". Está errada para "Ana é o
+                Médico": essa frase muda a partida inteira e saía do mesmo
+                tamanho que as outras, no pé da tela, onde a mesa passava os
+                olhos. O `destaque` vem do engine (ver `Announcement`), e só as
+                revelações o carregam.
+              */}
+              {anuncios
+                .filter((a) => a.destaque)
+                .map((a, i) => (
+                  <View
+                    key={`d${i}`}
+                    style={{
+                      alignSelf: 'stretch',
+                      borderWidth: 1,
+                      borderColor: cores.folhaDeOuro,
+                      backgroundColor: '#241A17',
+                      padding: espaco.md,
+                      gap: 6,
+                    }}
+                  >
+                    <Text style={[tipografia.rotulo, { color: cores.folhaDeOuro }]}>
+                      {a.rotulo ?? 'Revelação'}
+                    </Text>
+                    <Text
+                      style={[
+                        tipografia.corpoSerif,
+                        { color: cores.linhoCru, fontSize: 19, lineHeight: 27 },
+                      ]}
+                    >
+                      {a.texto}
+                    </Text>
+                  </View>
+                ))}
+
+              {anuncios
+                .filter((a) => !a.destaque)
+                .map((a, i) => (
+                  <Text
+                    key={i}
+                    style={[
+                      tipografia.corpoSerif,
+                      { fontFamily: familia.serifItalico, color: cores.cera, textAlign: 'center' },
+                    ]}
+                  >
+                    {a.texto}
+                  </Text>
+                ))}
             </View>
           </Revelacao>
         )}

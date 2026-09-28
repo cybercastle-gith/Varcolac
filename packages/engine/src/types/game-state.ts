@@ -64,6 +64,21 @@ export interface GameState {
   readonly efeitos: readonly EfeitoAdiado[];
   readonly contadores: Contadores;
   readonly rng: RngState;
+  /**
+   * Vila Amaldiçoada: a última noite antes de a maldição levar todo mundo.
+   *
+   * Morava na fila de `efeitos`, como `prazo-da-maldicao`, e por isso **nunca
+   * vencia**: `limparEfeitosVencidos` descarta tudo com `naRodada < rodada`, e
+   * a checagem de derrota é `rodada > naRodada`. Quando a rodada finalmente
+   * passava do prazo, o efeito já tinha sido varrido — o modo inteiro só
+   * narrava agravamentos e não terminava nunca.
+   *
+   * A fila é para o que acontece NUMA rodada. Um prazo é o contrário disso:
+   * vale desde o começo e precisa continuar valendo depois de vencido.
+   *
+   * `null` em todos os modos que não são a Vila Amaldiçoada.
+   */
+  readonly prazoDaMaldicao: number | null;
   /** Objetivo do Coringa, alvo do Vingador, poção da Bruxa. */
   readonly objetivosSecretos: Readonly<Record<PlayerId, string>>;
   readonly vencedores: readonly PlayerId[] | null;

@@ -132,9 +132,20 @@ export const loboCarnical: Role = {
   id: 'lobo-carnical',
   nome: 'Lobo Carniçal',
   faccao: 'lobos',
-  categoria: 'passivo',
+  categoria: 'ataque',
   peso: 4,
-  etapa: 'estertores',
+  /*
+   * `ataque`, e não `estertores`.
+   *
+   * Ele é um LOBO, e com a etapa em `estertores` nunca recebia a pergunta de
+   * ataque: era um lobo que não mordia, e o voto dele na matilha não existia.
+   * Levantado em três sessões seguidas e decidido pelo usuário em 2026-09-28.
+   *
+   * A marca de quem ele leva junto continua existindo — agora é a segunda
+   * opção da noite dele (ver o roteiro), como nas outras cartas da matilha que
+   * escolhem entre duas coisas.
+   */
+  etapa: 'ataque',
   usoLimitado: { kind: 'por-partida', total: 1 },
   vitoriaPropria: false,
   descricaoCurta: 'Ao ser morto, não morre na hora: mata alguém e só expira na noite seguinte.',

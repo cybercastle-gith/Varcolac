@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { View, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { role, MODOS } from '@jogo/engine';
+import { role, MODOS, noitesDaMaldicao } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { TelaOperacao, Rolagem, Botao, Rotulo, Titulo, Pequeno, Corpo } from '../../components/ui';
@@ -122,17 +122,58 @@ export function RevisaoScreen({ navigation }: Props) {
         )}
 
         {/*
-          Composição oculta: a revisão mostra o índice e NÃO mostra as cartas.
-          O índice fica porque ele é sobre equilíbrio, não sobre quem é quem —
-          e é o único jeito de o host decidir se a mesa está jogável sem abrir
-          o baralho que ele acabou de fechar.
+          Seleção aleatória: aqui não se lista NADA.
+          
+          A tela de revisão é o último lugar antes de a primeira carta sair, e
+          é exatamente onde a mesa inteira está olhando junto. Mostrar a
+          composição aqui desfaria o modo; mostrar `?` no lugar de cada carta,
+          como a versão anterior fazia, ainda entregava QUANTAS cartas de cada
+          tipo existem. Uma frase e mais nada é o que não vaza.
         */}
-        {config.composicaoOculta ? (
+        {/*
+          O prazo da maldição, dito antes de começar.
+
+          "A vila tem um número fixo de noites" não serve de nada se a mesa
+          descobre o número na terceira manhã — relatado assim: "não tem noites
+          fixas claramente declaradas". Aqui ela decide se topa o modo sabendo
+          quantas noites tem.
+        */}
+        {config.modo === 'vila-amaldicoada' && (
+          <View
+            style={{
+              gap: espaco.xs,
+              marginTop: espaco.md,
+              borderLeftWidth: 2,
+              borderLeftColor: cores.garanca,
+              paddingLeft: espaco.md,
+            }}
+          >
+            <Rotulo cor={cores.garanca}>A maldição tem prazo</Rotulo>
+            <Pequeno cor={cores.linhoCru}>
+              {noitesDaMaldicao(jogadores.length)} noites. Se os lobos continuarem de pé depois da
+              última, a vila inteira se perde — não importa quantos restem.
+            </Pequeno>
+          </View>
+        )}
+
+        {config.selecaoAleatoria ? (
           <View style={{ gap: espaco.xs, marginTop: espaco.md }}>
-            <Rotulo cor={cores.cera}>O baralho está fechado</Rotulo>
+            <Rotulo cor={cores.cera}>Ninguém sabe o que vem aí</Rotulo>
             <Pequeno>
-              {deck.roleIds.length} cartas embaralhadas. Cada um vê só a própria função, na noite 1.
-              A mesa inteira descobre o resto no fim.
+              As cartas foram escolhidas entre as que vocês marcaram, e o app não vai dizer quais.
+              Cada um descobre só a própria função, na noite 1.
+            </Pequeno>
+            {/*
+              O índice acima é ESTIMATIVA, e dizer isso é obrigatório.
+              
+              Ele é calculado sobre um sorteio de exemplo tirado da seleção —
+              não sobre as cartas que vão entrar, que ainda não foram tiradas.
+              Sem esta linha o host lê "vila forte" como um fato sobre a partida
+              que está prestes a começar, e ela é um fato sobre outra partida.
+            */}
+            <Pequeno cor={cores.nogueira}>
+              O índice acima é uma estimativa: ele mede um sorteio de exemplo entre as cartas
+              marcadas, e não a mesa que vai sair.
             </Pequeno>
           </View>
         ) : (

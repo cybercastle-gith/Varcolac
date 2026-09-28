@@ -183,7 +183,29 @@ export function prepararNoite(estado: GameState): GameState {
   const totalDeJogadores = estado.players.length;
   players = players.map((p) => {
     if (p.marcas.conservaPoderAte !== undefined && rodada > p.marcas.conservaPoderAte) {
-      return { ...p, marcas: { ...p.marcas, semPoder: true } };
+      /*
+       * Sangue Novo: venceu o prazo, ele vira Lobo comum.
+       *
+       * Antes isto punha `semPoder` e deixava a carta antiga na mão — o mesmo
+       * defeito do poder emprestado que já foi corrigido em outras três cartas.
+       * A troca acontece aqui e não na etapa 7 porque é aqui que o prazo vence.
+       */
+      const { conservaPoderAte: _c, ...semPrazo } = p.marcas;
+      const { varianteId: _v, ...semVariante } = p;
+      return {
+        ...semVariante,
+        roleId: 'lobo',
+        usosRestantes: Infinity,
+        marcas: {
+          ...semPrazo,
+          viraCarta: {
+            deRoleId: p.roleId,
+            ...(p.varianteId ? { deVarianteId: p.varianteId } : {}),
+            paraRoleId: 'lobo',
+            motivo: 'O que você era acabou. Agora é lobo, como os outros.',
+          },
+        },
+      };
     }
     if (p.roleId !== 'coringa' || p.varianteId !== 'missao-sem-volta') return p;
     if (p.marcas.virouAldeao) return p;
@@ -223,7 +245,15 @@ export function prepararNoite(estado: GameState): GameState {
     );
     anuncios = [
       ...anuncios,
-      { rodada, texto: `${alvo.nome} não resistiu.`, origem: 'morte' as const },
+      {
+        rodada,
+        texto: `${alvo.nome} não resistiu ao que trouxe da noite passada.`,
+        origem: 'morte' as const,
+        // Acontece na virada da noite, antes de o aparelho circular.
+        fase: 'noite' as const,
+        destaque: true,
+        rotulo: 'A conta chegou',
+      },
     ];
   }
 
@@ -242,8 +272,11 @@ export function prepararNoite(estado: GameState): GameState {
       ...anuncios,
       {
         rodada,
-        texto: `A cela se abriu: ${alvo.nome} é ${ehLobo ? 'Lobo' : 'Aldeão'}.`,
+        texto: `A cela se abriu. ${alvo.nome} é ${ehLobo ? 'LOBO' : 'da vila'}.`,
         origem: 'role' as const,
+        fase: 'noite' as const,
+        destaque: true,
+        rotulo: 'A testemunha da cela',
       },
     ];
   }

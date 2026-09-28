@@ -1,7 +1,7 @@
 import type { GameConfig, Deck } from '../types/config';
 import { CONTADORES_ZERADOS, type GameState } from '../types/game-state';
 import type { Player, PlayerFlags } from '../types/player';
-import { usosIniciais } from '../types/role';
+import { usosIniciais, usosPorMesa } from '../types/role';
 import { role } from '../data/roles/index';
 import { MISSOES_DO_CORINGA } from '../data/missions';
 import { criarRng, type Rng } from '../utils/rng';
@@ -128,7 +128,8 @@ export function criarPartida(
       roleId,
       ...(varianteId === undefined ? {} : { varianteId }),
       status: 'vivo',
-      usosRestantes: usosIniciais(role(roleId).usoLimitado),
+      usosRestantes:
+        usosPorMesa(roleId, varianteId, jogadores.length) ?? usosIniciais(role(roleId).usoLimitado),
       flags: FLAGS_LIMPAS,
       marcas: {},
       semVoto: false,
@@ -141,16 +142,25 @@ export function criarPartida(
   return {
     config,
     deck,
-    // A troca do Ladrão pode ter mudado a role: os usos precisam acompanhar.
+    /*
+     * Os vínculos podem ter mudado a role (Contaminação), então os usos são
+     * recalculados — e `usosPorMesa` vem primeiro aqui pelo mesmo motivo de lá
+     * em cima: esquecer este segundo ponto zerava a regra do Delegado sem
+     * nenhum sinal.
+     */
     players: players.map((p) => ({
       ...p,
-      usosRestantes: usosIniciais(role(p.roleId).usoLimitado),
+      usosRestantes:
+        usosPorMesa(p.roleId, p.varianteId, jogadores.length) ??
+        usosIniciais(role(p.roleId).usoLimitado),
     })),
     rodada: 1,
     fase: 'noite',
     eventoDaNoite: null,
     eventoAnunciado: null,
     eventosUsados: [],
+    // Só a Vila Amaldiçoada põe prazo, no `aoCriarPartida` dela.
+    prazoDaMaldicao: null,
     historicoVotos: [],
     informacoes: [],
     anuncios: [],

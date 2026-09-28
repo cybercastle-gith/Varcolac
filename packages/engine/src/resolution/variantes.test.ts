@@ -96,19 +96,23 @@ describe('Alfa: a conversão, que não existia', () => {
     const { estado, id, quem } = mesa(['alfa', 'medico', 'aldeao', 'vidente', 'lobo'], {
       alfa: 'treinamento',
     });
+    // O id é capturado ANTES: depois da conversão ele não é mais 'medico'.
+    const filhoteId = id('medico');
     const n1 = resolverNoite(
       estado,
       noite([
-        acao({ actorId: id('alfa'), etapa: 'ataque', escolha: 'converter', alvos: [id('medico')] }),
+        acao({ actorId: id('alfa'), etapa: 'ataque', escolha: 'converter', alvos: [filhoteId] }),
       ]),
     );
-    expect(quem(n1.estado, 'medico').marcas.tuteladoPor).toBe(id('alfa'));
+    const filhote = n1.estado.players.find((p) => p.id === filhoteId)!;
+    expect(filhote.roleId).toBe('lobo');
+    expect(filhote.marcas.tuteladoPor).toBe(id('alfa'));
 
-    // Na noite 2 o convertido vota sozinho num alvo: o voto dele não conta.
+    // Na noite 2 o voto dele na matilha não conta.
     const n2 = resolverNoite(
       prepararNoite(n1.estado),
       noite(
-        [acao({ actorId: id('medico'), etapa: 'ataque', kind: 'atacar', alvos: [id('aldeao')] })],
+        [acao({ actorId: filhoteId, etapa: 'ataque', kind: 'atacar', alvos: [id('aldeao')] })],
         2,
       ),
     );
@@ -250,7 +254,8 @@ describe('Xerife', () => {
     const n2 = resolverNoite(prepararNoite(n1.estado), noite([], 2));
     const n3 = prepararNoite(n2.estado);
     expect(vozes(n3)).toContain('A cela se abriu');
-    expect(vozes(n3)).toContain('é Lobo');
+    // O texto passou a gritar o lado, como a revista do Delegado.
+    expect(vozes(n3)).toContain('é LOBO');
   });
 
   it('Xerife de Si Mesmo pode aparecer na própria lista de alvos', () => {
@@ -510,8 +515,14 @@ describe('Detetive Obsessivo', () => {
 });
 
 describe('Necromante', () => {
-  it('Cova Aberta: volta sem poder, e o poder continua sem funcionar', () => {
-    const { estado, id, quem } = mesa(['necromante', 'medico', 'aldeao', 'lobo', 'vidente'], {
+  it('Cova Aberta: quem volta VIRA Aldeão, e a carta antiga acaba ali', () => {
+    /*
+     * SUPERADO em 2026-09-27: antes isto afirmava `marcas.semPoder` e que a
+     * carta continuava a mesma. O jogador voltava "sem poder" mas seguia sendo
+     * a Vidente na tela final, no ícone e na revelação ao morrer. Agora a
+     * carta vira Aldeão de verdade.
+     */
+    const { estado, id } = mesa(['necromante', 'medico', 'aldeao', 'lobo', 'vidente'], {
       necromante: 'cova-aberta',
     });
     const n1 = resolverNoite(
@@ -520,32 +531,22 @@ describe('Necromante', () => {
     );
     const n2 = resolverNoite(
       prepararNoite(n1.estado),
-      noite(
-        [
-          acao({
-            actorId: id('necromante'),
-            etapa: 'ressurreicao',
-            alvos: [id('medico')],
-          }),
-        ],
-        2,
-      ),
+      noite([acao({ actorId: id('necromante'), etapa: 'ressurreicao', alvos: [id('medico')] })], 2),
     );
-    expect(quem(n2.estado, 'medico').status).toBe('vivo');
-    expect(quem(n2.estado, 'medico').marcas.semPoder).toBe(true);
+    const voltou = n2.estado.players.find((p) => p.id === id('medico'))!;
+    expect(voltou.status).toBe('vivo');
+    expect(voltou.roleId).toBe('aldeao');
 
-    // Na noite 3 a cura dele não pega mais.
-    const n3 = resolverNoite(
-      prepararNoite(n2.estado),
-      noite(
-        [
-          acao({ actorId: id('medico'), etapa: 'protecao', alvos: [id('aldeao')] }),
-          acao({ actorId: id('lobo'), etapa: 'ataque', alvos: [id('aldeao')] }),
-        ],
-        3,
-      ),
-    );
-    expect(quem(n3.estado, 'aldeao').status).toBe('morto');
+    /*
+     * A prova de que a cura acabou é o ROTEIRO — é ele que decide o que cada
+     * um pode fazer. Forjar uma ação de proteção direto na submissão testaria
+     * outra coisa: o engine aceita qualquer ação declarada, porque confia em
+     * quem a montou, e é o roteiro que nunca a oferece.
+     */
+    const n3 = prepararNoite(n2.estado);
+    const passagem = roteiroDaNoite(n3).find((p) => p.player.id === id('medico'))!;
+    expect(passagem.pergunta.falsa).toBe(true);
+    expect(passagem.lembrete).toContain('Aldeão');
   });
 });
 
@@ -582,8 +583,13 @@ describe('Feiticeiro', () => {
 });
 
 describe('poder emprestado', () => {
-  it('Herdeiro: o Aldeão herda a Vidente e passa a receber a pergunta dela', () => {
-    const { estado, id, quem } = mesa(['aldeao', 'vidente', 'medico', 'lobo', 'xerife'], {
+  it('Herdeiro: o Aldeão VIRA a Vidente, carta e tudo', () => {
+    /*
+     * SUPERADO em 2026-09-27: antes isto afirmava `marcas.poderDe`, ou seja,
+     * poder emprestado com a carta antiga na mão. O usuário pediu que ele
+     * "vire o personagem" — a carta troca de verdade.
+     */
+    const { estado, id } = mesa(['aldeao', 'vidente', 'medico', 'lobo', 'xerife'], {
       aldeao: 'herdeiro',
     });
     const n1 = resolverNoite(
@@ -594,9 +600,10 @@ describe('poder emprestado', () => {
       prepararNoite(n1.estado),
       noite([acao({ actorId: id('aldeao'), etapa: 'informacao', alvos: [id('vidente')] })], 2),
     );
-    expect(quem(n2.estado, 'aldeao').marcas.poderDe).toBe('vidente');
+    const herdeiro = n2.estado.players.find((p) => p.id === id('aldeao'))!;
+    expect(herdeiro.roleId).toBe('vidente');
 
-    // A pergunta da noite 3 tem de ser a da Vidente, e não o toque falso.
+    // Na noite 3 ele recebe a pergunta da Vidente, e não o toque falso.
     const n3 = prepararNoite(n2.estado);
     const passagem = roteiroDaNoite(n3).find((p) => p.player.id === id('aldeao'))!;
     expect(passagem.pergunta.falsa).toBe(false);
@@ -664,15 +671,20 @@ describe('as regras que o usuário definiu em 2026-09-26', () => {
     expect(passagem.pergunta.falsa).toBe(true);
   });
 
-  it('Ladrão Troca com Mortos: sem morto na mesa ele não recebe pergunta', () => {
+  it('Ladrão Troca com Mortos: sem morto na mesa ele recebe o MOTIVO', () => {
+    /*
+     * SUPERADO em 2026-09-28: antes isto exigia toque falso. Toque falso é
+     * mentira por necessidade, e aqui não há necessidade nenhuma — quem tem a
+     * carta sabe que tem, e ficar sem tela nenhuma parecia defeito do app. A
+     * varredura `cada-carta-age` foi quem cobrou isso.
+     */
     const { estado, id } = mesa(['ladrao', 'aldeao', 'vidente', 'lobo', 'medico'], {
       ladrao: 'troca-com-mortos',
     });
     const passagem = roteiroDaNoite(estado).find((p) => p.player.id === id('ladrao'));
-    // O Ladrão pode ter virado outra role na atribuição; se ainda é Ladrão, a
-    // pergunta tem de ser falsa por falta de mortos.
     if (passagem && passagem.player.roleId === 'ladrao') {
-      expect(passagem.pergunta.falsa).toBe(true);
+      expect(passagem.pergunta.aviso).toContain('alguém já caiu');
+      expect(passagem.pergunta.alvos).toHaveLength(0);
     }
   });
 

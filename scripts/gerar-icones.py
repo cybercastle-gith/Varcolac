@@ -1,89 +1,85 @@
+# -*- coding: utf-8 -*-
 """
-Gera os ícones de placeholder do app a partir da paleta Luz de Vela.
+Gera os ícones do app a partir da marca.
 
-Um losango Garança sobre Fuligem — o motivo de bordado da seção 7 do documento
-de identidade visual, que é justamente o que precisa funcionar a 48px.
+Por que um script e não três arquivos exportados à mão: os três ícones têm
+regras DIFERENTES e conflitantes, e refazê-los à mão garante que um deles saia
+errado na próxima vez.
 
-Não é o ícone final: o ícone final sai do banco de materiais fotografados.
-Isto existe para que `expo prebuild` produza um APK com a cara certa desde já.
+- `icon.png` (1024): iOS e a loja. Fundo opaco Fuligem, porque iOS não aceita
+  transparência e recorta o canto sozinho.
+- `adaptive-icon.png` (1024): Android. Fundo TRANSPARENTE (o sistema aplica o
+  `backgroundColor` do app.json) e a marca inteira dentro do círculo de
+  segurança — o Android recorta em círculo, quadrado arredondado ou gota,
+  dependendo do lançador, e o que passa de 66% do lado pode ser cortado.
+- `favicon.png` (48): a aba do navegador. Fundo opaco, sem margem: a 48px
+  qualquer respiro come o desenho.
 
-Uso:  python scripts/gerar-icones.py
+Uso: python scripts/gerar-icones.py
 """
 
-import shutil
-import struct
-import zlib
-from pathlib import Path
+import os
+import sys
 
-FULIGEM = (0x14, 0x10, 0x0D)
-GARANCA = (0xA3, 0x26, 0x20)
-CERA = (0xE0, 0xB7, 0x5C)
+from PIL import Image
 
-RAIZ = Path(__file__).resolve().parent.parent
-DESTINO = RAIZ / "assets" / "icons"
-# O app precisa dos assets DENTRO de apps/mobile: o Expo Go não serve arquivos
-# de fora da pasta do projeto ("Unable to resolve manifest assets").
-DESTINO_APP = RAIZ / "apps" / "mobile" / "assets"
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ASSETS = os.path.join(RAIZ, 'apps', 'mobile', 'assets')
+
+MARCA = os.path.join(ASSETS, 'app-logo.png')
+FULIGEM = (0x14, 0x10, 0x0D, 255)
 
 
-def png(caminho: Path, largura: int, altura: int, pixel) -> None:
-    """Escreve um PNG RGB sem dependência externa."""
-    linhas = bytearray()
-    for y in range(altura):
-        linhas.append(0)  # filtro "None"
-        for x in range(largura):
-            linhas.extend(pixel(x, y))
+def recortar_ao_conteudo(im):
+    """Corta a moldura transparente, para a margem ser nossa e não do arquivo."""
+    caixa = im.getbbox()
+    return im.crop(caixa) if caixa else im
 
-    def bloco(tipo: bytes, dados: bytes) -> bytes:
-        return (
-            struct.pack(">I", len(dados))
-            + tipo
-            + dados
-            + struct.pack(">I", zlib.crc32(tipo + dados) & 0xFFFFFFFF)
-        )
 
-    cabecalho = struct.pack(">2I5B", largura, altura, 8, 2, 0, 0, 0)
-    caminho.write_bytes(
-        b"\x89PNG\r\n\x1a\n"
-        + bloco(b"IHDR", cabecalho)
-        + bloco(b"IDAT", zlib.compress(bytes(linhas), 9))
-        + bloco(b"IEND", b"")
+def encaixar(marca, lado, ocupacao):
+    """A marca centrada num quadrado de `lado`, ocupando `ocupacao` dele."""
+    alvo = int(lado * ocupacao)
+    copia = marca.copy()
+    copia.thumbnail((alvo, alvo), Image.LANCZOS)
+    tela = Image.new('RGBA', (lado, lado), (0, 0, 0, 0))
+    tela.paste(
+        copia,
+        ((lado - copia.width) // 2, (lado - copia.height) // 2),
+        copia,
     )
+    return tela
 
 
-def losango(tamanho: int, fundo, traco, escala: float = 0.34, espessura: float = 0.055):
-    """Losango vazado, centrado. Traço de peso único, como manda o sistema."""
-    centro = tamanho / 2
-    raio = tamanho * escala
-    faixa = tamanho * espessura
-
-    def pixel(x: int, y: int):
-        d = abs(x + 0.5 - centro) + abs(y + 0.5 - centro)
-        return traco if abs(d - raio) <= faixa else fundo
-
-    return pixel
+def achatar(camada, fundo=FULIGEM):
+    """Põe a camada sobre um fundo opaco. iOS e favicon não aceitam alfa."""
+    tela = Image.new('RGBA', camada.size, fundo)
+    tela.alpha_composite(camada)
+    return tela.convert('RGB')
 
 
-def main() -> None:
-    DESTINO.mkdir(parents=True, exist_ok=True)
+def main():
+    if not os.path.exists(MARCA):
+        print('não encontrei a marca em', MARCA)
+        return 1
 
-    png(DESTINO / "icon.png", 1024, 1024, losango(1024, FULIGEM, GARANCA))
-    # O adaptativo do Android recorta as bordas: o motivo entra menor.
-    png(
-        DESTINO / "adaptive-icon.png",
-        1024,
-        1024,
-        losango(1024, FULIGEM, GARANCA, escala=0.24, espessura=0.04),
-    )
-    png(DESTINO / "splash.png", 1242, 1242, losango(1242, FULIGEM, CERA, escala=0.18))
-    png(DESTINO / "favicon.png", 48, 48, losango(48, FULIGEM, GARANCA))
+    marca = recortar_ao_conteudo(Image.open(MARCA).convert('RGBA'))
+    print('marca recortada:', marca.size)
 
-    DESTINO_APP.mkdir(parents=True, exist_ok=True)
-    for f in sorted(DESTINO.glob("*.png")):
-        shutil.copy2(f, DESTINO_APP / f.name)
-        # Sem seta unicode: o console do Windows usa cp1252 e quebraria.
-        print(f"{f.relative_to(RAIZ)}  {f.stat().st_size} bytes  ->  {(DESTINO_APP / f.name).relative_to(RAIZ)}")
+    # iOS / loja: 80% do quadrado, fundo opaco.
+    achatar(encaixar(marca, 1024, 0.80)).save(os.path.join(ASSETS, 'icon.png'))
+
+    # Android: 62% (dentro dos 66% de segurança), fundo transparente.
+    encaixar(marca, 1024, 0.62).save(os.path.join(ASSETS, 'adaptive-icon.png'))
+
+    # Navegador: cheio, fundo opaco. 48px não tem espaço para margem.
+    achatar(encaixar(marca, 48, 0.94)).save(os.path.join(ASSETS, 'favicon.png'))
+
+    for nome in ('icon.png', 'adaptive-icon.png', 'favicon.png'):
+        caminho = os.path.join(ASSETS, nome)
+        im = Image.open(caminho)
+        print(nome, im.size, im.mode, os.path.getsize(caminho), 'bytes')
+    return 0
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    sys.exit(main())

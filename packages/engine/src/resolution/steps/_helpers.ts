@@ -182,10 +182,28 @@ export function anunciar(
   estado: GameState,
   texto: string,
   origem: 'evento' | 'morte' | 'votacao' | 'role' | 'fantasma' | 'modo',
+  /** Revelação que a mesa tem de parar para ler. Ver `Announcement.destaque`. */
+  destaque?: { rotulo: string },
 ): GameState {
   return {
     ...estado,
-    anuncios: [...estado.anuncios, { rodada: estado.rodada, texto, origem }],
+    anuncios: [
+      ...estado.anuncios,
+      {
+        rodada: estado.rodada,
+        texto,
+        origem,
+        /*
+         * A fase sai do ESTADO, e não de um parâmetro.
+         *
+         * São quase trinta pontos de chamada espalhados por etapas, votação e
+         * modos; pedir a fase em cada um garantiria que alguém passasse a
+         * errada um dia, e o defeito reapareceria calado.
+         */
+        fase: estado.fase === 'noite' ? ('noite' as const) : ('dia' as const),
+        ...(destaque ? { destaque: true, rotulo: destaque.rotulo } : {}),
+      },
+    ],
   };
 }
 

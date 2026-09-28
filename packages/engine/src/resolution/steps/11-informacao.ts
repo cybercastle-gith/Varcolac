@@ -2,9 +2,21 @@ import type { GameState } from '../../types/game-state';
 import type { PlayerId } from '../../types/player';
 import { efeitosDaRodada } from '../../types/effect';
 import { role } from '../../data/roles/index';
+import { nomeDaCarta, usosIniciais } from '../../types/role';
+import { trocarCarta } from '../../turn/troca-de-carta';
 import type { StepFn } from '../night-pipeline';
-import { acoesDe, agendar, anunciar, entregarInfo, gravar, nome, roleEfetivaId } from './_helpers';
-import { leituraDeFaccao as leitura } from '../../turn/leitura';
+import {
+  acoesDe,
+  agendar,
+  anunciar,
+  entregarInfo,
+  gastarUso,
+  gravar,
+  nome,
+  roleEfetivaId,
+  temUso,
+} from './_helpers';
+import { leituraDeFaccao as leitura, visoesDaConfusa } from '../../turn/leitura';
 
 /**
  * Etapa 11 — Vidente e Detetive.
@@ -70,7 +82,7 @@ export const informacao: StepFn = (ctx) => {
         estado.rodada === 1
           ? `${alvoP.nome} é ${leitura(antes, travado)}.`
           : estado.rodada === 2
-            ? `${alvoP.nome} é ${role(roleEfetivaId(alvoP)).nome}.`
+            ? `${alvoP.nome} é ${nomeDaCarta(role(roleEfetivaId(alvoP)), alvoP.varianteId)}.`
             : (() => {
                 const ultima = antes.historicoVotos.at(-1);
                 const votou = ultima?.votos[travado];
@@ -107,8 +119,11 @@ export const informacao: StepFn = (ctx) => {
      * está no pescoço.
      */
     if (r.id === 'aldeao' && ator.varianteId === 'testemunha') {
-      estado = anunciar(estado, `O app confirma: ${ator.nome} é Aldeão.`, 'role');
-      estado = gravar(estado, ator.id, {});
+      if (!temUso(estado, ator.id)) continue;
+      estado = gastarUso(estado, ator.id);
+      estado = anunciar(estado, `O app confirma, e não mente: ${ator.nome} é Aldeão.`, 'role', {
+        rotulo: 'Uma prova',
+      });
       ctx.log.registrar('informacao', {
         mensagem: `${ator.nome} usou a testemunha.`,
         motivo: 'Variante Testemunha: confirmação pública e verdadeira, uma vez por partida.',
@@ -127,18 +142,37 @@ export const informacao: StepFn = (ctx) => {
       const mortoId = acao.alvos[0];
       const mortoP = mortoId ? antes.players.find((x) => x.id === mortoId) : undefined;
       if (!mortoP) continue;
-      estado = gravar(estado, ator.id, { poderDe: mortoP.roleId });
-      estado = entregarInfo(estado, {
-        rodada: estado.rodada,
-        paraId: ator.id,
-        origem: 'app',
-        texto: `Você herdou o poder de ${mortoP.nome}: ${role(mortoP.roleId).nome}.`,
-        verdadeira: true,
-        sobre: [mortoP.id],
+
+      /**
+       * O Herdeiro VIRA o morto — carta inteira, não poder emprestado.
+       *
+       * `marcas.poderDe` dava a habilidade e deixava a carta antiga na mão: na
+       * tela ele continuava Aldeão, o ícone era de Aldeão, e a revelação ao
+       * morrer dizia Aldeão. Relatado assim: "ele não está personificando quem
+       * ele herdou, ele tem que virar o personagem".
+       *
+       * A FACÇÃO acompanha. Herdar um lobo morto faz dele um lobo — é o preço
+       * de uma carta que pode virar qualquer coisa da mesa, e a razão de ser
+       * uma vez só por partida.
+       */
+      const novaRole = role(mortoP.roleId);
+      estado = trocarCarta(estado, ator.id, {
+        roleId: mortoP.roleId,
+        ...(mortoP.varianteId ? { varianteId: mortoP.varianteId } : {}),
+        usos: usosIniciais(novaRole.usoLimitado),
+        motivo: `Você herdou o que era de ${mortoP.nome}.`,
       });
+      estado = {
+        ...estado,
+        objetivosSecretos: {
+          ...estado.objetivosSecretos,
+          [ator.id]: `você herdou a carta de ${mortoP.nome}: agora é ${nomeDaCarta(novaRole, mortoP.varianteId)}`,
+        },
+      };
       ctx.log.registrar('informacao', {
-        mensagem: `${ator.nome} herdou ${role(mortoP.roleId).nome}.`,
-        motivo: 'Variante Herdeiro: herda a habilidade, nunca a facção.',
+        mensagem: `${ator.nome} virou ${nomeDaCarta(novaRole, mortoP.varianteId)}.`,
+        motivo:
+          'Variante Herdeiro: herda a CARTA inteira, inclusive a facção. Uma vez por partida.',
         atores: [ator.id],
         alvos: [mortoP.id],
       });
@@ -157,11 +191,16 @@ export const informacao: StepFn = (ctx) => {
       const mortoId = acao.alvos[0];
       const mortoP = mortoId ? antes.players.find((x) => x.id === mortoId) : undefined;
       if (!mortoP || mortoP.status === 'vivo') continue;
+      if (!temUso(estado, ator.id)) continue;
+      estado = gastarUso(estado, ator.id);
+      estado = trocarCarta(estado, ator.id, {
+        roleId: mortoP.roleId,
+        ...(mortoP.varianteId ? { varianteId: mortoP.varianteId } : {}),
+        usos: usosIniciais(role(mortoP.roleId).usoLimitado),
+        motivo: `Você vestiu a carta de ${mortoP.nome}.`,
+      });
       estado = {
         ...estado,
-        players: estado.players.map((x) =>
-          x.id === ator.id ? { ...x, roleId: mortoP.roleId } : x,
-        ),
         objetivosSecretos: {
           ...estado.objetivosSecretos,
           [ator.id]: `roubou a role de ${mortoP.nome}, que já estava morto`,
@@ -192,6 +231,8 @@ export const informacao: StepFn = (ctx) => {
      * prazo, e o prazo é dele.
      */
     if (r.id === 'bobo' && ator.varianteId === 'bobo-da-forca') {
+      if (!temUso(estado, ator.id)) continue;
+      estado = gastarUso(estado, ator.id);
       estado = gravar(estado, ator.id, { forcaNaRodada: estado.rodada });
       ctx.log.registrar('informacao', {
         mensagem: `${ator.nome} marcou a votação de hoje.`,
@@ -209,13 +250,30 @@ export const informacao: StepFn = (ctx) => {
       const mesma = b ? leitura(antes, a) === leitura(antes, b) : false;
 
       if (ator.varianteId === 'delegado') {
-        // Revista pública: a mesa inteira ouve, mas não descobre a facção.
-        const temPoder =
-          role(antes.players.find((p) => p.id === a)!.roleId).categoria !== 'nenhuma';
+        /**
+         * A revista revela a FACÇÃO, e é cara.
+         *
+         * Antes dizia só "tem poder" / "não tem poder" — quase inútil numa mesa
+         * onde metade das cartas tem poder. Decisão do usuário em 2026-09-27:
+         * revela o lado, em público, e em troca tem um uso a cada quatro
+         * jogadores (ver `usosDoDelegado`, em `types/role.ts`).
+         */
+        if (!temUso(estado, ator.id)) {
+          ctx.log.registrar('informacao', {
+            mensagem: `${ator.nome} não tem mais revistas.`,
+            motivo: 'A revista pública é limitada pelo tamanho da mesa.',
+            atores: [ator.id],
+          });
+          continue;
+        }
+        estado = gastarUso(estado, ator.id);
+        const ehLobo = leitura(antes, a) === 'lobo';
         estado = anunciar(
           estado,
-          `Revista em ${nome(antes, a)}: ${temPoder ? 'tem poder' : 'não tem poder'}.`,
+          `A revista em ${nome(antes, a)} terminou. ${nome(antes, a)} é ` +
+            (ehLobo ? 'LOBO.' : 'da vila.'),
           'role',
+          { rotulo: 'Revista pública' },
         );
       } else {
         estado = entregarInfo(estado, {
@@ -231,7 +289,7 @@ export const informacao: StepFn = (ctx) => {
       if (ator.varianteId === 'delegado') {
         ctx.log.registrar('informacao', {
           mensagem: `${ator.nome} revistou ${nome(antes, a)} em público.`,
-          motivo: 'Variante Delegado: a mesa ouve se o alvo tem poder, e não a facção.',
+          motivo: 'Variante Delegado: a facção do alvo foi lida em voz alta para a mesa.',
           atores: [ator.id],
           alvos: [a],
         });
@@ -290,37 +348,38 @@ export const informacao: StepFn = (ctx) => {
      * forte do que a carta diz.
      */
     if (ator.varianteId === 'confusa') {
-      const segundo = acao.alvos[1];
-      if (!segundo) continue;
+      /**
+       * As duas visões saem de `visoesDaConfusa`, e não de um sorteio local.
+       *
+       * A resposta imediata da passagem usa a MESMA função. Enquanto cada lado
+       * decidia por conta própria, a tela mostrava duas leituras verdadeiras e
+       * a noite seguinte entregava a versão com a mentira — dava para achar a
+       * falsa por comparação, que é o oposto do que a variante quer.
+       */
+      const visoes = visoesDaConfusa(antes, ator.id, acao.alvos);
+      if (visoes.length < 2) continue;
 
-      // Qual das duas mente sai do RNG semeado: a partida segue reproduzível.
-      const mentirNoSegundo = ctx.rng.next() < 0.5;
-      const entregar = (id: PlayerId, mente: boolean) => {
-        const pessoa = antes.players.find((x) => x.id === id)!;
-        const real = leitura(antes, id);
-        const dito = mente ? (real === 'lobo' ? 'da vila' : 'lobo') : real;
+      for (const v of visoes) {
         estado = entregarInfo(estado, {
           rodada: estado.rodada,
           paraId: ator.id,
           origem: 'vidente',
-          texto: `${pessoa.nome} é ${dito}.`,
-          verdadeira: !mente,
-          sobre: [id],
+          texto: v.texto,
+          verdadeira: v.verdadeira,
+          sobre: [v.alvoId],
         });
-      };
-      entregar(alvo, !mentirNoSegundo);
-      entregar(segundo, mentirNoSegundo);
+      }
 
-      const idFalso = mentirNoSegundo ? segundo : alvo;
       estado = {
         ...estado,
         players: estado.players.map((x) => (x.id === ator.id ? { ...x, semVoto: true } : x)),
       };
+      const mentira = visoes.find((v) => !v.verdadeira)!;
       ctx.log.registrar('informacao', {
-        mensagem: `${ator.nome} teve duas visões; a falsa foi sobre ${nome(antes, idFalso)}.`,
+        mensagem: `${ator.nome} teve duas visões; a falsa foi sobre ${nome(antes, mentira.alvoId)}.`,
         motivo: 'Variante Vidente Confusa: ela não sabe qual das duas mentiu.',
         atores: [ator.id],
-        alvos: [alvo, segundo],
+        alvos: visoes.map((v) => v.alvoId),
       });
       continue;
     }

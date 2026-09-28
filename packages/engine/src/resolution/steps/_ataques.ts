@@ -37,6 +37,21 @@ export function cotaDaMatilha(estado: GameState): number {
   return adiado && adiado.kind === 'matilha-mata-n' ? adiado.n : 1;
 }
 
+/**
+ * A matilha está proibida de matar esta noite?
+ *
+ * `cotaDaMatilha` responde pela mordida COLETIVA, e três cartas atacam por
+ * conta própria — o Feiticeiro atravessando, o Lobo Branco e o Carniceiro.
+ * Elas passavam por fora da cota e matavam na "noite 1 sem sangue", que é a
+ * opção cuja promessa inteira é que ninguém morre.
+ *
+ * A Bruxa e o Sobrevivente armado NÃO entram aqui: são solitários, e a opção
+ * fala da matilha.
+ */
+export function matilhaProibidaDeMatar(estado: GameState): boolean {
+  return estado.config.semMorteNaPrimeiraNoite === true && estado.rodada === 1;
+}
+
 /** Quantos alvos o Lobo Branco leva nesta noite. Sangue Acumulado dobra. */
 export function cotaDoLoboBranco(estado: GameState, id: PlayerId): number {
   const adiado = efeitosDaRodada(estado.efeitos, estado.rodada).find(
@@ -56,6 +71,19 @@ export function cotaDoLoboBranco(estado: GameState, id: PlayerId): number {
  */
 export function ataqueIndividual(p: Player): boolean {
   if (p.roleId === 'lobo-branco' || p.roleId === 'bruxa') return true;
+  /*
+   * O Feiticeiro que ATRAVESSA mata sozinho.
+   *
+   * Ele entrava na votação da matilha, e com dois lobos mirando alvos
+   * diferentes o alvo dele ia a sorteio: metade das vezes o poder de uma vez
+   * por partida simplesmente não acontecia. Relatado assim: "atravessar cura
+   * não está funcionando, um médico cura e eu seleciono para matar aquela
+   * pessoa curada mas ela não morre".
+   *
+   * O botão promete "mata de uma vez". Então mata — fora da cota, como o Lobo
+   * Branco e a Bruxa, que também atacam por conta própria.
+   */
+  if (p.roleId === 'feiticeiro') return true;
   // O Padre Exorcista mata quando acerta um lobo: entra aqui para que a etapa 8
   // resolva a benza dele como resolve qualquer outra morte.
   if (p.roleId === 'padre' && p.varianteId === 'exorcista') return true;

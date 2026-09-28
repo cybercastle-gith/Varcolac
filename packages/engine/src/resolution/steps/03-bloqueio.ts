@@ -52,20 +52,22 @@ export const bloqueio: StepFn = (ctx) => {
          * quem está preso desde o primeiro dia, e no segundo descobre de que
          * lado ele estava. É o Xerife trocando surpresa por prova.
          */
+        /**
+         * Testemunha da Cela: UMA noite de cela, e a revelação no dia seguinte.
+         *
+         * Eram duas noites presas com a revelação na terceira rodada — tão
+         * longe da prisão que a informação chegava sobre alguém que a mesa já
+         * tinha esquecido. Relatado assim: "se prende na noite 1, no dia 2 ele
+         * já tem que estar solto e apareceu o que aconteceu".
+         *
+         * Prende na noite 1 → fica preso na noite 2 → é solto e lido em voz
+         * alta no amanhecer do dia 2. O bloqueio comum já foi agendado acima
+         * para `amanha`; aqui só entra a revelação, na mesma rodada.
+         */
         case 'testemunha-da-cela':
-          estado = agendar(estado, {
-            kind: 'bloqueado-na-noite',
-            naRodada: amanha + 1,
-            playerId: alvo,
-            preso: true,
-          });
-          estado = agendar(estado, {
-            kind: 'revelar-preso',
-            naRodada: amanha + 1,
-            playerId: alvo,
-          });
-          estado = gravar(estado, alvo, { reveladoNaRodada: amanha + 1 });
-          extra = ' A prisão será anunciada, e no segundo dia o preso é revelado.';
+          estado = agendar(estado, { kind: 'revelar-preso', naRodada: amanha, playerId: alvo });
+          estado = gravar(estado, alvo, { reveladoNaRodada: amanha });
+          extra = ' No amanhecer seguinte ele sai da cela, e a mesa ouve de que lado ele está.';
           break;
 
         /**

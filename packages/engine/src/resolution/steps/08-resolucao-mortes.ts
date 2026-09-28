@@ -2,8 +2,23 @@ import type { CauseOfDeath, PlayerId } from '../../types/player';
 import type { GameState } from '../../types/game-state';
 import { role } from '../../data/roles/index';
 import type { StepFn } from '../night-pipeline';
-import { acoesDe, agendar, anunciar, gastarUso, gravar, marcar, matar, nome } from './_helpers';
-import { alvosDaMatilha, ataqueIndividual, cotaDoLoboBranco } from './_ataques';
+import {
+  acoesDe,
+  agendar,
+  anunciar,
+  gastarUso,
+  gravar,
+  marcar,
+  matar,
+  nome,
+  temUso,
+} from './_helpers';
+import {
+  alvosDaMatilha,
+  ataqueIndividual,
+  cotaDoLoboBranco,
+  matilhaProibidaDeMatar,
+} from './_ataques';
 import { faccaoEfetiva } from '../../turn/faccao';
 import { protecaoBloqueada } from './_protecao';
 import { ecosDaMorte } from './_mortes';
@@ -30,13 +45,28 @@ export const resolucaoMortes: StepFn = (ctx) => {
    */
   const perfuracoesQueMatam = acoesDe(ctx, 'perfuracao').filter((a) => {
     const ator = ctx.estado.players.find((p) => p.id === a.actorId);
-    return ator?.roleId === 'feiticeiro' && a.escolha === 'atravessar';
+    if (ator?.roleId !== 'feiticeiro' || a.escolha !== 'atravessar') return false;
+    /*
+     * O uso é lido em `estadoInicial`, e não em `estado`.
+     *
+     * A etapa 6 já cobrou o uso desta noite, então `estado` mostra zero para
+     * quem ACABOU de perfurar — cobrar de novo aqui anularia toda perfuração
+     * válida. A pergunta certa é "ele tinha uso quando a noite começou?", e só
+     * `estadoInicial` responde isso.
+     *
+     * Sem esta checagem a etapa 6 recusava a perfuração por falta de uso e a
+     * etapa 8 matava assim mesmo: o Feiticeiro perdia a perfuração e continuava
+     * matando todas as noites.
+     */
+    const antesDaNoite = ctx.estadoInicial.players.find((p) => p.id === a.actorId);
+    return (antesDaNoite?.usosRestantes ?? 0) > 0;
   });
 
   const ataques = [
     ...acoesDe(ctx, 'ataque').filter((a) => a.escolha !== 'uivar' && a.escolha !== 'converter'),
     ...perfuracoesQueMatam,
   ];
+  const idsQueAtravessam = new Set(perfuracoesQueMatam.map((a) => a.actorId));
   const protecoes = acoesDe(ctx, 'protecao');
 
   // Quem cada guarda-costas está cobrindo, para a troca de vida na hora certa.
@@ -71,6 +101,19 @@ export const resolucaoMortes: StepFn = (ctx) => {
     const atacante = estado.players.find((p) => p.id === a.actorId)!;
     if (!ataqueIndividual(atacante)) continue;
 
+    /*
+     * Noite sem sangue vale para quem é da MATILHA, mesmo atacando sozinho.
+     * A Bruxa e o Sobrevivente armado continuam livres: são solitários.
+     */
+    if (matilhaProibidaDeMatar(estado) && role(atacante.roleId).faccao === 'lobos') {
+      ctx.log.registrar('resolucao-mortes', {
+        mensagem: `${atacante.nome} não caçou.`,
+        motivo: 'Noite 1 sem sangue: nenhum lobo mata, nem os que atacam sozinhos.',
+        atores: [atacante.id],
+      });
+      continue;
+    }
+
     /**
      * A poção da VIDA nunca curou ninguém.
      *
@@ -79,6 +122,22 @@ export const resolucaoMortes: StepFn = (ctx) => {
      * tentou salvar. Metade da role fazia o oposto do que a carta prometia.
      */
     if (atacante.roleId === 'bruxa') {
+      /*
+       * A poção é de uso ÚNICO e ninguém gastava o uso.
+       *
+       * `usoLimitado` da Bruxa é `por-partida: 1` desde sempre, e nenhuma etapa
+       * chamava `gastarUso` — ela usava a poção todas as noites. Relatado
+       * assim: "a poção da bruxa não está com um único uso".
+       */
+      if (!temUso(estado, atacante.id)) {
+        ctx.log.registrar('resolucao-mortes', {
+          mensagem: `${atacante.nome} não tem mais poção.`,
+          motivo: 'Uma por partida.',
+          atores: [atacante.id],
+        });
+        continue;
+      }
+      estado = gastarUso(estado, atacante.id);
       estado = resolverPocao(ctx, estado, atacante.id, a.alvos, investidas, a.escolha);
       continue;
     }
@@ -169,9 +228,21 @@ export const resolucaoMortes: StepFn = (ctx) => {
       continue;
     }
 
-    // Sobrevivente com A Qualquer Custo: mata como um lobo, por conta própria.
+    /*
+     * O Feiticeiro só ataca por conta própria quando ESCOLHEU atravessar. Se
+     * escolheu caçar, o voto dele é da matilha como o de qualquer lobo —
+     * `ataqueIndividual` não distingue as duas escolhas, e é aqui que a
+     * distinção existe.
+     */
+    if (atacante.roleId === 'feiticeiro' && !idsQueAtravessam.has(a.actorId)) continue;
+
+    // Sobrevivente com A Qualquer Custo, e o Feiticeiro atravessando.
     for (const alvo of a.alvos) {
-      investidas.push({ alvo, atacanteId: atacante.id, causa: 'lobo-branco' });
+      investidas.push({
+        alvo,
+        atacanteId: atacante.id,
+        causa: atacante.roleId === 'feiticeiro' ? 'matilha' : 'lobo-branco',
+      });
     }
   }
 
@@ -306,15 +377,30 @@ export const resolucaoMortes: StepFn = (ctx) => {
      * sabendo — inclusive podendo ouvir o condenado à morte falar. É a variante
      * que mais muda o dia sem mudar nada da noite.
      */
-    const rastro = estado.players.find(
-      (p) => p.id === atacanteId && p.varianteId === 'rastro' && p.roleId === 'lobo',
-    );
+    /**
+     * Basta UM lobo com Rastro na mordida — não o primeiro da lista.
+     *
+     * `atacanteId` guarda o primeiro atacante que declarou aquele alvo, e a
+     * checagem olhava só para ele. Com dois lobos no mesmo alvo, se o Rastro
+     * não fosse o primeiro a passar o celular, a variante não acontecia.
+     * Relatado assim: "Lobo rastro não está funcionando".
+     */
+    const rastro = ataques.some((acaoDeAtaque) => {
+      const lobo = estado.players.find((p) => p.id === acaoDeAtaque.actorId);
+      return (
+        !!lobo &&
+        lobo.roleId === 'lobo' &&
+        lobo.varianteId === 'rastro' &&
+        acaoDeAtaque.alvos.includes(alvo)
+      );
+    });
     if (rastro && causa === 'matilha') {
       estado = gravar(estado, alvo, { morreDepoisDaVotacao: estado.rodada });
       estado = anunciar(
         estado,
-        `Há sangue na porta de ${vitima.nome}. Ele ainda está de pé — por enquanto.`,
+        `Há sangue na porta de ${vitima.nome}. Ele ainda está de pé — até o fim do dia.`,
         'morte',
+        { rotulo: 'Um rastro na soleira' },
       );
       ctx.log.registrar('resolucao-mortes', {
         mensagem: `${vitima.nome} foi marcado, e não morre agora.`,

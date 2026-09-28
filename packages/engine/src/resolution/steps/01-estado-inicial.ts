@@ -1,6 +1,8 @@
 import type { StepFn } from '../night-pipeline';
 import { role } from '../../data/roles/index';
+import { usosIniciais } from '../../types/role';
 import { acoesDe, nome } from './_helpers';
+import { trocarCarta } from '../../turn/troca-de-carta';
 
 /**
  * Etapa 1 — o ponto de partida da noite.
@@ -53,17 +55,31 @@ export const estadoInicial: StepFn = (ctx) => {
       if (!alvoP) continue;
 
       if (ator.varianteId === 'troca-forcada') {
-        const outro = acao.alvos[1] ? estado.players.find((p) => p.id === acao.alvos[1]) : undefined;
+        const outro = acao.alvos[1]
+          ? estado.players.find((p) => p.id === acao.alvos[1])
+          : undefined;
         if (!outro) continue;
+        /*
+         * Os usos acompanham a CARTA, e não a pessoa.
+         *
+         * Relatado em mesa: A usou o Ladrão em B, C trocou A e B, e B ficou com
+         * um Ladrão sem usos — porque o contador de A tinha ficado no corpo de
+         * B. Quem recebe uma carta recebe a carta inteira.
+         */
+        estado = trocarCarta(estado, alvoP.id, {
+          roleId: outro.roleId,
+          ...(outro.varianteId ? { varianteId: outro.varianteId } : {}),
+          usos: usosIniciais(role(outro.roleId).usoLimitado),
+          motivo: 'Alguém embaralhou as cartas. Esta é a sua agora.',
+        });
+        estado = trocarCarta(estado, outro.id, {
+          roleId: alvoP.roleId,
+          ...(alvoP.varianteId ? { varianteId: alvoP.varianteId } : {}),
+          usos: usosIniciais(role(alvoP.roleId).usoLimitado),
+          motivo: 'Alguém embaralhou as cartas. Esta é a sua agora.',
+        });
         estado = {
           ...estado,
-          players: estado.players.map((p) =>
-            p.id === alvoP.id
-              ? { ...p, roleId: outro.roleId }
-              : p.id === outro.id
-                ? { ...p, roleId: alvoP.roleId }
-                : p,
-          ),
           objetivosSecretos: {
             ...estado.objetivosSecretos,
             [ator.id]: `você trocou as cartas de ${alvoP.nome} e ${outro.nome}`,
@@ -79,13 +95,13 @@ export const estadoInicial: StepFn = (ctx) => {
       }
 
       if (ator.varianteId === 'contaminacao') {
+        estado = trocarCarta(estado, alvoP.id, {
+          roleId: 'ladrao',
+          usos: 1,
+          motivo: 'Você foi contaminado: agora também é um Ladrão.',
+        });
         estado = {
           ...estado,
-          players: estado.players.map((p) => {
-            if (p.id !== alvoP.id) return p;
-            const { varianteId: _v, ...semVariante } = p;
-            return { ...semVariante, roleId: 'ladrao' };
-          }),
           objetivosSecretos: {
             ...estado.objetivosSecretos,
             [ator.id]: `você contaminou ${alvoP.nome}`,
@@ -102,15 +118,26 @@ export const estadoInicial: StepFn = (ctx) => {
       }
 
       const nomeRoubado = role(alvoP.roleId).nome;
+      /*
+       * Pelas DUAS pontas, e por `trocarCarta`.
+       *
+       * O roubo mexia em `roleId` na mão, então nenhum dos dois via a tela de
+       * "sua carta mudou" e os usos não acompanhavam a carta nova — a vítima
+       * ficava com o Ladrão e com o contador de usos da carta antiga.
+       */
+      estado = trocarCarta(estado, ator.id, {
+        roleId: alvoP.roleId,
+        ...(alvoP.varianteId ? { varianteId: alvoP.varianteId } : {}),
+        usos: usosIniciais(role(alvoP.roleId).usoLimitado),
+        motivo: `Você roubou a carta de ${alvoP.nome}.`,
+      });
+      estado = trocarCarta(estado, alvoP.id, {
+        roleId: 'ladrao',
+        usos: usosIniciais(role('ladrao').usoLimitado),
+        motivo: 'Alguém levou a sua carta esta noite, e deixou esta no lugar.',
+      });
       estado = {
         ...estado,
-        players: estado.players.map((p) =>
-          p.id === ator.id
-            ? { ...p, roleId: alvoP.roleId }
-            : p.id === alvoP.id
-              ? { ...p, roleId: 'ladrao' }
-              : p,
-        ),
         objetivosSecretos: {
           ...estado.objetivosSecretos,
           // Diz QUAL carta, e não só que houve roubo: "roubou a role de Davi"

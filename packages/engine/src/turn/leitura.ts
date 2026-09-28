@@ -38,6 +38,16 @@ export interface RespostaImediata {
   readonly texto: string;
   /** Uma segunda linha, quando a variante entrega duas visões. */
   readonly segunda?: string;
+  /**
+   * As duas linhas valem o MESMO e devem ser desenhadas do mesmo tamanho.
+   *
+   * Sem isto a tela imprimia a primeira grande e a segunda pequena, e a
+   * Vidente Confusa saía da passagem achando que a segunda era um rodapé — uma
+   * hierarquia visual que a variante não tem.
+   */
+  readonly duasVisoes?: boolean;
+  /** Linha de contexto sob as visões, em tom menor. */
+  readonly rodape?: string;
   /** `true` quando a resposta NÃO é a leitura, e sim o aviso de que ela atrasa. */
   readonly adiada: boolean;
 }
@@ -109,12 +119,14 @@ export function respostaImediata(
      * eliminação qual era qual.
      */
     if (ator.varianteId === 'confusa') {
-      const segundo = alvos[1];
-      if (!segundo) return { texto, adiada: false };
-      const p2 = estado.players.find((x) => x.id === segundo)!;
+      const visoes = visoesDaConfusa(estado, actorId, alvos);
+      if (visoes.length < 2) return { texto, adiada: false };
       return {
-        texto,
-        segunda: `${p2.nome} é ${leituraDeFaccao(estado, segundo)}. Uma das duas é falsa.`,
+        texto: visoes[0]!.texto,
+        segunda: visoes[1]!.texto,
+        // As DUAS têm o mesmo peso na tela: nenhuma é rodapé da outra.
+        duasVisoes: true,
+        rodape: 'Uma das duas é falsa, e nem você sabe qual.',
         adiada: false,
       };
     }
@@ -154,9 +166,7 @@ export function respostaImediata(
     if (!alvoP) return null;
     const acertou = leituraDeFaccao(estado, alvoP.id) === 'lobo';
     return {
-      texto: acertou
-        ? `A benza pegou em ${alvoP.nome}.`
-        : `${alvoP.nome} não tinha nada dentro.`,
+      texto: acertou ? `A benza pegou em ${alvoP.nome}.` : `${alvoP.nome} não tinha nada dentro.`,
       segunda: acertou
         ? 'Você acertou. O resto a mesa descobre de manhã.'
         : 'Você errou, e perdeu a moral: daqui para frente é um Aldeão comum.',
@@ -165,4 +175,54 @@ export function respostaImediata(
   }
 
   return null;
+}
+
+/**
+ * Qual das duas visões da Vidente Confusa é a MENTIRA.
+ *
+ * Precisa ser decidido em dois lugares muito distantes: na resposta imediata,
+ * que aparece na passagem do celular, e na etapa 11, que grava as informações.
+ * A etapa 11 tem o RNG semeado da noite; a passagem não tem RNG nenhum — ela
+ * roda antes de qualquer resolução.
+ *
+ * Enquanto cada lado decidia por conta própria, a tela mostrava as duas leituras
+ * VERDADEIRAS e a noite seguinte entregava uma versão diferente com a mentira.
+ * Quem prestasse atenção descobria a falsa por comparação, que é exatamente o
+ * que a variante existe para impedir.
+ *
+ * A saída é não sortear: uma função pura da semente, da rodada, de quem
+ * investiga e de quem foi investigado. Determinística, idêntica dos dois lados,
+ * e sem consumir o RNG — consumir mudaria o resto da noite dependendo de a tela
+ * ter perguntado ou não.
+ */
+export function mentiraDaConfusa(
+  estado: GameState,
+  actorId: PlayerId,
+  alvos: readonly PlayerId[],
+): PlayerId | null {
+  const [a, b] = alvos;
+  if (!a || !b) return null;
+  const semente = `${estado.config.semente}|${estado.rodada}|${actorId}|${a}|${b}`;
+  let h = 2166136261;
+  for (let i = 0; i < semente.length; i += 1) {
+    h ^= semente.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) % 2 === 0 ? a : b;
+}
+
+/** A leitura da Confusa, já com a mentira no lugar. Uma linha por alvo. */
+export function visoesDaConfusa(
+  estado: GameState,
+  actorId: PlayerId,
+  alvos: readonly PlayerId[],
+): readonly { readonly alvoId: PlayerId; readonly texto: string; readonly verdadeira: boolean }[] {
+  const falso = mentiraDaConfusa(estado, actorId, alvos);
+  return alvos.slice(0, 2).map((id) => {
+    const p = estado.players.find((x) => x.id === id)!;
+    const real = leituraDeFaccao(estado, id);
+    const mente = id === falso;
+    const dito = mente ? (real === 'lobo' ? 'da vila' : 'lobo') : real;
+    return { alvoId: id, texto: `${p.nome} é ${dito}.`, verdadeira: !mente };
+  });
 }

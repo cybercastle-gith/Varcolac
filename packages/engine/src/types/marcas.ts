@@ -31,6 +31,27 @@ export interface Marcas {
   readonly conservaPoderAte?: number;
   /** Herança Amarga, Bobo Desesperado, Missão Sem Volta: virou Aldeão comum. */
   readonly virouAldeao?: boolean;
+  /**
+   * A carta mudou, e o jogador ainda não foi avisado na tela.
+   *
+   * Seis coisas trocam a carta de alguém no meio da partida — a conversão do
+   * Alfa, a herança do Aldeão, a Cova Aberta, a Herança Amarga, a Contaminação
+   * e a Troca com Mortos. Todas mudavam `roleId` em silêncio: o jogador pegava
+   * o aparelho na noite seguinte e a pergunta era outra, sem uma palavra sobre
+   * por quê.
+   *
+   * A marca é CONSUMIDA pela passagem: a tela de "sua carta mudou" aparece uma
+   * vez, antes da ação daquela noite, e a marca some. Guardar o papel ANTIGO é
+   * o que permite dizer "você era o Médico" em vez de só mostrar a carta nova.
+   */
+  readonly viraCarta?: {
+    readonly deRoleId: RoleId;
+    readonly deVarianteId?: string;
+    readonly paraRoleId: RoleId;
+    readonly paraVarianteId?: string;
+    /** Uma frase curta: quem fez isso e por quê. */
+    readonly motivo: string;
+  };
 
   // ── Voto ─────────────────────────────────────────────────────────────────
   /** Uivo de Troca: perdeu o voto pelo resto da partida. */
@@ -71,6 +92,17 @@ export interface Marcas {
   readonly atacadoNaRodada?: number;
   /** Obsessivo: o alvo travado na noite 1. */
   readonly alvoTravado?: PlayerId;
+  /**
+   * Quem este jogador leva junto quando morrer.
+   *
+   * O Caçador, a Armadilha e o Carniçal declaram isto em vida, e a declaração
+   * PRECISA atravessar as noites: ela era guardada só no mapa da noite em que
+   * foi feita, e a cadeia de estertores do DIA é chamada sem esse mapa. Ou
+   * seja: o Caçador escolhia o alvo, era linchado, e o tiro saía no "primeiro
+   * vivo da lista" — a escolha dele ia para o lixo justamente na morte mais
+   * comum do jogo.
+   */
+  readonly levaJunto?: PlayerId;
   /** Treinamento: convertido que só ataca depois que este Alfa morrer. */
   readonly tuteladoPor?: PlayerId;
   /** Sangue Acumulado: o lobo que o Lobo Branco marcou em vez de matar. */

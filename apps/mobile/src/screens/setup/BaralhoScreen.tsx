@@ -2,19 +2,10 @@ import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import {
-  ESTILOS,
-  ROLES_LOBOS,
-  ROLES_SOLITARIOS,
-  ROLES_VILA,
-  role,
-  varianteImplementada,
-  type DeckStyle,
-  type Role,
-  type RoleId,
-} from '@jogo/engine';
+import { motivoDaPendencia, type Role, type RoleId } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
+import { chaveDaCarta, funcoesDoModo } from '../../store/selecao';
 import { Ambiente } from '../../components/Ambiente';
 import { corDaFaccao } from '../../components/Motivo';
 import { IconeDeRole } from '../../components/IconeDeRole';
@@ -24,355 +15,162 @@ import { cores, espaco, raio, tipografia, alvoMinimo } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Baralho'>;
 
-type Aba = 'montar' | 'pronto';
-
 /**
- * Tela de baralho — depois do modo, e com tela própria.
+ * Tela de baralho — a mesa marca SIM ou NÃO em cada carta.
  *
- * **Montar o seu vem primeiro, de propósito.** É a escolha que dá autoria à
- * mesa, e a que o dossiê descreve como o coração do produto: o host não escolhe
- * um baralho, ele monta uma experiência. Os presets existem para quem tem
- * pressa, não como caminho principal.
+ * Reescrita em 2026-09-26. Antes havia três formas de montar a mesma coisa: um
+ * contador `- 0 +` por função, uma lista de "permitidas" para o sorteio, e o
+ * Baralho Surpresa. Três telas, três modelos mentais, e o host tinha de
+ * descobrir sozinho que eram a mesma decisão vista de ângulos diferentes.
+ *
+ * Agora é uma lista e um interruptor. A lista diz o que a mesa ACEITA ver; o
+ * interruptor (`selecaoAleatoria`) diz se o app pode escolher dentro dela. Com
+ * ele ligado a mesa marca mais cartas do que cadeiras e nunca sabe quais
+ * ficaram de fora — que é o único jeito honesto de esconder a composição, sem
+ * uma tela de `?` implorando para ser espiada.
+ *
+ * **A variante é uma carta à parte.** Querer o Xerife Boca Calada sem querer o
+ * Xerife normal é uma frase que o modelo antigo não conseguia dizer.
  */
 export function BaralhoScreen({ navigation }: Props) {
   const s = useJogo();
-  const [aba, setAba] = useState<Aba>('montar');
   const [aberta, setAberta] = useState<RoleId | null>(null);
 
-  const total = s.deck.roleIds.length;
-  const faltam = s.jogadores.length - total;
-  const completo = faltam === 0;
+  const aleatoria = s.config.selecaoAleatoria;
+  const saldo = s.saldoDaSelecao();
+  /**
+   * Quando pode seguir.
+   *
+   * No modo aleatório sobrar é o ponto — só faltar impede. Fora dele a conta
+   * tem de fechar exata, senão a mesa veria uma lista e jogaria outra.
+   */
+  const pronto = aleatoria ? saldo >= 0 : saldo === 0;
 
   const grupos: { titulo: string; roles: readonly Role[] }[] = [
-    { titulo: 'Vila', roles: ROLES_VILA },
-    { titulo: 'Lobos', roles: ROLES_LOBOS },
-    { titulo: 'Solitários', roles: ROLES_SOLITARIOS },
-  ];
+    { titulo: 'Vila', roles: funcoesDoModo(s.config.modo).filter((r) => r.faccao === 'vila') },
+    { titulo: 'Lobos', roles: funcoesDoModo(s.config.modo).filter((r) => r.faccao === 'lobos') },
+    {
+      titulo: 'Solitários',
+      roles: funcoesDoModo(s.config.modo).filter((r) => r.faccao === 'solitario'),
+    },
+  ].filter((g) => g.roles.length > 0);
+
+  const alternar = (roleId: RoleId, varianteId?: string) => {
+    void Haptics.selectionAsync();
+    s.alternarCarta(chaveDaCarta(roleId, varianteId));
+  };
 
   return (
     <Ambiente tipo="operacao" clima="neutro" tremula={false}>
-      {/* Cabeçalho fixo com a contagem: é o número que o host olha o tempo todo. */}
       <View style={{ paddingHorizontal: espaco.lg, paddingTop: espaco.md, gap: espaco.xs }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: espaco.sm }}>
           <Titulo>O baralho</Titulo>
-          <Text
-            style={[
-              tipografia.interface,
-              { color: completo ? cores.horezu : cores.cera, marginLeft: 'auto' },
-            ]}
-          >
-            {total} / {s.jogadores.length}
+          <Text style={[tipografia.interface, { color: pronto ? cores.cera : cores.garanca }]}>
+            {s.selecionadas.length} / {s.jogadores.length}
           </Text>
         </View>
-        {s.equilibrio && total > 0 && (
-          <Pequeno cor={s.equilibrio.aceitavel ? cores.horezu : cores.garanca}>
-            {s.equilibrio.leitura.replace('-', ' ').replace(/^./, (letra) => letra.toUpperCase())}
-            {s.equilibrio.aceitavel ? '' : ' (não recomendado)'}
-          </Pequeno>
-        )}
+        <Pequeno>
+          {aleatoria
+            ? 'Marque MAIS cartas do que cadeiras. O app escolhe quais entram, e ninguém vê.'
+            : 'Marque exatamente uma carta por jogador.'}
+        </Pequeno>
       </View>
 
-      {/* Duas abas: montar (padrão) e pronto. */}
-      <View
-        style={{
-          flexDirection: 'row',
-          gap: espaco.xs,
-          padding: espaco.lg,
-          paddingBottom: espaco.sm,
-        }}
-      >
-        {(
-          [
-            ['montar', 'Montar o meu'],
-            ['pronto', 'Prontos'],
-          ] as const
-        ).map(([id, rotulo]) => (
-          <Pressable
-            key={id}
-            onPress={() => setAba(id)}
-            style={{
-              flex: 1,
-              minHeight: alvoMinimo,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: raio.padrao,
-              borderWidth: 1,
-              borderColor: aba === id ? cores.garanca : '#3E362E',
-              backgroundColor: aba === id ? '#241A17' : 'transparent',
-            }}
-          >
-            <Text
-              style={[
-                tipografia.interface,
-                { color: aba === id ? cores.linhoCru : cores.ferrugem },
-              ]}
-            >
-              {rotulo}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {aba === 'montar' ? (
-        <ScrollView
-          contentContainerStyle={{
-            paddingHorizontal: espaco.lg,
-            paddingBottom: espaco.xl,
-            gap: espaco.sm,
+      <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
+        {/* ── O interruptor do modo de seleção ────────────────────────────── */}
+        <Pressable
+          onPress={() => {
+            void Haptics.selectionAsync();
+            s.setConfig({ selecaoAleatoria: !aleatoria });
+          }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: espaco.md,
+            minHeight: alvoMinimo,
+            borderWidth: 1,
+            borderColor: aleatoria ? cores.cera : '#2E2721',
+            backgroundColor: aleatoria ? '#241A17' : '#1A1613',
+            borderRadius: raio.padrao,
+            padding: espaco.md,
           }}
         >
-          <Pequeno>
-            Escolha quantas cartas de cada função entram, e qual versão de cada uma. Toque no nome
-            para ver as variantes.
-          </Pequeno>
+          <Marcador ligado={aleatoria} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[tipografia.interface, { color: cores.linhoCru }]}>Seleção aleatória</Text>
+            <Text style={[tipografia.pequeno, { color: cores.ferrugem }]}>
+              {aleatoria
+                ? 'A mesa escolhe o leque; o app escolhe a mão. Ninguém sabe a composição.'
+                : 'A mesa monta a composição carta por carta, e todos a conhecem.'}
+            </Text>
+          </View>
+        </Pressable>
 
-          {/*
-            Sorteio entre as escolhidas.
-            É o meio-termo entre montar carta a carta e aceitar o Baralho
-            Surpresa inteiro: o host marca QUAIS funções topa ver na mesa, sem
-            dizer quantas de cada, e o app sorteia uma composição válida só com
-            elas — medindo o equilíbrio, como em qualquer outro baralho.
-          */}
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: s.permitidas.length > 0 ? cores.cera : '#2E2721',
-              borderRadius: raio.padrao,
-              padding: espaco.md,
-              gap: espaco.sm,
-              marginBottom: espaco.xs,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.sm }}>
-              <View style={{ flex: 1 }}>
-                <Rotulo cor={s.permitidas.length > 0 ? cores.cera : cores.ferrugem}>
-                  Sortear entre as escolhidas
-                </Rotulo>
-                <Text style={[tipografia.pequeno, { color: cores.ferrugem, fontSize: 11 }]}>
-                  {s.permitidas.length === 0
-                    ? 'Toque no losango de cada função que pode entrar.'
-                    : `${s.permitidas.length} marcadas · o app escolhe ${s.jogadores.length} entre elas`}
-                </Text>
-              </View>
-              {s.permitidas.length > 0 && (
-                <Pressable onPress={s.limparPermitidas} hitSlop={10}>
-                  <Text style={[tipografia.rotulo, { color: cores.nogueira, fontSize: 10 }]}>
-                    desmarcar
-                  </Text>
-                </Pressable>
-              )}
-            </View>
-
-            <Botao
-              tom={s.permitidas.length > 0 ? 'primario' : 'secundario'}
-              desabilitado={s.permitidas.length === 0}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                s.sortearEntrePermitidas();
-              }}
-            >
-              Sortear a mesa
+        <View style={{ flexDirection: 'row', gap: espaco.sm }}>
+          <View style={{ flex: 1 }}>
+            <Botao tom="secundario" onPress={s.marcarTudo}>
+              Marcar tudo
             </Botao>
           </View>
-
-          {/*
-            Composição oculta: a mesa não vê o que entrou.
-            Fica junto do sorteio de propósito — é a mesma ideia levada ao fim:
-            o host escolhe o vocabulário e nem ele vê a composição.
-          */}
-          <Pressable
-            onPress={() => {
-              void Haptics.selectionAsync();
-              s.setConfig({ composicaoOculta: !s.config.composicaoOculta });
-            }}
-            style={{
-              minHeight: alvoMinimo,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: espaco.md,
-              borderWidth: 1,
-              borderColor: s.config.composicaoOculta ? cores.cera : '#2E2721',
-              backgroundColor: s.config.composicaoOculta ? '#241A17' : '#1A1613',
-              borderRadius: raio.padrao,
-              paddingHorizontal: espaco.md,
-              marginBottom: espaco.xs,
-            }}
-          >
-            <View
-              style={{
-                width: 16,
-                height: 16,
-                borderWidth: 1.5,
-                borderColor: s.config.composicaoOculta ? cores.cera : '#3E362E',
-                backgroundColor: s.config.composicaoOculta ? cores.cera : 'transparent',
-                transform: [{ rotate: '45deg' }],
-              }}
-            />
-            <View style={{ flex: 1 }}>
-              <Text style={[tipografia.interface, { color: cores.linhoCru }]}>
-                Composição oculta
-              </Text>
-              <Text style={[tipografia.pequeno, { color: cores.ferrugem, fontSize: 11 }]}>
-                {s.config.composicaoOculta
-                  ? 'Ninguém vê o baralho. Cada um descobre só a própria função.'
-                  : 'A mesa vê quais funções entraram antes de começar.'}
-              </Text>
-            </View>
-          </Pressable>
-
-          <View style={{ flexDirection: 'row', gap: espaco.sm, marginBottom: espaco.xs }}>
-            <Botao tom="claro" onPress={s.limparBaralho} style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>
+            <Botao tom="secundario" onPress={s.limparSelecao}>
               Limpar
             </Botao>
           </View>
+        </View>
 
-          {grupos.map((g, gi) => (
-            <View key={g.titulo} style={{ gap: espaco.xs, marginTop: espaco.sm }}>
-              <Rotulo>{g.titulo}</Rotulo>
-              {g.roles.map((r, i) => (
-                <Aparicao key={r.id} atraso={gi * 40 + i * 12}>
-                  <LinhaDeRole
-                    r={r}
-                    oculta={s.config.composicaoOculta}
-                    permitida={s.permitidas.includes(r.id)}
-                    onPermitir={() => {
-                      void Haptics.selectionAsync();
-                      s.alternarPermitida(r.id);
-                    }}
-                    quantidade={s.contarRole(r.id)}
-                    varianteId={s.config.variantes[r.id]}
-                    aberta={aberta === r.id}
-                    cheio={completo}
-                    onAbrir={() => setAberta(aberta === r.id ? null : r.id)}
-                    onAjustar={(d) => {
-                      void Haptics.selectionAsync();
-                      s.ajustarRole(r.id, d);
-                    }}
-                    onVariante={(v) => s.escolherVariante(r.id, v)}
-                  />
-                </Aparicao>
-              ))}
-            </View>
-          ))}
-        </ScrollView>
-      ) : (
-        <ScrollView
-          contentContainerStyle={{
-            paddingHorizontal: espaco.lg,
-            paddingBottom: espaco.xl,
-            gap: espaco.sm,
-          }}
-        >
-          <Pressable
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              s.baralhoSurpresa();
-            }}
+        {grupos.map((g) => (
+          <View key={g.titulo} style={{ gap: espaco.xs }}>
+            <Rotulo>
+              {g.titulo} · {g.roles.length}
+            </Rotulo>
+            {g.roles.map((r, i) => (
+              <Aparicao key={r.id} atraso={i * 12}>
+                <LinhaDeCarta
+                  r={r}
+                  selecionadas={s.selecionadas}
+                  aberta={aberta === r.id}
+                  onAbrir={() => setAberta(aberta === r.id ? null : r.id)}
+                  onAlternar={alternar}
+                />
+              </Aparicao>
+            ))}
+          </View>
+        ))}
+
+        {s.config.modo === 'traicao' && (
+          <View
             style={{
-              borderWidth: 1,
-              borderColor: cores.cera,
-              backgroundColor: '#241A17',
-              borderRadius: raio.padrao,
+              borderLeftWidth: 2,
+              borderLeftColor: cores.cera,
+              backgroundColor: '#221B17',
               padding: espaco.md,
               gap: 4,
             }}
           >
-            <Text style={[tipografia.interface, { color: cores.cera }]}>Baralho Surpresa</Text>
+            <Rotulo cor={cores.cera}>Traição</Rotulo>
             <Text style={[tipografia.pequeno, { color: cores.ferrugem }]}>
-              O app monta uma composição válida que ninguém na mesa conhece de antemão.
+              Não há cartas de lobo para escolher, e isso é o modo funcionando: a mesa começa
+              inteira do lado da vila e a matilha nasce das conversões, uma por amanhecer.
             </Text>
-          </Pressable>
-
-          {/*
-            O que o baralho escolhido tem dentro.
-            O Baralho Surpresa trocava a composição em silêncio: o host tocava,
-            o contador no topo mudava de número e nenhuma carta aparecia. Sem
-            isto não há como revisar — nem como decidir se vale sortear de novo.
-          */}
-          {s.config.composicaoOculta && (
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: cores.cera,
-                borderRadius: raio.padrao,
-                padding: espaco.md,
-                marginTop: espaco.sm,
-                gap: 4,
-              }}
-            >
-              <Rotulo cor={cores.cera}>Composição oculta</Rotulo>
-              <Text style={[tipografia.pequeno, { color: cores.ferrugem }]}>
-                O baralho está fechado. Cada um vê só a própria função, na noite 1, e a mesa inteira
-                só descobre o resto no fim da partida.
-              </Text>
-            </View>
-          )}
-
-          {s.deck.roleIds.length > 0 && !s.config.composicaoOculta && (
-            <View style={{ gap: espaco.xs, marginTop: espaco.sm }}>
-              <Rotulo cor={cores.cera}>Neste baralho · {s.deck.nome}</Rotulo>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: espaco.xs }}>
-                {[
-                  ...new Map(
-                    s.deck.roleIds.map((id) => [id, s.deck.roleIds.filter((x) => x === id).length]),
-                  ).entries(),
-                ].map(([id, n]) => (
-                  <View
-                    key={id}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      backgroundColor: '#1D1814',
-                      borderWidth: 1,
-                      borderColor: '#2E2721',
-                      borderRadius: raio.padrao,
-                      paddingVertical: 6,
-                      paddingHorizontal: 10,
-                    }}
-                  >
-                    <IconeDeRole roleId={id} tamanho={22} cor={corDaFaccao(id)} />
-                    <Text style={[tipografia.pequeno, { color: cores.linhoCru }]}>
-                      {role(id).nome}
-                      {n > 1 ? ` ×${n}` : ''}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {ESTILOS.map((e, i) => (
-            <Aparicao key={e.id} atraso={i * 20}>
-              <Pressable
-                onPress={() => s.setEstilo(e.id as DeckStyle)}
-                style={{
-                  minHeight: alvoMinimo,
-                  borderWidth: 1,
-                  borderColor: s.deck.id === e.id ? cores.garanca : '#2E2721',
-                  backgroundColor: s.deck.id === e.id ? '#241A17' : '#1D1814',
-                  borderRadius: raio.padrao,
-                  padding: espaco.md,
-                  gap: 2,
-                }}
-              >
-                <Text style={[tipografia.interface, { color: cores.linhoCru }]}>{e.nome}</Text>
-                <Text style={[tipografia.pequeno, { color: cores.ferrugem }]}>{e.frase}</Text>
-              </Pressable>
-            </Aparicao>
-          ))}
-        </ScrollView>
-      )}
+          </View>
+        )}
+      </ScrollView>
 
       <View style={{ padding: espaco.lg, gap: espaco.xs }}>
-        {!completo && (
+        {!pronto && (
           <Pequeno cor={cores.garanca}>
-            {faltam > 0
-              ? `Faltam ${faltam} carta(s) para fechar a mesa.`
-              : `Há ${-faltam} carta(s) a mais do que jogadores.`}
+            {saldo < 0
+              ? `Faltam ${-saldo} carta(s) para cobrir a mesa.`
+              : `Há ${saldo} carta(s) a mais. Ligue a seleção aleatória, ou desmarque.`}
           </Pequeno>
         )}
-        <Botao desabilitado={!completo} onPress={() => navigation.navigate('Sistemas')}>
+        {pronto && aleatoria && saldo > 0 && (
+          <Pequeno cor={cores.cera}>
+            {saldo} carta(s) vão ficar de fora, e ninguém vai saber quais.
+          </Pequeno>
+        )}
+        <Botao desabilitado={!pronto} onPress={() => navigation.navigate('Sistemas')}>
           Continuar
         </Botao>
       </View>
@@ -380,289 +178,141 @@ export function BaralhoScreen({ navigation }: Props) {
   );
 }
 
-/** Uma linha do construtor: motivo, nome, contador e as variantes. */
-function LinhaDeRole({
+/** O losango que diz sim ou não. O mesmo motivo da marca e das barras. */
+function Marcador({ ligado }: { ligado: boolean }) {
+  return (
+    <View
+      style={{
+        width: 18,
+        height: 18,
+        borderWidth: 1,
+        borderColor: ligado ? cores.cera : '#3E362E',
+        backgroundColor: ligado ? cores.cera : 'transparent',
+        transform: [{ rotate: '45deg' }],
+      }}
+    />
+  );
+}
+
+/**
+ * Uma função e as variantes dela, cada uma com o seu sim ou não.
+ *
+ * As variantes ficam recolhidas porque são 73 e a lista aberta seria ilegível —
+ * mas a contagem de quantas estão marcadas aparece na linha fechada, senão o
+ * host perde de vista o que escolheu três rolagens atrás.
+ */
+function LinhaDeCarta({
   r,
-  quantidade,
-  varianteId,
+  selecionadas,
   aberta,
-  cheio,
-  permitida,
-  oculta,
   onAbrir,
-  onAjustar,
-  onVariante,
-  onPermitir,
+  onAlternar,
 }: {
   r: Role;
-  quantidade: number;
-  varianteId: string | undefined;
+  selecionadas: readonly string[];
   aberta: boolean;
-  cheio: boolean;
-  /** Marcada para entrar no sorteio. Independe da quantidade escolhida à mão. */
-  permitida: boolean;
-  /** Composição oculta: mostra `?` no lugar da quantidade. */
-  oculta: boolean;
   onAbrir: () => void;
-  onAjustar: (delta: number) => void;
-  onVariante: (v: string | null) => void;
-  onPermitir: () => void;
+  onAlternar: (roleId: RoleId, varianteId?: string) => void;
 }) {
   const cor = corDaFaccao(r.id);
-  const dentro = quantidade > 0;
+  const baseMarcada = selecionadas.includes(chaveDaCarta(r.id));
+  const variantesMarcadas = r.variantes.filter((v) =>
+    selecionadas.includes(chaveDaCarta(r.id, v.id)),
+  ).length;
+  const algumaMarcada = baseMarcada || variantesMarcadas > 0;
 
   return (
     <View
-      /*
-       * A linha selecionada tem FUNDO e BORDA, não sombra.
-       *
-       * Antes o fundo era `dentro ? '' : '#1A1613'` — string vazia não é cor
-       * válida, então a linha escolhida ficava sem fundo nenhum. Com
-       * `elevation` e sem superfície opaca, o Android desenha a sombra solta e
-       * deslocada para baixo (o `elevation` ignora `shadowOffset`), que é a
-       * mancha esquisita em volta das funções selecionadas.
-       *
-       * Borda colorida faz o mesmo trabalho e é honesta: diz "esta entrou" sem
-       * fingir profundidade que a tela não tem. Também cumpre "nunca cor
-       * sozinha" — o contador ao lado diz quantas.
-       */
       style={{
-        backgroundColor: dentro ? '#241A17' : '#1A1613',
         borderWidth: 1,
-        borderColor: dentro ? cor : '#2E2721',
+        borderColor: algumaMarcada ? cor : '#2E2721',
+        backgroundColor: algumaMarcada ? '#241A17' : '#1A1613',
         borderRadius: raio.padrao,
         overflow: 'hidden',
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: alvoMinimo }}>
-        {/*
-          O marcador do sorteio.
-          Losango e não caixa de seleção: é o motivo da Vila no vocabulário do
-          jogo, e o alvo de toque tem 44px mesmo com o desenho pequeno — no
-          escuro, alvo pequeno é alvo errado.
-        */}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Pressable
-          onPress={onPermitir}
-          hitSlop={6}
+          onPress={() => onAlternar(r.id)}
           style={{
-            width: 44,
-            alignSelf: 'stretch',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          accessibilityLabel={`${permitida ? 'Tirar' : 'Pôr'} ${r.nome} no sorteio`}
-        >
-          <View
-            style={{
-              width: 16,
-              height: 16,
-              borderWidth: 1.5,
-              borderColor: permitida ? cores.cera : '#3E362E',
-              backgroundColor: permitida ? cores.cera : 'transparent',
-              transform: [{ rotate: '45deg' }],
-            }}
-          />
-        </Pressable>
-
-        <Pressable
-          onPress={onAbrir}
-          style={{
-            flex: 1,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 12,
-            paddingVertical: 12,
-            paddingRight: 12,
+            gap: espaco.sm,
+            flex: 1,
+            minHeight: alvoMinimo,
+            paddingHorizontal: espaco.md,
+            paddingVertical: espaco.sm,
           }}
         >
-          <IconeDeRole
-            roleId={r.id}
-            varianteId={varianteId}
-            tamanho={36}
-            cor={dentro ? cor : cores.nogueira}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={[tipografia.corpo, { color: dentro ? cores.linhoCru : cores.ferrugem }]}>
-              {varianteId ? r.variantes.find((v) => v.id === varianteId)?.nome : r.nome}
+          <Marcador ligado={baseMarcada} />
+          <IconeDeRole roleId={r.id} tamanho={30} cor={cor} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[tipografia.interface, { color: cores.linhoCru }]}>
+              {r.nome} <Text style={{ color: cores.ferrugem }}>peso {r.peso}</Text>
             </Text>
-            <Text style={[tipografia.pequeno, { color: cores.ferrugem, fontSize: 11 }]}>
-              {r.variantes.length > 0 ? ` Ver ${r.variantes.length} variantes` : ''}
+            <Text style={[tipografia.pequeno, { color: cores.ferrugem }]} numberOfLines={2}>
+              {r.descricaoCurta}
             </Text>
           </View>
         </Pressable>
 
-        {/*
-          Contador.
-          O alvo sempre teve 44 x 48, que passa no mínimo da identidade — o que
-          faltava era AFORDÂNCIA. Um `−` e um `+` soltos, no escuro, com o
-          aparelho passando de mão em mão, leem como texto e não como botão: a
-          pessoa aperta o nome da função em vez do sinal. A moldura resolve isso
-          sem mexer em tamanho nenhum.
-        */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: espaco.xs }}>
-          <Passo sinal="−" onPress={() => onAjustar(-1)} inativo={quantidade === 0} />
-          <Text
-            style={[
-              tipografia.numero,
-              {
-                fontSize: 18,
-                color: dentro ? cores.linhoCru : cores.nogueira,
-                width: 24,
-                textAlign: 'center',
-              },
-            ]}
-          >
-            {/*
-              Com a composição oculta, o host continua montando — ele só não vê
-              QUANTAS de cada entraram. É o que faz o baralho ser surpresa até
-              para quem o montou.
-            */}
-            {oculta ? '?' : quantidade}
+        {/* Abrir as variantes é um alvo SEPARADO do de marcar a base: tocar
+            para ver o que existe não pode marcar nada sem querer. */}
+        <Pressable
+          onPress={onAbrir}
+          style={{
+            minHeight: alvoMinimo,
+            minWidth: 56,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderLeftWidth: 1,
+            borderLeftColor: '#2E2721',
+            gap: 2,
+          }}
+        >
+          <Text style={[tipografia.rotulo, { color: cores.nogueira, fontSize: 10 }]}>
+            {variantesMarcadas > 0
+              ? `${variantesMarcadas}/${r.variantes.length}`
+              : r.variantes.length}
           </Text>
-          <Passo sinal="+" onPress={() => onAjustar(1)} inativo={cheio} />
-        </View>
+          <Text style={{ color: cores.nogueira, fontSize: 11 }}>{aberta ? '▴' : '▾'}</Text>
+        </Pressable>
       </View>
 
       {aberta && (
-        <View
-          style={{
-            padding: espaco.md,
-            gap: espaco.sm,
-            borderTopWidth: 1,
-            borderTopColor: '#2E2721',
-          }}
-        >
-          <Text style={[tipografia.pequeno, { color: cores.ferrugem }]}>{r.descricaoLonga}</Text>
-
-          {r.variantes.length > 0 && (
-            <>
-              <Rotulo cor={cores.cera}>Variantes</Rotulo>
-              {/* A variante é um COMPLEMENTO do motivo: o ícone ao lado muda junto. */}
-              <View style={{ gap: espaco.xs }}>
-                <OpcaoDeVariante
-                  roleId={r.id}
-                  nome={`${r.nome} (base)`}
-                  descricao={r.descricaoCurta}
-                  peso={r.peso}
-                  ativa={!varianteId}
-                  onPress={() => onVariante(null)}
-                />
-                {r.variantes.map((v) => (
-                  <OpcaoDeVariante
-                    key={v.id}
-                    roleId={r.id}
-                    varianteId={v.id}
-                    nome={v.nome}
-                    descricao={v.descricao}
-                    peso={v.peso}
-                    ativa={varianteId === v.id}
-                    onPress={() => onVariante(v.id)}
-                  />
-                ))}
-              </View>
-            </>
-          )}
+        <View style={{ borderTopWidth: 1, borderTopColor: '#2E2721' }}>
+          {r.variantes.map((v) => {
+            const marcada = selecionadas.includes(chaveDaCarta(r.id, v.id));
+            const pendencia = motivoDaPendencia(v.id);
+            return (
+              <Pressable
+                key={v.id}
+                onPress={() => onAlternar(r.id, v.id)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: espaco.sm,
+                  minHeight: alvoMinimo,
+                  paddingHorizontal: espaco.md,
+                  paddingVertical: espaco.sm,
+                  backgroundColor: marcada ? '#2A1F1A' : 'transparent',
+                }}
+              >
+                <Marcador ligado={marcada} />
+                <IconeDeRole roleId={r.id} varianteId={v.id} tamanho={26} cor={cores.cera} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[tipografia.interface, { color: cores.linhoCru, fontSize: 14 }]}>
+                    {v.nome} <Text style={{ color: cores.ferrugem }}>peso {v.peso}</Text>
+                  </Text>
+                  <Text style={[tipografia.pequeno, { color: cores.ferrugem }]}>{v.descricao}</Text>
+                  {/* O host precisa saber ANTES de escolher, não depois de jogar. */}
+                  {pendencia && <Pequeno cor={cores.nogueira}>{pendencia}</Pequeno>}
+                </View>
+              </Pressable>
+            );
+          })}
         </View>
       )}
     </View>
-  );
-}
-
-function OpcaoDeVariante({
-  roleId,
-  varianteId,
-  nome,
-  descricao,
-  peso,
-  ativa,
-  onPress,
-}: {
-  roleId: RoleId;
-  varianteId?: string;
-  nome: string;
-  descricao: string;
-  peso: number;
-  ativa: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: espaco.sm,
-        minHeight: alvoMinimo,
-        borderWidth: 1,
-        borderColor: ativa ? cores.cera : '#2E2721',
-        borderRadius: raio.padrao,
-        padding: espaco.sm,
-      }}
-    >
-      <IconeDeRole
-        roleId={roleId}
-        varianteId={varianteId}
-        tamanho={32}
-        cor={ativa ? cores.cera : cores.nogueira}
-      />
-      <View style={{ flex: 1 }}>
-        <Text style={[tipografia.pequeno, { color: ativa ? cores.linhoCru : cores.ferrugem }]}>
-          {nome}
-        </Text>
-        <Text style={[tipografia.pequeno, { color: cores.nogueira, fontSize: 11 }]}>
-          {descricao}
-        </Text>
-        {/* O host precisa saber antes de escolher, não depois de jogar. */}
-        {varianteId && !varianteImplementada(varianteId) && (
-          <Text style={[tipografia.rotulo, { color: cores.nogueira, fontSize: 9 }]}>
-            regra ainda não implementada
-          </Text>
-        )}
-      </View>
-    </Pressable>
-  );
-}
-
-// `role` é reexportado por conveniência de quem lê este arquivo isolado.
-void role;
-
-/** Um lado do contador: moldura de 38px dentro do alvo de 44 x 48. */
-function Passo({
-  sinal,
-  onPress,
-  inativo,
-}: {
-  sinal: string;
-  onPress: () => void;
-  inativo: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={inativo}
-      style={({ pressed }) => ({
-        width: 44,
-        height: 48,
-        alignItems: 'center',
-        justifyContent: 'center',
-        opacity: inativo ? 0.25 : 1,
-        transform: [{ translateY: pressed && !inativo ? 1 : 0 }],
-      })}
-    >
-      <View
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 4,
-          borderWidth: 1,
-          borderColor: '#3E362E',
-          backgroundColor: '#1D1814',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Text style={{ color: cores.linhoCru, fontSize: 20, lineHeight: 22 }}>{sinal}</Text>
-      </View>
-    </Pressable>
   );
 }

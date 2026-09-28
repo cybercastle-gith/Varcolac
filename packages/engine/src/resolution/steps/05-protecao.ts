@@ -259,7 +259,12 @@ export const protecao: StepFn = (ctx) => {
      * em 2026-09-26.
      */
     if (comoAge === 'medico' && ator.varianteId === 'de-guerra' && acao.alvos.length >= 2) {
-      estado = anunciar(estado, `${ator.nome} é o Médico.`, 'role');
+      estado = anunciar(
+        estado,
+        `${ator.nome} é o Médico. Ele curou duas pessoas esta noite, e por isso está exposto.`,
+        'role',
+        { rotulo: 'O Médico se revelou' },
+      );
       ctx.log.registrar('protecao', {
         mensagem: `${ator.nome} amanheceu revelado.`,
         motivo: 'Variante Médico de Guerra: cura dois, mas a mesa inteira fica sabendo quem é.',

@@ -13,10 +13,12 @@ import { useJogo } from './jogo';
 
 const zerar = () => {
   useJogo.setState({
-    jogadores: ['Ana', 'Bruno', 'Célia', 'Davi', 'Elza', 'Fábio', 'Gil', 'Hilda'].map((nome, i) => ({
-      nome,
-      cor: `#00000${i}`,
-    })),
+    jogadores: ['Ana', 'Bruno', 'Célia', 'Davi', 'Elza', 'Fábio', 'Gil', 'Hilda'].map(
+      (nome, i) => ({
+        nome,
+        cor: `#00000${i}`,
+      }),
+    ),
     estado: null,
     vitoria: null,
     roteiro: [],
@@ -188,16 +190,91 @@ describe('sessão de mesa', () => {
     expect(jogar()).toEqual(jogar());
   });
 
-  it('o Baralho Surpresa monta uma composição do tamanho da mesa', () => {
-    useJogo.getState().baralhoSurpresa();
-    const { deck, jogadores, equilibrio } = useJogo.getState();
+  it('marcar tudo cobre a mesa e o baralho previsto tem o tamanho dela', () => {
+    // SUPERADO: o Baralho Surpresa deixou de existir em 2026-09-26. O que
+    // ocupou o lugar dele é marcar as cartas e ligar a seleção aleatória.
+    useJogo.getState().marcarTudo();
+    const { selecionadas, deck, jogadores, equilibrio } = useJogo.getState();
+    expect(selecionadas.length).toBeGreaterThan(jogadores.length);
     expect(deck.roleIds).toHaveLength(jogadores.length);
     expect(equilibrio).not.toBeNull();
+  });
+
+  it('a variante escolhida acompanha a CARTA, e não a função', () => {
+    const s = useJogo.getState();
+    s.limparSelecao();
+    // Boca Calada SIM, Xerife normal NÃO: a frase que o modelo antigo não dizia.
+    s.alternarCarta('xerife:boca-calada');
+    const { deck } = useJogo.getState();
+    const i = deck.roleIds.indexOf('xerife');
+    expect(i).toBeGreaterThanOrEqual(0);
+    expect(deck.variantes?.[i]).toBe('boca-calada');
+  });
+
+  it('trocar para Traição poda as cartas de lobo da seleção', () => {
+    const s = useJogo.getState();
+    s.limparSelecao();
+    s.alternarCarta('lobo');
+    s.alternarCarta('vidente');
+    s.setConfig({ modo: 'traicao' });
+    expect(useJogo.getState().selecionadas).toEqual(['vidente']);
+    s.setConfig({ modo: 'classico' });
   });
 
   it('trocar o número de jogadores refaz o baralho para caber', () => {
     useJogo.getState().adicionarJogador('Ivo');
     const { deck, jogadores } = useJogo.getState();
     expect(deck.roleIds).toHaveLength(jogadores.length);
+  });
+});
+
+describe('seleção aleatória é balanceada', () => {
+  /*
+   * Embaralhar a seleção e cortar N era honesto e péssimo: com 97 cartas
+   * marcadas para seis cadeiras, sai mesa sem nenhum lobo com frequência —
+   * e quem descobre é a mesa, na terceira noite.
+   */
+  it('nunca sorteia uma mesa sem lobo, nem uma mesa só de lobos', () => {
+    const s = useJogo.getState();
+    s.limparSelecao();
+    s.marcarTudo();
+    s.setConfig({ selecaoAleatoria: true });
+
+    for (let i = 0; i < 25; i += 1) {
+      // Semente nova a cada volta: é o sorteio da PARTIDA que precisa valer.
+      useJogo.getState().setConfig({ semente: `sorteio-${i}` });
+      useJogo.getState().comecar();
+      const estado = useJogo.getState().estado!;
+      const lobos = estado.players.filter((p) => role(p.roleId).faccao === 'lobos').length;
+      const total = estado.players.length;
+
+      expect(lobos, `mesa ${i} saiu sem lobo`).toBeGreaterThan(0);
+      expect(lobos, `mesa ${i} saiu com lobos demais`).toBeLessThan(total / 2);
+    }
+  });
+
+  it('respeita o que a mesa marcou: função não marcada não entra', () => {
+    const s = useJogo.getState();
+    s.limparSelecao();
+    // Um leque pequeno e explícito, maior que a mesa.
+    for (const k of ['lobo', 'alfa', 'aldeao', 'vidente', 'medico', 'xerife', 'padre', 'cacador']) {
+      s.alternarCarta(k);
+    }
+    s.setConfig({ selecaoAleatoria: true, semente: 'restrito' });
+    useJogo.getState().comecar();
+
+    const permitidas = new Set([
+      'lobo',
+      'alfa',
+      'aldeao',
+      'vidente',
+      'medico',
+      'xerife',
+      'padre',
+      'cacador',
+    ]);
+    for (const p of useJogo.getState().estado!.players) {
+      expect(permitidas.has(p.roleId), `${p.roleId} entrou sem ter sido marcado`).toBe(true);
+    }
   });
 });

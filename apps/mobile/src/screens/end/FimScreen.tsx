@@ -1,6 +1,6 @@
 import { View, Text, ScrollView } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { role, MISSOES_POR_ID } from '@jogo/engine';
+import { role, nomeDaCarta, MISSOES_POR_ID } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { Botao, Titulo, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
@@ -77,7 +77,14 @@ export function FimScreen({ navigation }: Props) {
                   morto={p.status === 'morto'}
                   corDoPonto={cor}
                   detalhe={
-                    `${r.nome}` +
+                    /*
+                     * O nome da CARTA, e não o da função base.
+                     *
+                     * A tela final é onde a mesa descobre tudo, e dizer
+                     * "Xerife" a quem jogou a noite toda de Boca Calada apaga
+                     * exatamente a informação que explica o que aconteceu.
+                     */
+                    `${nomeDaCarta(r, p.varianteId)}` +
                     (p.status === 'morto'
                       ? ` · morreu na ${p.mortoNaRodada}ª noite (${p.causaMorte})`
                       : '') +
@@ -113,7 +120,24 @@ export function FimScreen({ navigation }: Props) {
         <Botao
           onPress={() => {
             encerrar();
-            navigation.reset({ index: 0, routes: [{ name: 'Revisao' }] });
+            /*
+             * A pilha inteira do setup, e não só a Revisão.
+             *
+             * `reset` com uma rota só deixa a tela sem nada embaixo: o botão
+             * "Voltar" da Revisão chama `goBack()` e não tem para onde ir.
+             * Relatado assim: "após eu clicar em jogar novamente, e vou pra
+             * tela de revisão não consigo voltar".
+             */
+            navigation.reset({
+              index: 4,
+              routes: [
+                { name: 'Home' },
+                { name: 'Jogadores' },
+                { name: 'Modo' },
+                { name: 'Baralho' },
+                { name: 'Revisao' },
+              ],
+            });
           }}
         >
           Jogar de novo

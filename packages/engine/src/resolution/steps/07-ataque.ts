@@ -4,6 +4,7 @@ import { role } from '../../data/roles/index';
 import { faccaoEfetiva } from '../../turn/faccao';
 import type { StepFn } from '../night-pipeline';
 import { acoesDe, agendar, anunciar, gastarUso, gravar, nome, temUso } from './_helpers';
+import { trocarCarta } from '../../turn/troca-de-carta';
 import { ataqueIndividual, cotaDaMatilha, quantosLobosVivos } from './_ataques';
 
 /**
@@ -49,7 +50,9 @@ export const ataque: StepFn = (ctx) => {
 
     const delatado = acao.alvos[0] ? estado.players.find((p) => p.id === acao.alvos[0]) : ator;
     if (!delatado) continue;
-    estado = anunciar(estado, `Um uivo atravessou a vila: ${delatado.nome} é lobo.`, 'role');
+    estado = anunciar(estado, `Um uivo atravessou a vila: ${delatado.nome} é lobo.`, 'role', {
+      rotulo: 'Um uivo na mata',
+    });
 
     switch (ator.varianteId) {
       /**
@@ -118,12 +121,30 @@ export const ataque: StepFn = (ctx) => {
     if (!alvo || !temUso(estado, ator.id)) continue;
 
     estado = gastarUso(estado, ator.id);
+
+    /**
+     * O convertido vira um LOBO comum — carta e tudo.
+     *
+     * Antes ele mantinha a própria carta e só mudava de lado, o que criava um
+     * Médico que curava para a matilha. Decisão do usuário em 2026-09-28: "o
+     * alvo transformado pelo alfa deve virar um lobo normal".
+     *
+     * A marca `'convertido'` continua em `objetivosSecretos` porque é dela que
+     * o modo Traição e a tela de segredo vivem — e porque distinguir "nasceu
+     * lobo" de "virou lobo" ainda importa para o Sangue Marcado e para o
+     * Treinamento.
+     */
+    estado = trocarCarta(estado, alvo.id, {
+      roleId: 'lobo',
+      usos: Infinity,
+      motivo: `Você foi mordido esta noite. Agora caça com a matilha.`,
+    });
     estado = {
       ...estado,
       objetivosSecretos: { ...estado.objetivosSecretos, [alvo.id]: 'convertido' },
     };
 
-    let detalhe = 'Mantém a própria habilidade e passa a caçar com a matilha.';
+    let detalhe = 'Vira um Lobo comum e passa a caçar com a matilha.';
 
     switch (ator.varianteId) {
       /**
@@ -133,10 +154,24 @@ export const ataque: StepFn = (ctx) => {
        * que era, para sempre; aqui ele tem uma única noite para usar o poder da
        * vila a favor dos lobos e depois vira um lobo comum.
        */
+      /**
+       * Sangue Novo: ele leva a carta ANTIGA por uma noite.
+       *
+       * Com a conversão base trocando a carta na hora, esta variante é a única
+       * que ainda empresta poder: o convertido continua sendo o que era por uma
+       * noite — e é aí que mora o valor dela para a matilha — e só depois vira
+       * Lobo comum.
+       */
       case 'sangue-novo':
+        estado = trocarCarta(estado, alvo.id, {
+          roleId: alvo.roleId,
+          ...(alvo.varianteId ? { varianteId: alvo.varianteId } : {}),
+          usos: alvo.usosRestantes,
+          motivo: 'Você foi mordido, mas o que era seu ainda serve — por uma noite.',
+        });
         estado = gravar(estado, alvo.id, { conservaPoderAte: estado.rodada + 1 });
         detalhe =
-          'Variante Sangue Novo: guarda a habilidade antiga por uma noite e depois a perde.';
+          'Variante Sangue Novo: guarda a carta antiga por uma noite e só depois vira Lobo.';
         break;
 
       /**

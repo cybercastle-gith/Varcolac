@@ -32,6 +32,18 @@ function alinhamento(estado: GameState, p: Player): ResolvedAlignment | undefine
   const a = role(p.roleId).alinhamento;
   if (a === 'bem' || a === 'mal' || a === 'puro') return a;
   if (a === 'definido-em-jogo') {
+    /**
+     * Só a Bruxa BASE muda de lado pela poção.
+     *
+     * Decisão do usuário em 2026-09-27: as três variantes (Compartilhada,
+     * Misteriosa, Ressonante) contam sempre como vila, mesmo usando a poção de
+     * morte. Nenhuma delas ESCOLHE matar do jeito que a base escolhe — a
+     * Compartilhada atinge um segundo alvo às cegas, a Misteriosa não sabe o
+     * que tem no frasco, e a Ressonante paga anunciando que existe. Contá-las
+     * como lobo encerrava partidas na paridade por uma morte que a jogadora
+     * não decidiu.
+     */
+    if (p.varianteId) return 'bem';
     return estado.objetivosSecretos[p.id] === 'pocao-morte' ? 'mal' : 'bem';
   }
   return a === undefined ? undefined : 'puro';
@@ -259,9 +271,7 @@ export function verificarVitoria(estado: GameState): VictoryResult {
    * noite 1 — a partida acabava antes de o modo começar a existir.
    */
   const traicaoAindaVaiConverter =
-    estado.config.modo === 'traicao' &&
-    lobosVivos.length === 0 &&
-    vivosAgora.length > 2;
+    estado.config.modo === 'traicao' && lobosVivos.length === 0 && vivosAgora.length > 2;
 
   if (traicaoAindaVaiConverter) {
     return { encerrada: false, camadas: [] };
@@ -294,7 +304,24 @@ export function verificarVitoria(estado: GameState): VictoryResult {
     });
   }
 
-  const encerrada = camadas.length > 0;
+  /**
+   * O Vingador ENCERRA a partida quando o juramento se cumpre.
+   *
+   * `vitoriaPropria: true` já estava na carta, e a vitória dele entrava como
+   * camada — que só é lida quando a partida acaba por outro motivo. Na prática
+   * o alvo morria, ele tinha vencido, e o jogo seguia por mais três noites sem
+   * ninguém saber. É o mesmo caso do Bobo, que encerra na votação.
+   */
+  const vingancaCumprida = estado.players.some((p) => {
+    if (p.roleId !== 'vingador' || !disputaVitoriaPropria(p)) return false;
+    const alvoId = estado.objetivosSecretos[p.id];
+    const alvo = alvoId ? estado.players.find((x) => x.id === alvoId) : undefined;
+    if (alvo?.status !== 'morto') return false;
+    // A Vingança da Praça só conta se a corda o matou.
+    return p.varianteId !== 'vinganca-da-praca' || alvo.causaMorte === 'linchamento';
+  });
+
+  const encerrada = camadas.length > 0 || vingancaCumprida;
   if (encerrada) camadas.push(...camadasDeSolitarios(estado, vivosAgora));
 
   return { encerrada, camadas };

@@ -99,26 +99,66 @@ const traicao: ModeHooks = {
   },
 };
 
+/**
+ * Quantas noites a vila tem, por tamanho de mesa.
+ *
+ * Exportado porque a tela de revisão precisa dizer o número ANTES de a partida
+ * começar — a mesa decide se topa o modo sabendo o prazo, e não descobrindo
+ * na terceira manhã.
+ */
+export function noitesDaMaldicao(jogadores: number): number {
+  return Math.max(3, Math.ceil(jogadores / 2));
+}
+
 const vilaAmaldicoada: ModeHooks = {
   id: 'vila-amaldicoada',
   nome: 'Vila Amaldiçoada',
   descricao:
     'A vila tem um número fixo de noites. Se não eliminar os lobos até lá, todos morrem. ' +
     'A cada noite o app sorteia um agravamento e narra em uma frase.',
-  aoCriarPartida: (estado) => ({
-    ...estado,
+  aoCriarPartida: (estado) => {
     // O prazo escala com a mesa: mesa grande precisa de mais noites para agir.
-    efeitos: [
-      ...estado.efeitos,
-      { kind: 'prazo-da-maldicao', naRodada: Math.ceil(estado.players.length / 2) },
-    ],
-  }),
+    const prazo = noitesDaMaldicao(estado.players.length);
+    return anunciar(
+      { ...estado, prazoDaMaldicao: prazo },
+      `A maldição tem prazo: ${prazo} noites. Se os lobos continuarem de pé depois da ` +
+        `noite ${prazo}, a vila inteira se perde.`,
+      'modo',
+      { rotulo: 'O prazo da maldição' },
+    );
+  },
   aoAmanhecer: (estado, rng) => {
     const a = rng.pick(AGRAVAMENTOS);
-    return anunciar(estado, a.texto, 'modo');
+    let e = anunciar(estado, a.texto, 'modo');
+
+    /*
+     * A contagem regressiva é dita TODA manhã.
+     *
+     * "A vila tem um número fixo de noites" não serve de nada se a mesa não
+     * souber quantas faltam — relatado assim: "não tem noites fixas claramente
+     * declaradas". A última noite é anunciada com destaque, porque é a única em
+     * que a informação muda a decisão do dia.
+     */
+    const prazo = estado.prazoDaMaldicao;
+    if (prazo !== null) {
+      const faltam = prazo - estado.rodada;
+      e =
+        faltam <= 0
+          ? anunciar(e, 'Esta é a última noite. Depois dela não há vila.', 'modo', {
+              rotulo: 'A última noite',
+            })
+          : anunciar(
+              e,
+              faltam === 1
+                ? 'Resta UMA noite antes de a maldição se fechar.'
+                : `Restam ${faltam} noites antes de a maldição se fechar.`,
+              'modo',
+            );
+    }
+    return e;
   },
   derrotaDaVila: (estado) =>
-    estado.efeitos.some((e) => e.kind === 'prazo-da-maldicao' && estado.rodada > e.naRodada),
+    estado.prazoDaMaldicao !== null && estado.rodada > estado.prazoDaMaldicao,
 };
 
 const duplas: ModeHooks = {

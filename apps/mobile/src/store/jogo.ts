@@ -1,9 +1,18 @@
 import { create } from 'zustand';
 import {
+  cartasDoModo,
+  chaveDaCarta,
+  lerChave,
+  podarParaModo,
+  type CartaSelecionavel,
+} from './selecao';
+import { lerMesa, salvarMesa } from './persistencia';
+import {
   DEFAULT_CONFIG,
   baralhoDeFabrica,
   calcularEquilibrio,
   criarPartida,
+  marcarTrocaVista,
   gerarBaralho,
   modo as ganchosDoModo,
   prepararNoite,
@@ -69,14 +78,16 @@ interface JogoStore {
   equilibrio: BalanceResult | null;
 
   /**
-   * As funções que o host marcou como permitidas para o sorteio.
+   * As cartas que a mesa marcou com SIM. Chaves de `selecao.ts`.
    *
-   * Não é o baralho: é o VOCABULÁRIO do baralho. O host diz quais cartas topa
-   * ver na mesa, sem dizer quantas de cada, e o app sorteia uma composição
-   * válida só com elas. É o meio-termo entre montar carta a carta e aceitar o
-   * Baralho Surpresa inteiro.
+   * Substituiu, de uma vez, o contador `- 0 +` por função, a lista de
+   * "permitidas" e o Baralho Surpresa — os três eram formas diferentes de
+   * dizer a mesma coisa e cada um tinha a sua tela. Agora existe uma lista e um
+   * interruptor (`config.selecaoAleatoria`) que decide o que fazer com ela.
    */
-  permitidas: RoleId[];
+  selecionadas: string[];
+  /** Já terminou de ler o que estava salvo em disco? A Home espera por isto. */
+  carregada: boolean;
 
   // ── Partida ──
   estado: GameState | null;
@@ -97,21 +108,20 @@ interface JogoStore {
   reordenarJogadores: (de: number, para: number) => void;
   setEstilo: (e: DeckStyle) => void;
   setConfig: (patch: Partial<GameConfig>) => void;
-  baralhoSurpresa: () => void;
-  alternarPermitida: (roleId: RoleId) => void;
-  limparPermitidas: () => void;
-  sortearEntrePermitidas: () => void;
-  /** Construtor manual: quantas cartas de cada role o host escolheu. */
-  contarRole: (roleId: RoleId) => number;
-  ajustarRole: (roleId: RoleId, delta: number) => void;
-  escolherVariante: (roleId: RoleId, varianteId: string | null) => void;
-  limparBaralho: () => void;
-  completarComAldeoes: () => void;
+  alternarCarta: (chave: string) => void;
+  limparSelecao: () => void;
+  marcarTudo: () => void;
+  /** Quantas cartas faltam (ou sobram) para a mesa poder começar. */
+  saldoDaSelecao: () => number;
   recalcular: () => void;
+  /** Lê o setup salvo em disco. Chamado uma vez, na abertura do app. */
+  restaurar: () => Promise<void>;
 
   // ── Fluxo de partida ──
   comecar: () => void;
   registrarAcao: (acao: NightAction | null) => void;
+  /** A tela de "sua carta mudou" já foi mostrada a este jogador. */
+  verTroca: (id: PlayerId) => void;
   proximaPassagem: () => void;
   fecharNoiteAgora: () => void;
   votar: (de: PlayerId, em: PlayerId | null) => void;
@@ -121,9 +131,122 @@ interface JogoStore {
 }
 
 const NOMES_SUGERIDOS = [
-  'Ana', 'Bruno', 'Célia', 'Davi', 'Elza', 'Fábio', 'Gil', 'Hilda',
-  'Ivo', 'Júlia', 'Kaio', 'Lara', 'Miro', 'Nina', 'Otávio', 'Pilar',
+  'Ana',
+  'Bruno',
+  'Célia',
+  'Davi',
+  'Elza',
+  'Fábio',
+  'Gil',
+  'Hilda',
+  'Ivo',
+  'Júlia',
+  'Kaio',
+  'Lara',
+  'Miro',
+  'Nina',
+  'Otávio',
+  'Pilar',
 ];
+
+/**
+ * Transforma a lista de cartas marcadas num baralho de `jogadores` cartas.
+ *
+ * Três casos, e os três precisam ser previsíveis para o host:
+ *
+ * - **Sobram cartas** e a seleção é aleatória: o app escolhe, em silêncio.
+ * - **Sobram cartas** e a seleção NÃO é aleatória: leva as primeiras, em
+ *   ordem. A tela não deixa chegar aqui — ela exige o número exato —, e este
+ *   caminho existe só para não haver estado impossível.
+ * - **Faltam cartas**: o resto vira Aldeão. É o preenchimento honesto: a mesa
+ *   marcou seis cartas para dez pessoas, então quatro pessoas não têm poder.
+ *
+ * `rng` ausente = pré-visualização (a tela de revisão, a calculadora de peso).
+ * Nesse caso nada é sorteado, para o número na tela não dançar a cada toque.
+ */
+function baralhoDaSelecao(
+  chaves: readonly string[],
+  config: GameConfig,
+  jogadores: number,
+  rng?: ReturnType<typeof retomarRng>,
+): Deck {
+  const cartas: CartaSelecionavel[] = chaves.map(lerChave);
+
+  /*
+   * A semente da PRÉVIA sai do conteúdo da seleção, não do relógio.
+   *
+   * O número na tela de revisão precisa ficar parado enquanto o host não mexe
+   * em nada. Marcar mais uma carta muda a semente, e aí mudar a estimativa é o
+   * comportamento certo.
+   */
+  const sorteio =
+    rng ??
+    retomarRng({ semente: `previa:${chaves.length}:${[...chaves].sort().join()}`, passo: 0 });
+
+  const escolhidas = config.selecaoAleatoria
+    ? sortearBalanceado(cartas, config, jogadores, sorteio)
+    : sorteio.shuffle(cartas).slice(0, jogadores);
+
+  while (escolhidas.length < jogadores) escolhidas.push({ roleId: 'aldeao' });
+
+  return {
+    id: 'selecionado',
+    nome: config.selecaoAleatoria ? 'Seleção aleatória' : 'Escolhido pela mesa',
+    roleIds: escolhidas.map((c) => c.roleId),
+    variantes: escolhidas.map((c) => c.varianteId),
+  };
+}
+
+/**
+ * Sorteia uma composição EQUILIBRADA dentro do que a mesa marcou.
+ *
+ * Embaralhar a seleção e cortar N era um sorteio honesto e um jogo péssimo: com
+ * 97 cartas marcadas para seis cadeiras, a chance de sair uma mesa sem nenhum
+ * lobo — ou com quatro — é alta, e quem descobre isso é a mesa, na terceira
+ * noite, quando não dá mais para consertar.
+ *
+ * Quem sabe montar uma composição válida é `gerarBaralho`, que já existia e já
+ * aceita uma lista de funções permitidas: ele fixa o número de lobos pelo
+ * tamanho da mesa, respeita o teto de solitários e de cartas pesadas, e escolhe
+ * a melhor de duzentas tentativas pela calculadora de peso.
+ *
+ * O que falta a ele é a noção de VARIANTE, que só existe aqui: ele devolve
+ * funções, e esta função as traduz de volta para as cartas que a mesa marcou.
+ * Quando há Xerife base e Boca Calada marcados e o gerador pede "um xerife", o
+ * sorteio decide qual dos dois entra — que é exatamente o que a mesa pediu ao
+ * marcar os dois.
+ */
+function sortearBalanceado(
+  cartas: readonly CartaSelecionavel[],
+  config: GameConfig,
+  jogadores: number,
+  rng: ReturnType<typeof retomarRng>,
+): CartaSelecionavel[] {
+  if (cartas.length === 0) return [];
+
+  const permitidas = [...new Set(cartas.map((c) => c.roleId))];
+  const { deck } = gerarBaralho({ jogadores, config, permitidas }, rng);
+
+  /** As cartas marcadas para cada função, para o sorteio escolher entre elas. */
+  const porRole = new Map<RoleId, CartaSelecionavel[]>();
+  for (const c of cartas) {
+    const lista = porRole.get(c.roleId) ?? [];
+    lista.push(c);
+    porRole.set(c.roleId, lista);
+  }
+
+  return deck.roleIds.map((roleId) => {
+    const opcoes = porRole.get(roleId);
+    /*
+     * `gerarBaralho` pode devolver uma função que a mesa NÃO marcou: quando um
+     * grupo inteiro fica de fora (nenhum lobo marcado, por exemplo), ele volta
+     * ao catálogo daquele grupo em vez de entregar uma mesa impossível. Aí
+     * entra a carta base, que é o comportamento menos surpreendente.
+     */
+    if (!opcoes || opcoes.length === 0) return { roleId };
+    return opcoes.length === 1 ? opcoes[0]! : rng.pick(opcoes);
+  });
+}
 
 export const useJogo = create<JogoStore>((set, get) => ({
   jogadores: NOMES_SUGERIDOS.slice(0, 6).map((nome, i) => ({
@@ -131,7 +254,8 @@ export const useJogo = create<JogoStore>((set, get) => ({
     cor: CORES_DE_JOGADOR[i]!,
   })),
   estilo: 'classico',
-  permitidas: [],
+  selecionadas: [],
+  carregada: false,
   config: { ...DEFAULT_CONFIG, semente: sementeAleatoria() },
   deck: baralhoDeFabrica('classico', 6),
   equilibrio: null,
@@ -149,7 +273,10 @@ export const useJogo = create<JogoStore>((set, get) => ({
     const sugerido = NOMES_SUGERIDOS[jogadores.length] ?? `Jogador ${jogadores.length + 1}`;
     const n = jogadores.length + 1;
     set({
-      jogadores: [...jogadores, { nome: nome || sugerido, cor: CORES_DE_JOGADOR[jogadores.length % 16]! }],
+      jogadores: [
+        ...jogadores,
+        { nome: nome || sugerido, cor: CORES_DE_JOGADOR[jogadores.length % 16]! },
+      ],
       ...(deck.id === 'manual' ? {} : { deck: baralhoDeFabrica(estilo, n) }),
     });
     get().recalcular();
@@ -198,122 +325,108 @@ export const useJogo = create<JogoStore>((set, get) => ({
   },
 
   setConfig: (patch) => {
-    set({ config: { ...get().config, ...patch } });
-    get().recalcular();
-  },
-
-  baralhoSurpresa: () => {
-    const { config, jogadores } = get();
-    const rng = retomarRng({ semente: sementeAleatoria(), passo: 0 });
-    // O Baralho Surpresa só é possível porque a calculadora de peso existe: ela
-    // deixou de ser um extra e virou infraestrutura.
-    const { deck } = gerarBaralho({ jogadores: jogadores.length, config }, rng);
-    // Surpresa de verdade: ninguém na mesa vê a composição. O host pode
-    // desligar no mesmo painel, se quiser revisar antes de começar.
-    set({ deck, config: { ...config, composicaoOculta: true } });
-    get().recalcular();
-  },
-
-  alternarPermitida: (roleId) => {
-    const atual = get().permitidas;
+    const config = { ...get().config, ...patch };
+    /*
+     * Trocar de modo poda a seleção.
+     *
+     * O Traição não aceita carta de lobo. Sem a poda, a mesa marcava a matilha
+     * inteira no Clássico, trocava para Traição e começava a partida com um
+     * baralho que o próprio modo desmontava em silêncio no `aoCriarPartida`.
+     */
     set({
-      permitidas: atual.includes(roleId)
-        ? atual.filter((x) => x !== roleId)
-        : [...atual, roleId],
-    });
-  },
-
-  limparPermitidas: () => set({ permitidas: [] }),
-
-  /**
-   * Sorteia a mesa inteira usando só o que o host permitiu.
-   *
-   * Semente nova a cada toque, de propósito: o host toca de novo até gostar do
-   * que viu, e repetir a mesma composição não serviria para nada. A semente da
-   * PARTIDA é outra, e continua vindo do setup.
-   */
-  sortearEntrePermitidas: () => {
-    const { config, jogadores, permitidas } = get();
-    if (permitidas.length === 0) return;
-    const rng = retomarRng({ semente: sementeAleatoria(), passo: 0 });
-    const { deck } = gerarBaralho(
-      { jogadores: jogadores.length, config, permitidas },
-      rng,
-    );
-    // O host escolheu o vocabulário, não a composição — então a composição é
-    // surpresa para ele também.
-    set({ deck, config: { ...config, composicaoOculta: true } });
-    get().recalcular();
-  },
-
-  contarRole: (roleId) => get().deck.roleIds.filter((x) => x === roleId).length,
-
-  /**
-   * Acrescenta ou tira uma carta do baralho montado à mão.
-   *
-   * O baralho é uma LISTA, não um mapa de contagens, porque a ordem importa na
-   * hora de sortear — e porque duas cartas da mesma role são duas cartas, não
-   * "role ×2" com um número pendurado.
-   */
-  ajustarRole: (roleId, delta) => {
-    const atual = [...get().deck.roleIds];
-    if (delta > 0) {
-      if (atual.length >= get().jogadores.length) return;
-      atual.push(roleId);
-    } else {
-      const i = atual.lastIndexOf(roleId);
-      if (i < 0) return;
-      atual.splice(i, 1);
-    }
-    set({ deck: { id: 'manual', nome: 'Montado à mão', roleIds: atual } });
-    get().recalcular();
-  },
-
-  escolherVariante: (roleId, varianteId) => {
-    const variantes = { ...get().config.variantes };
-    if (varianteId === null) delete variantes[roleId];
-    else variantes[roleId] = varianteId;
-    set({ config: { ...get().config, variantes } });
-    get().recalcular();
-  },
-
-  limparBaralho: () => {
-    set({ deck: { id: 'manual', nome: 'Montado à mão', roleIds: [] } });
-    get().recalcular();
-  },
-
-  /** Fecha o baralho com Aldeões: o preenchimento honesto de uma mesa. */
-  completarComAldeoes: () => {
-    const faltam = get().jogadores.length - get().deck.roleIds.length;
-    if (faltam <= 0) return;
-    set({
-      deck: {
-        ...get().deck,
-        id: 'manual',
-        nome: 'Montado à mão',
-        roleIds: [...get().deck.roleIds, ...Array.from({ length: faltam }, () => 'aldeao')],
-      },
+      config,
+      ...(patch.modo ? { selecionadas: podarParaModo(get().selecionadas, patch.modo) } : {}),
     });
     get().recalcular();
   },
+
+  alternarCarta: (chave) => {
+    const atual = get().selecionadas;
+    set({
+      selecionadas: atual.includes(chave) ? atual.filter((x) => x !== chave) : [...atual, chave],
+    });
+    get().recalcular();
+  },
+
+  limparSelecao: () => {
+    set({ selecionadas: [] });
+    get().recalcular();
+  },
+
+  /** Marca tudo que o modo atual permite — o atalho para "me surpreenda". */
+  marcarTudo: () => {
+    set({
+      selecionadas: cartasDoModo(get().config.modo).map((c) =>
+        chaveDaCarta(c.roleId, c.varianteId),
+      ),
+    });
+    get().recalcular();
+  },
+
+  /**
+   * Positivo = sobram cartas; negativo = faltam; zero = fecha exato.
+   *
+   * A tela precisa da MESMA conta que `comecar` usa, senão o botão habilita e
+   * a partida começa com um baralho diferente do que a mesa viu.
+   */
+  saldoDaSelecao: () => get().selecionadas.length - get().jogadores.length,
 
   recalcular: () => {
-    const { deck, config, jogadores } = get();
-    // O baralho manual pode estar incompleto no meio da montagem — e deve
-    // continuar assim. Trocá-lo por um preset aqui apagaria o trabalho do host
-    // no exato instante em que ele tirou uma carta para pensar.
+    const { selecionadas, config, jogadores } = get();
+    /*
+     * O equilíbrio é calculado sobre a SELEÇÃO, não sobre um baralho já
+     * montado — porque no modo aleatório o baralho só existe quando a partida
+     * começa. A conta continua sendo útil: ela diz o peso médio do que a mesa
+     * topou ver, que é a informação que o host quer antes de decidir.
+     */
+    const previsto = baralhoDaSelecao(selecionadas, config, jogadores.length);
     set({
+      deck: previsto,
       equilibrio:
-        deck.roleIds.length > 0
-          ? calcularEquilibrio(deck, config, jogadores.length)
-          : null,
+        previsto.roleIds.length > 0 ? calcularEquilibrio(previsto, config, jogadores.length) : null,
     });
+    void salvarMesa({ jogadores: get().jogadores, selecionadas, config });
+  },
+
+  restaurar: async () => {
+    const salva = await lerMesa();
+    if (!salva) {
+      set({ carregada: true });
+      return;
+    }
+    /*
+     * A semente NÃO é restaurada.
+     *
+     * Ela é o que torna uma partida reproduzível, e reaproveitá-la faria a
+     * mesa seguinte sortear exatamente as mesmas cartas para as mesmas
+     * pessoas. O resto do setup é trabalho de digitação e merece voltar.
+     */
+    const config = { ...salva.config, semente: sementeAleatoria() };
+    set({
+      carregada: true,
+      jogadores: [...salva.jogadores],
+      selecionadas: podarParaModo(salva.selecionadas, config.modo),
+      config,
+    });
+    get().recalcular();
   },
 
   comecar: () => {
-    const { deck, config, jogadores, estilo } = get();
+    const { selecionadas, config, jogadores, estilo } = get();
+
+    /*
+     * O baralho da PARTIDA é sorteado agora, com a semente da partida.
+     *
+     * No modo aleatório é aqui que a mesa deixa de saber a composição: ela
+     * marcou quinze cartas para dez lugares e nunca vai ver quais cinco
+     * ficaram de fora. Fora dele, a seleção já fecha exato e o sorteio só
+     * embaralha a ordem.
+     */
+    const rng = retomarRng({ semente: config.semente, passo: 0 });
     const certo =
-      deck.roleIds.length === jogadores.length ? deck : baralhoDeFabrica(estilo, jogadores.length);
+      selecionadas.length > 0
+        ? baralhoDaSelecao(selecionadas, config, jogadores.length, rng)
+        : baralhoDeFabrica(estilo, jogadores.length);
 
     let estado = criarPartida(certo, config, jogadores);
 
@@ -336,6 +449,23 @@ export const useJogo = create<JogoStore>((set, get) => ({
 
   registrarAcao: (acao) => {
     if (acao) set({ acoes: [...get().acoes, acao] });
+  },
+
+  /**
+   * Consome a marca de troca de carta.
+   *
+   * Sem isto a tela reapareceria em TODAS as passagens seguintes daquele
+   * jogador — a marca é o que diz "ele ainda não foi avisado", e avisar sem
+   * apagar é um laço.
+   *
+   * O roteiro NÃO é recalculado aqui: ele foi montado no início da noite e é o
+   * contrato desta passagem. Recalcular no meio da circulação do aparelho
+   * mudaria perguntas de quem ainda não jogou.
+   */
+  verTroca: (id) => {
+    const estado = get().estado;
+    if (!estado) return;
+    set({ estado: marcarTrocaVista(estado, id) });
   },
 
   proximaPassagem: () => {

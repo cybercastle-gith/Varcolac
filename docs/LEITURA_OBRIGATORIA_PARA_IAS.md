@@ -1578,6 +1578,623 @@ varredura depois de mexer no catálogo; ela custa trinta segundos.
 - **Os três eventos inertes** (A Corda Escolhe, Delação, Vingança dos Ossos)
   continuam como estavam — ver `docs/EVENTOS.md`. Não foram tocados aqui.
 
+### 2026-09-27 — MELHORIAS V2: o setup reescrito, e o que uma mesa de verdade encontrou
+
+Lista de 35 itens vinda de uma partida jogada de ponta a ponta. A maioria não
+era regra faltando — era **regra existindo e não chegando à tela**.
+
+#### O setup: três modelos viraram um
+
+Havia três maneiras de montar a mesma coisa, cada uma com a sua tela: contador
+`- 0 +` por função, lista de "permitidas" para o sorteio, e o Baralho Surpresa.
+Os três foram substituídos por **uma lista de cartas com sim/não** e **um
+interruptor** (`config.selecaoAleatoria`).
+
+- **`config.composicaoOculta` morreu.** SUPERADO em 2026-09-27. Ela escondia um
+  baralho que a mesa tinha montado carta por carta — uma tela de `?` pedindo
+  para ser espiada, e que ainda entregava QUANTAS cartas de cada tipo existiam.
+  A seleção aleatória esconde de verdade: a mesa marca mais cartas do que
+  cadeiras e nunca sabe quais ficaram de fora.
+- **A variante virou CARTA.** `config.variantes` mapeava uma variante por
+  função, então escolher a variante apagava a base — "quero o Boca Calada e não
+  quero o Xerife normal" era inexprimível. Agora `Deck.variantes` é um vetor
+  paralelo a `roleIds`, uma entrada por carta. `config.variantes` continua
+  existindo como padrão por função, e os cenários do laboratório seguem válidos
+  sem ele. **Ao embaralhar, embaralhe as POSIÇÕES** — embaralhar as roles soltas
+  separa a carta da variante dela.
+- **Persistência** (`store/persistencia.ts`): jogadores, seleção e config
+  sobrevivem a fechar o app. A PARTIDA não, de propósito — restaurar meia noite
+  com metade das ações colhidas é pior do que não restaurar. A semente também
+  não volta, senão a mesa seguinte sorteia exatamente as mesmas cartas.
+
+#### Os defeitos que a mesa encontrou e a causa de cada um
+
+| Relato | Causa |
+|---|---|
+| "A Lua Cheia não funcionou" | `cotaDaMatilha` devolvia 2 certinho, mas o roteiro pedia **um** alvo por lobo e `alvosDaMatilha` só mata quem recebeu voto. Com um lobo na mesa existia um nome, e morria um. |
+| "Traição acaba depois da primeira noite" | O modo começa sem lobo de propósito, e a vitória via "zero lobos vivos" e declarava a vila vencedora antes de o modo existir. |
+| "O Sino cancelou a votação do dia 2, não do dia 1" | Agendava `rodada + 1`. O dia vem DEPOIS da noite **dentro da mesma rodada**. |
+| "O Necromante morreu e a ressurreição não aconteceu" | `acoesDe` descartava ator morto. Ele declarou vivo; morrer na etapa 8 é acidente de ordem, não desistência. |
+| "O Bobo voltou pela Cova Aberta e ganhou linchado" | A "habilidade" do Bobo É ganhar na corda. `disputaVitoriaPropria()` agora cobre `semPoder` e `virouAldeao`. |
+| "Lobos ganharam com gente viva na mesa" | A paridade comparava lobos × **vila**, e Bobo/Sobrevivente/Coringa não eram vila — sumiam do placar. Agora é lobos × **não-lobos**. |
+| "O Detetive Obsessivo pede dois alvos" | Obsessivo e Delegado herdavam a pergunta do Detetive base. |
+| "O convertido não podia matar" | Ele mantém a carta de vila; sem uma pergunta de ataque, a conversão de um Aldeão não dava nada à matilha. |
+| "O Ladrão foi aleatório" / "a Bruxa teve a poção imposta" | Os dois eram sorteados em `criarPartida`, em silêncio. Escolher É a role. Saíram do setup e viraram pergunta da noite 1. |
+| "O Caçador não escolhe quem leva junto" | O engine pegava `candidatos[0]` — o primeiro vivo da lista. Ele nunca decidiu nada. O mesmo valia para o Carniçal. |
+
+#### Regras novas dadas pelo usuário
+
+- **Caçador Armadilha não morre**: quem cai é o nome que ele deixou armado.
+  Resolvido antes da checagem de proteção — não é cura, e a perfuração do
+  Feiticeiro não desarma.
+- **Xerife base deixou de silenciar.** O preso comum fala e vota; só o do Boca
+  Calada perde a voz. O efeito ganhou o campo `calaAVoz`. A carta do Xerife
+  dizia o contrário e foi corrigida junto. (SUPERADO: o registro de 2026-09-26
+  dizia que pôr `silenciado` era o conserto. Era metade dele.)
+- **Noite 1 sem sangue** (`semMorteNaPrimeiraNoite`): mora em `cotaDaMatilha`,
+  não numa checagem dentro da etapa 7 — zerar a cota cala a matilha inteira sem
+  que as etapas 7 e 8 precisem saber da opção.
+
+#### Informação que vazava pela FORMA da tela
+
+Dois casos, e os dois são do mesmo tipo — o app não dizia nada, o
+comportamento dizia tudo:
+
+1. **A votação secreta pulava quem não pode votar.** A mesa via o celular passar
+   por cima da pessoa e sabia na hora que ela é a Vidente, ou que está presa.
+   Agora a fila é a ordem da mesa inteira e quem não vota recebe o aparelho,
+   vê a mesma tela, e nela só existe "Abster-se" — com o motivo escrito, que só
+   ele lê.
+2. **Tela muda para quem foi impedido.** Preso, embebedado e Detetive Cansado
+   recebiam a mesma tela de "a vila dorme" de um Aldeão qualquer e achavam que
+   o app tinha bugado. `Pergunta.aviso` diz o motivo, e só a quem já sabe que
+   tem poder.
+
+#### O que a tela passou a mostrar
+
+- **Nome da CARTA em todo lugar** (`nomeDaCarta`): amanhecer, execução,
+  discussão, tela final e o topo da passagem. Dizer "Xerife" a quem jogou a
+  noite toda de Boca Calada apaga a informação que explica o que aconteceu.
+- **`Passagem.lembrete`**: Bobo, Sobrevivente, Coringa e Aldeão viam a função
+  uma vez, na noite 1. Agora a carta volta atrás do "segurar para revelar" toda
+  noite. Quem TEM poder e já gastou **não** recebe lembrete — dizer "você é o
+  Padre" a um Padre sem usos o obrigaria a esconder a tela.
+- **Duas caixas na passagem**: "Você soube" (a leitura que você pediu) e
+  "Aconteceu com você" (`origem: 'app'` — o rastro do poder de outro).
+  Empilhadas, o jogador lia a Vidente do Espelho como se fosse informação dele.
+- **`Announcement.destaque`**: revelações que mudam a partida (Médico de Guerra,
+  revista do Delegado, uivo) saem num cartão com rótulo, e não em itálico no pé
+  da tela junto com "a vila velou o corpo a noite toda".
+
+#### Armadilha nova, e ela é de tela
+
+`recalcular` pré-visualizava o baralho cortando as **primeiras** N cartas da
+seleção. A lista nasce em ordem de catálogo, que começa com a vila inteira: a
+revisão anunciava "Lobos: 0, esperado ≈ 2" e sugeria "adicionar um lobo" a uma
+mesa que ia sortear lobos normalmente. A prévia agora sorteia com semente
+derivada do CONTEÚDO da seleção — estável enquanto o host não mexe — e a tela
+diz em voz alta que é estimativa.
+
+#### Ícones
+
+`scripts/gerar-icones.py` gera os três a partir de `assets/app-logo.png`, que já
+estava no repositório e não era usado — os ícones eram placeholders de 8 KB. As
+três regras conflitam (iOS opaco, Android transparente e dentro do círculo de
+66%, favicon sem margem), e é por isso que é script e não exportação à mão.
+
+**Estado final:** `pnpm -r typecheck` limpo · **143 testes do engine + 13 do
+app**. `resolution/melhorias-v2.test.ts` é novo: cada caso ali é a prova de um
+defeito RELATADO em mesa, não uma regra nova. Se um deles voltar a falhar,
+alguém desfez um conserto.
+
+#### O que ficou para trás
+
+- **`Passagem.lembrete` não foi visto na tela.** O engine devolve o texto (há
+  teste), mas o `SegurarParaRevelar` dentro do `ScrollView` da passagem não foi
+  conferido no navegador.
+- **O Lobo Carniçal não caça com a matilha.** A `etapa` dele é `estertores`, e
+  por isso ele nunca recebe a pergunta de ataque — é um lobo que não morde.
+  Anterior a esta sessão e não relatado; mexer nisso é decisão de equilíbrio.
+- **Pesos**: 65 variantes seguem com o peso que tinham quando eram só texto.
+
+### 2026-09-27 (II) — MELHORIAS V3: a narração refeita, e uma CLASSE de defeito
+
+Treze itens de outra partida jogada inteira. Desta vez apareceu um padrão que
+vale mais que os itens: **três poderes de "uma vez por partida" nunca gastavam
+o uso**, e ninguém tinha como perceber lendo o catálogo, porque o catálogo
+estava certo.
+
+#### A classe de defeito: uso limitado que ninguém cobra
+
+`usoLimitado: { kind: 'por-partida', total: 1 }` é DADO. Quem cobra é a etapa,
+chamando `gastarUso`. Quando a etapa esquece, a carta funciona todas as noites
+e nada no repositório reclama.
+
+Encontrados: **poção da Bruxa** (relatado em mesa), **perfuração do
+Feiticeiro**, **Testemunha do Aldeão**, **Bobo da Forca**, **Troca com
+Mortos**. O Lobo Sombra tinha o mesmo defeito e já havia sido corrigido em
+2026-09-26 — ou seja, é a terceira vez que este erro aparece.
+
+> **A varredura que os encontra**, e que vale repetir sempre que uma carta com
+> limite entrar: liste os `id` do catálogo cujo bloco contém `'por-partida'` e
+> confira, um a um, se existe um `gastarUso` no caminho daquela carta. São
+> trinta segundos. O teste `uso único é uso único`, em
+> `resolution/melhorias-v3.test.ts`, automatiza a pergunta para os dois casos
+> mais caros — estenda a lista dele em vez de confiar na memória.
+
+**Armadilha ao consertar**: a etapa 6 passou a recusar a perfuração sem uso, e a
+etapa 8 continuou matando, porque ela lê as ações e não o resultado da etapa 6.
+A correção foi ler `ctx.estadoInicial` — "ele tinha uso quando a noite
+começou?". Ler `ctx.estado` ali anularia toda perfuração válida, já que a etapa
+6 acabou de zerar o contador.
+
+#### Narração: `Announcement.fase`
+
+Relatado assim: *"a Anciã morreu na primeira noite e a mensagem dela continua
+aparecendo"*. As telas filtravam anúncios só por `rodada`, e **noite e dia
+compartilham o número**: tudo que a noite narrou reaparecia inteiro na tela de
+Execução. `Announcement.fase` ('noite' | 'dia') é carimbado dentro de
+`anunciar()` a partir de `estado.fase` — não é parâmetro de propósito, porque
+são quase trinta pontos de chamada e um deles passaria a fase errada um dia.
+
+Junto vieram os textos que o usuário chamou de "broxa":
+- Ressurreição era `"Fulano voltou."` — a coisa mais rara do jogo, no tom de um
+  comentário de clima. Agora é destaque com rótulo.
+- Última Vela **não anunciava nada** quando a vela apagava e o ressuscitado
+  voltava para a cova. O mesmo valia para o Rastro. As duas mortes de fim de dia
+  eram silenciosas.
+- A Anciã dizia "a vila perdeu suas forças **esta** noite" na noite em que
+  morria — o efeito é da noite SEGUINTE. Todos os textos dela foram para o
+  futuro.
+- **Quem muda de papel é dito com o nome.** Vale para toda variante que troca a
+  carta de alguém: a pessoa precisa saber que perdeu o poder, e a mesa precisa
+  parar de contar com uma função que não existe mais.
+
+#### Defeitos que só aparecem com MAIS DE UM LOBO
+
+Dois relatos ("atravessar não funciona", "Lobo Rastro não funciona") passavam
+nos meus testes isolados e falhavam em mesa. A causa dos dois é a mesma família:
+
+- **Feiticeiro atravessando** entrava na VOTAÇÃO da matilha. Com dois lobos em
+  alvos diferentes, o alvo dele ia a sorteio — metade das vezes o poder de uma
+  vez por partida não acontecia. Agora ele ataca por conta própria
+  (`ataqueIndividual`), fora da cota, porque o botão promete "mata de uma vez".
+- **Lobo Rastro** era detectado por `atacanteId`, que guarda só o PRIMEIRO
+  atacante daquele alvo. Se o Rastro não fosse o primeiro a passar o celular, a
+  variante não acontecia. Agora procura o Rastro entre todos os atacantes.
+
+> **Lição para testes**: um caso com um lobo só não exercita `alvosDaMatilha`,
+> que é onde mora metade da complexidade da noite. Ao testar qualquer coisa da
+> matilha, ponha DOIS lobos na mesa.
+
+#### Cartas que passaram a trocar de verdade
+
+`marcas.poderDe` dava a habilidade e deixava a carta antiga na mão — na tela o
+jogador continuava sendo o que era, no ícone, na revelação ao morrer e na tela
+final. Duas viraram troca de carta de verdade:
+
+- **Aldeão Herdeiro** vira o morto, com a facção junto. Herdar um lobo morto faz
+  dele um lobo: é o preço de uma carta que pode virar qualquer coisa da mesa.
+- **Cova Aberta** devolve a pessoa como Aldeão, e não como "a Vidente sem
+  poder". Isso resolveu de graça o Bobo que ressuscitava e continuava ganhando
+  na corda — ele nem é mais Bobo.
+
+`marcas.poderDe` continua existindo para o empréstimo TEMPORÁRIO (Sombra de
+Alguém) e para a Incorporação, que por carta não troca de papel.
+
+#### Vidente Confusa: duas decisões que não conversavam
+
+A resposta imediata (na passagem) e a etapa 11 decidiam separadamente qual das
+visões era a mentira. A tela mostrava as duas VERDADEIRAS e a noite seguinte
+entregava a versão com a mentira — dava para achar a falsa por comparação, que é
+o oposto do que a variante existe para fazer.
+
+A etapa 11 tem o RNG semeado; a passagem não tem RNG nenhum. A saída foi **não
+sortear**: `mentiraDaConfusa()` é uma função pura de semente + rodada + quem
+investiga + quem foi investigado. Determinística, idêntica dos dois lados, e sem
+consumir o RNG — consumir mudaria o resto da noite dependendo de a tela ter
+perguntado ou não.
+
+#### Decisões de regra do usuário
+
+| Carta | Regra nova |
+|---|---|
+| **Delegado** | A revista revela a FACÇÃO em público (antes: só "tem poder", quase inútil). Em troca, **um uso a cada 4 jogadores** — `usosPorMesa()`, em `types/role.ts`. É a primeira carta cujos usos dependem do tamanho da mesa; `create-game` a consulta em DOIS pontos, e esquecer o segundo zera a regra sem sinal. |
+| **Bruxa** | Só a Bruxa **sem variante** com poção de morte conta como lobo na paridade. As três variantes contam como vila mesmo matando — nenhuma delas ESCOLHE matar como a base escolhe. |
+| **Noite 1 sem sangue** | A matilha é AVISADA, não perguntada. Antes o lobo escolhia alguém, confirmava, e nada acontecia. |
+
+#### Telas
+
+- **`SegurarParaRevelar` não funciona dentro de `ScrollView`.** O toque longo
+  vira rolagem e a barra de progresso trava no meio. Foi o que travou a tela da
+  Herança Amarga. O lembrete de função virou TOCAR para ver. Na revelação da
+  noite 1 o gesto continua certo — lá a tela é dele sozinho.
+- **"Jogar novamente" dava `reset` com uma rota só**, então o "Voltar" da
+  Revisão não tinha para onde ir. Agora reconstrói a pilha do setup inteira.
+- As duas visões da Confusa saem do mesmo tamanho (`duasVisoes`). A segunda
+  linha nasceu como rodapé e continuou pequena quando virou leitura de verdade.
+
+**Estado final:** `pnpm -r typecheck` limpo · **160 testes do engine + 13 do
+app**.
+
+#### Testes reescritos, não silenciados
+
+Cinco testes afirmavam a regra ANTIGA e falharam de propósito: Cova Aberta
+(`semPoder` → troca de carta), Herdeiro (`poderDe` → troca de carta), Bobo da
+Cova Aberta, e dois textos de anúncio. Todos foram reescritos para a regra nova,
+com `SUPERADO em 2026-09-27` no comentário.
+
+Um deles merece nota: o teste da Cova Aberta tentava provar que a cura acabou
+FORJANDO uma ação de proteção na submissão. O engine aceitou — ele confia em
+quem monta a submissão, e é o **roteiro** que nunca ofereceria aquilo. O teste
+passou a perguntar ao roteiro. Se você precisa forjar uma ação para provar uma
+regra, provavelmente está testando o lugar errado.
+
+#### O que ficou para trás
+
+- **Nada disto foi visto em mesa real**, só em teste e no navegador.
+- **O Lobo Carniçal continua sem caçar com a matilha** (`etapa: 'estertores'`).
+  Levantado na sessão anterior, ainda sem decisão.
+- **Pesos**: 65 variantes seguem com o peso de quando eram só texto.
+
+### 2026-09-28 — a varredura que eu deveria ter feito antes de dizer "revisei"
+
+**Comece por aqui se você vai mexer em qualquer carta.**
+
+Na sessão anterior eu escrevi "revisei todas as variantes e roles". Era falso, e
+o usuário me corrigiu depois de dez partidas de mesa: o que eu tinha feito foi
+uma varredura de `grep` atrás de UM padrão de defeito (uso limitado que ninguém
+cobra). Isso não é revisar. Uma carta pode ter o uso cobrado direitinho e mesmo
+assim não fazer nada — porque a etapa que a resolveria nunca é alcançada, ou
+porque o roteiro oferece uma pergunta cuja resposta ninguém lê.
+
+#### `simulation/cada-carta-age.test.ts` — a ferramenta
+
+Faz **cada carta do catálogo agir de verdade**, respondendo só o que o roteiro
+oferece (como o app faz), e cobra o mínimo indiscutível:
+
+> **Responder uma pergunta verdadeira tem de deixar rastro** — uma linha de log
+> não-ignorada que cite o ator.
+
+Uma carta que passa ainda pode ter a regra errada. Uma que **não** passa está
+garantidamente sem regra nenhuma. Rodar isto leva segundos e teria pego tudo que
+dez partidas de mesa pegaram.
+
+Achou oito, em três causas diferentes:
+
+| Causa | Cartas |
+|---|---|
+| **Toque falso por falta de alvos** — a lista de "quem não mira ninguém" era `padre` e `lobo-sombra`, escrita quando só esses dois existiam | Aldeão Testemunha, Bobo da Forca |
+| **Recusa muda** — sem alvo possível, o jogador recebia toque falso e parecia não ter poder | Médico de Plantão, Curandeiro, Última Dose, Necromante e Vidente dos Ossos sem mortos |
+| **Declaração sem log** — quem declara em vida e dispara na morte não registrava NADA; olhando o histórico, era como se não tivesse recebido o aparelho | Caçador (base e 3 variantes), Anciã Testamento, Herança Amarga |
+
+> **Lição de método:** a varredura aceita `pergunta.aviso` como rastro válido. A
+> diferença entre "a carta está quebrada" e "a carta está legitimamente
+> impedida" é o app DIZER o motivo. Se você adicionar uma recusa nova, dê o
+> motivo junto — senão ela vira silêncio e a varredura cobra, com razão.
+
+#### `turn/troca-de-carta.ts` — uma porta só
+
+**Seis** mecânicas trocavam o papel de um jogador: conversão do Alfa, herança do
+Aldeão, Cova Aberta, Herança Amarga, Contaminação e Troca com Mortos. Cada uma
+fazia o seu `players.map(...)` à mão, e as seis esqueciam coisas diferentes —
+uma não zerava a variante antiga, outra não recalculava os usos, **nenhuma
+avisava o jogador**.
+
+Agora todas passam por `trocarCarta()`. A marca `marcas.viraCarta` guarda o
+papel ANTIGO e alimenta a tela nova de "sua carta mudou", que aparece antes da
+ação e é consumida por `marcarTrocaVista` — avisar sem apagar seria um laço.
+
+**Se você criar uma sétima troca de carta, use esta função.** Um `players.map`
+novo mexendo em `roleId` é dívida: o jogador vai virar outra coisa em silêncio.
+
+#### Decisões do usuário
+
+- **O convertido do Alfa vira um Lobo comum**, carta e tudo. Antes mantinha a
+  própria carta e só mudava de lado — um Médico que curava para a matilha.
+  `Sangue Novo` passou a ser a única variante que ainda empresta poder: leva a
+  carta antiga por uma noite e depois vira Lobo.
+- **Toda troca de papel mostra uma tela**, até quando o destino é Aldeão.
+
+#### `turn/apresentacao.ts` — o app deixou de ser um formulário
+
+Pedido: *"cada role muda bastante a experiência visual do usuário e o fluxo"*.
+O app desenhava as 97 cartas com a mesma tela — a Vidente enxergando, o Lobo
+mordendo e o Padre cancelando a noite inteira eram o mesmo formulário com o
+texto trocado.
+
+Não são 24 telas feitas à mão (seria impossível de manter e garantiria que uma
+carta nova nascesse feia). São quatro eixos que mudam o comportamento da mesma
+tela:
+
+- **verbo** — o botão diz o que a carta faz: "Morder", "Enxergar", "Trancar".
+- **atmosfera** — uma linha de clima antes da regra, no tom da carta.
+- **acento** — a cor que domina a tela. Vem daqui, e **não** de `corDaFaccao`:
+  duas cartas da mesma facção podem pedir climas opostos (o Lobo Sombra some no
+  Índigo enquanto o Lobo morde em Sangue).
+- **pesado** — confirmar pede uma segunda batida. Reservado ao que não tem
+  volta; pôr em tudo transforma a proteção numa formalidade que todo mundo
+  aprende a atravessar sem ler.
+
+**O toque falso não recebe nada disto** — vestir o toque falso com o clima da
+função entregaria a função pela cor.
+
+Um teste (`turn/apresentacao.test.ts`) cobra que toda função tenha verbo e
+atmosfera próprios e que nenhum verbo atravesse facções: se o Médico e o Lobo
+apertam o mesmo botão, a tela voltou a ser genérica.
+
+#### Testes reescritos
+
+Quatro afirmavam a regra antiga e foram reescritos com `SUPERADO em
+2026-09-28`. Um perdeu a própria premissa: *"o convertido caça mesmo com carta
+de vila"* — não existe mais carta de vila ali.
+
+**Estado final:** `pnpm -r typecheck` limpo · **243 testes do engine + 13 do
+app** (eram 160 + 13).
+
+#### O que ficou para trás
+
+- **O Herdeiro que o usuário relatou não reproduziu.** A varredura o exercita
+  herdando cinco cartas diferentes e usando cada uma na noite seguinte, e passa.
+  A hipótese que sobra é ele ter herdado uma carta que não pode mais agir
+  (Vingador e Ladrão só agem na noite 1; Bobo, Coringa e Sobrevivente nunca
+  agem) — o que agora pelo menos mostra a tela de troca e o lembrete, em vez de
+  um toque falso mudo. **Se acontecer de novo, peça qual carta foi herdada.**
+- **O Lobo Carniçal continua sem caçar com a matilha** — terceira sessão
+  seguida em que isto é levantado sem decisão.
+- **Pesos**: 65 variantes seguem com o peso de quando eram só texto.
+
+### 2026-09-28 (II) — o Carniçal caça, a carta vira consulta, e o app ganha peso
+
+#### O Lobo Carniçal, enfim
+
+Levantado em três sessões seguidas e decidido agora: a `etapa` dele era
+`estertores`, então ele **nunca recebia a pergunta de ataque** — um lobo que não
+mordia e cujo voto na matilha não existia. Virou `ataque`, com escolha dupla
+(caçar / marcar quem leva junto), como as outras cartas da matilha.
+
+**E ele expôs um defeito vizinho, pior:** a declaração de estertor vivia só no
+mapa da noite em que foi feita, e `resolverDia` chama `dispararEstertores` **sem
+esse mapa**. Resultado: o Caçador escolhia o alvo, era linchado, e o tiro saía
+no "primeiro vivo da lista" — a escolha dele ia para o lixo justamente na morte
+mais comum do jogo. Agora a declaração vira `marcas.levaJunto` e atravessa as
+noites. Há teste (`a marca do Carniçal sobrevive até a um linchamento`).
+
+> Se você criar uma carta que declara em vida e dispara na morte, grave em
+> `marcas.levaJunto`. O mapa da noite morre com a noite.
+
+#### O lembrete virou consulta, para TODA carta
+
+Nasceu só para quem nunca age, com o receio de que dizer "você é o Padre" a um
+Padre sem usos o obrigasse a esconder a tela. **O receio estava invertido:** um
+botão presente só em algumas passagens entrega, pela própria presença, quem tem
+poder. Agora o botão "◈ ver minha carta" está em toda passagem — inclusive no
+toque falso — e nada abre até alguém tocar. É a uniformidade que protege.
+
+Vive fora do `ScrollView`, numa `Sobreposicao` nova. Os dois erros da versão
+anterior eram o mesmo erro: **um atalho de consulta não pode disputar o dedo com
+o conteúdo nem mudar de lugar.**
+
+#### Design: as três velocidades
+
+`theme/spacing.ts` ganhou `tempos = { toque: 120, transicao: 250, momento: 420 }`.
+Números soltos espalhados pelos componentes são a origem do desconforto que
+ninguém consegue nomear: duas coisas que começam juntas terminam em momentos
+diferentes e a tela parece frouxa.
+
+- **Botão e linha de jogador ganharam mola.** O afundar de 1px resolvia o
+  essencial (no escuro, deslocamento se vê e opacidade não), mas era
+  instantâneo nos dois sentidos — e voltar instantâneo parece elástico solto. A
+  mola da LISTA é menor que a do botão (0.985 contra 0.97): numa lista, escala
+  forte faz as linhas vizinhas parecerem pular junto.
+- **`Animated.createAnimatedComponent` fora do componente.** Chamado dentro,
+  cria um tipo novo a cada render e o React desmonta a árvore a cada toque — a
+  animação nunca chega a rodar.
+- **`Aparicao` trocou `Easing.out(Easing.cubic)` por uma bézier.** A diferença é
+  toda no fim: a curva nova passa a maior parte do tempo desacelerando, e o
+  elemento parece POUSAR. Com cubic, numa lista escalonada, as últimas linhas
+  parecem lentas mesmo tendo a mesma duração.
+  **`Easing.quart` NÃO existe no React Native** — só `quad`, `cubic` e `poly(n)`.
+  Tentei usar e o typecheck pegou.
+- **`animation: 'slide_from_right'` declarado explicitamente.** O padrão do
+  `native-stack` cai em "sem transição" na web, que é onde este app é testado o
+  tempo todo — o comportamento divergia entre o que eu via e o que a mesa via.
+- **Gesto de voltar desligado nas telas de partida.** Arrastar a borda no meio
+  de uma passagem voltava para a revisão com a partida em curso.
+
+**Estado final:** `pnpm -r typecheck` limpo · **244 testes do engine + 13 do
+app**.
+
+#### Testes reescritos
+
+Três afirmavam a regra antiga (`SUPERADO em 2026-09-28`): a etapa do Carniçal, a
+pergunta do Carniçal morto e o lembrete só para quem não age.
+
+#### O que ficou para trás
+
+- **Pesos**: 65 variantes seguem com o peso de quando eram só texto. O Carniçal
+  acabou de ganhar um ataque e continua valendo 4.
+- O **Herdeiro** que o usuário relatou continua sem reproduzir — ver a sessão
+  anterior.
+
+### 2026-09-28 (III) — eu deixei TODOS os botões do app invisíveis
+
+Leia isto antes de animar qualquer coisa.
+
+#### A armadilha
+
+```tsx
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable); // NÃO
+<AnimatedPressable style={({ pressed }) => [...]} />
+```
+
+**`Animated.createAnimatedComponent` não invoca `style` em formato de função.**
+Ele repassa a função como se fosse um objeto de estilo, o React Native Web a
+descarta, e o componente renderiza SEM ESTILO NENHUM — sem fundo, sem borda,
+sem altura. Todos os botões do app sumiram, e as linhas de jogador junto.
+
+O padrão correto é o inverso: o `Pressable` fica nu, cuidando só do toque, e
+quem carrega aparência e transformação é um `Animated.View` por dentro. Está em
+`useMolejo`, em `components/ui.tsx` — use essa função em vez de repetir o erro.
+
+#### Por que a minha verificação não pegou
+
+Eu conferi com `get_page_text`, que mostrou os rótulos dos botões normalmente.
+**O texto continuava no DOM; só a aparência tinha sumido.** Texto presente não é
+botão visível.
+
+E quando finalmente tirei screenshots, eles me enganaram duas vezes na direção
+OPOSTA — "VÂRCOLAC cortado", "rodapé sumido" — porque **o quadro do screenshot
+não bate com o viewport**: a janela era 1024×768 e a captura vinha em 800×600,
+cortando o pé da tela. Medi no DOM e estava tudo no lugar.
+
+> **O procedimento que funciona nesta pane:**
+> 1. `resize_window` para um tamanho de celular de verdade (414×760 serve).
+> 2. **Medir no DOM** (`getBoundingClientRect`) para julgar LAYOUT — é a única
+>    fonte confiável de posição e tamanho.
+> 3. Screenshot só para julgar APARÊNCIA, e conferindo a linha
+>    "coordinate frame" da resposta contra `window.innerWidth/innerHeight`
+>    antes de concluir qualquer coisa sobre o que "não aparece".
+
+#### O que sobrou de bom
+
+Depois de consertar, o resto das melhorias de movimento ficou:
+
+- `useMolejo` — mola no toque de botão e de linha de jogador.
+- `Surge` (em `animacoes.tsx`) — mola para o que aparece por CAUSA de um toque,
+  como o losango que confirma o alvo. Diferente de `Aparicao`, que é entrada de
+  conteúdo e desacelera até parar.
+- `key={etapa}` na rolagem da passagem: a troca de etapa remonta a árvore e as
+  `Aparicao` de dentro rodam de novo. Sem isso, sair de "segure para revelar"
+  para "sua vez" era um corte seco — a transição mais vista do jogo (uma por
+  jogador por noite) e a única sem nenhuma.
+- `flexGrow: 1` no `contentContainerStyle` e `flex: 1` no bloco de toque falso:
+  a lua ficava pendurada no topo com quinhentos pixels de vazio embaixo.
+
+**Estado final:** `pnpm -r typecheck` limpo · **244 + 13 testes**.
+
+#### O que ficou para trás
+
+O usuário disse que as animações continuam duras. O que foi feito é resposta ao
+toque e entrada de conteúdo; **não há transição de SAÍDA em lugar nenhum** — tudo
+que sai da tela some de uma vez. É provavelmente aí que mora o resto da queixa.
+
+### 2026-09-28 (IV) — MELHORIAS V4: a carta cortada e o prazo que nunca vencia
+
+#### O prazo da Vila Amaldiçoada morava no lugar errado
+
+O modo não terminava nunca, e a causa é sutil o bastante para valer o registro:
+o prazo era um `EfeitoAdiado` do tipo `prazo-da-maldicao`, e a derrota é
+checada com `rodada > naRodada`. Só que `limparEfeitosVencidos` **descarta tudo
+com `naRodada < rodada`** — quando a rodada finalmente passava do prazo, o
+efeito já tinha sido varrido da fila. `derrotaDaVila` nunca via nada.
+
+> **A fila de efeitos é para o que acontece NUMA rodada.** Um prazo é o
+> contrário disso: vale desde o começo e precisa continuar valendo depois de
+> vencido. Virou `GameState.prazoDaMaldicao`.
+
+Junto veio a outra metade do relato ("não tem noites fixas claramente
+declaradas"): o prazo agora é dito na criação, repetido toda manhã como
+contagem regressiva, mostrado na Revisão ANTES de a mesa aceitar o modo, e o
+cabeçalho do Amanhecer vira "Noite 3 de 5".
+
+#### A carta cortava conteúdo
+
+`CartaDeRole` tem altura fixa (3:4) e `overflow: 'hidden'`: tudo que não coube
+sumia em silêncio. "Sobrevivente Invisível", "Bobo Desesperado" e qualquer
+variante de nome comprido ou descrição de três frases.
+
+A correção é dar a cada bloco o seu espaço em vez de empilhar e torcer:
+
+- nome com `numberOfLines={2}` e tamanho em **três degraus** por comprimento
+  (uma fórmula contínua dá um tamanho diferente por carta e é impossível de
+  conferir);
+- a função de origem da variante ganhou régua e tamanho proporcional — era
+  `fontSize: 9` fixo, e é ela que responde "Boca Calada é um quê?";
+- descrição num bloco `flex: 1` que absorve o que sobra, com `numberOfLines`.
+  Cortar com reticências é honesto (o texto inteiro está na Biblioteca);
+  cortar no meio de uma palavra, sem aviso, não é;
+- um fio separando o rodapé da facção, que encostava na descrição — "tudo meio
+  junto", nas palavras de quem jogou.
+
+#### Os oito defeitos de regra
+
+| Relato | Causa |
+|---|---|
+| Feiticeiro matou na "noite 1 sem sangue" | `cotaDaMatilha` só cala a mordida COLETIVA. Três cartas atacam por fora dela (Feiticeiro atravessando, Lobo Branco, Carniceiro). Agora existe `matilhaProibidaDeMatar`, e a Bruxa/Sobrevivente seguem livres por serem solitários. |
+| Vingador venceu e o jogo continuou | A vitória dele entrava como *camada*, e camada só é lida quando a partida acaba por outro motivo. Agora **encerra**, como o Bobo. |
+| Anciã matou os poderes e a mesa gastou usos à toa | `acoesDe` descartava na resolução e o roteiro perguntava assim mesmo. Agora o roteiro avisa (`suspensaoAlcanca` espelha a checagem — **as duas precisam concordar**). |
+| Carniceiro Morto-Vivo foi linchado e a vila ganhou | A primeira morte o tirava do jogo. A carta diz "continua em jogo e pode ser morto novamente": agora volta a `vivo` com `mortoVivo + semPoder`, conta na paridade, fala, não age nem vota. A segunda morte é definitiva. |
+| Testemunha da Cela revelava tarde demais | Eram duas noites de cela com a revelação na terceira rodada. Agora: prende na noite 1 → preso na noite 2 → solto e lido no amanhecer do dia 2. |
+| Ladrão roubava sem avisar ninguém | Mexia em `roleId` na mão. Agora passa por `trocarCarta` **pelas duas pontas** — quem rouba e quem é roubado. |
+| Troca Forçada deixava um Ladrão sem usos | O contador ficava no corpo, não na carta. `usosIniciais` da carta nova, sempre. |
+| Bobo Desesperado não virava Aldeão de verdade | `marcas.virouAldeao` sozinho deixava a carta de Bobo na mão dele. Agora troca a carta e anuncia. |
+
+**Dois relatos não reproduziram:** o Uivador **escolhe** quem delatar (há teste
+com a lista de alvos) e **não** caça na mesma noite em que uiva. Se acontecer de
+novo, é na tela e não na regra.
+
+#### Uma dúvida pendente
+
+**Incorporação.** O relato foi "não trago a pessoa de volta, eu só uso o poder
+dela, além disso eu posso usar na mesma noite". O teste mostra que a carta faz o
+que promete: **ressuscita E dá o poder**. Não dá para saber se o relato descreve
+um defeito que não reproduzi ou um pedido de regra nova (absorver sem
+ressuscitar). Ficou como está, e a pergunta foi devolvida ao usuário.
+
+**Estado final:** `pnpm -r typecheck` limpo · **258 testes do engine + 13 do
+app**.
+
+### 2026-09-28 (V) — sorteio balanceado, e o Uivador que nunca mais mordia
+
+#### A seleção aleatória agora é BALANCEADA
+
+Embaralhar a seleção e cortar N era um sorteio honesto e um jogo péssimo: com
+97 cartas marcadas para seis cadeiras, a chance de sair uma mesa **sem nenhum
+lobo** é de uns 13% — e quem descobre isso é a mesa, na terceira noite, quando
+não dá mais para consertar.
+
+Quem sabe montar composição válida é `gerarBaralho`, que **já existia** e já
+aceita `permitidas`: fixa o número de lobos pelo tamanho da mesa, respeita o
+teto de solitários e de cartas pesadas, e escolhe a melhor de 200 tentativas
+pela calculadora de peso. O que faltava a ele é a noção de VARIANTE, que só
+existe no app — `sortearBalanceado` (em `store/jogo.ts`) traduz as funções que
+ele devolve de volta para as cartas que a mesa marcou. Xerife base e Boca
+Calada marcados, gerador pede "um xerife": o sorteio escolhe entre os dois.
+
+> Quando o gerador devolve uma função que a mesa NÃO marcou, é porque um grupo
+> inteiro ficou de fora e ele prefere desobedecer a entregar mesa impossível.
+> Aí entra a carta base.
+
+Dois testes em `store/jogo.test.ts` cobrem: 25 sorteios sem mesa sem lobo nem
+mesa maioria-lobo, e a garantia de que função não marcada não entra.
+
+#### O Uivador entregava um companheiro e nunca mais mordia
+
+Ele faltava em `escolheEntreDuas`, e o bloco de escolha dupla lá embaixo já o
+incluía — só que nunca era alcançado, porque a checagem de uso vem antes.
+Gasto o uivo, `podeAgir` devolvia falso e ele recebia **"Já foi" para sempre**.
+
+> **A regra destas cartas é: o poder especial acaba, a caçada continua.** Quem
+> entra no bloco de escolha dupla tem de estar nas DUAS listas —
+> `escolheEntreDuas` (que libera a passagem) e o `if` que monta as opções.
+> Feiticeiro, Alfa, Lobo Sombra, Uivador e o Carniceiro vivo.
+
+Correção do registro anterior: eu tinha escrito que "o Uivador não reproduziu".
+Reproduzia — eu é que testei a coisa errada. O relato era sobre a noite
+SEGUINTE ao uivo, e os meus dois testes olhavam a noite do uivo.
+
+#### Incorporação: absorve, não ressuscita
+
+Decisão do usuário. A carta dizia "ressuscita um morto E utiliza sua
+habilidade", e as duas juntas faziam dela a ressurreição do Necromante base
+MAIS um poder de brinde — a variante mais forte do jogo com o peso das outras.
+Agora o corpo fica na cova e só o que ele sabia muda de mão. A descrição da
+carta foi reescrita junto.
+
+**Estado final:** `pnpm -r typecheck` limpo · **259 testes do engine + 15 do
+app**.
+
 <!--
   PRÓXIMA SESSÃO: acrescente seu bloco aqui embaixo, no mesmo formato.
   Não apague nada acima. Se algo virou mentira, escreva "SUPERADO em <data>:" na

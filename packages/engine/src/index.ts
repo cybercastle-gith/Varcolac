@@ -14,7 +14,16 @@ export type * from './types/game-state';
 // ── Domínio ─────────────────────────────────────────────────────────────────
 export { NIGHT_STEPS } from './types/action';
 export { countsAsWolf, countsAsVillage } from './types/faction';
-export { pesoEfetivo, etapaEfetiva, usosIniciais } from './types/role';
+export {
+  pesoEfetivo,
+  etapaEfetiva,
+  usosIniciais,
+  usosPorMesa,
+  nomeDaCarta,
+  descricaoDaCarta,
+} from './types/role';
+export { trocarCarta, marcarTrocaVista } from './turn/troca-de-carta';
+export { apresentacaoDaCarta, apresentacaoDe } from './turn/apresentacao';
 export { DEFAULT_CONFIG } from './types/config';
 export { CHANCE_DE_EVENTO, etapasCanceladasPor, efeitoDo } from './types/event';
 export { efeitosDaRodada, temEfeito, limparEfeitosVencidos } from './types/effect';
@@ -31,7 +40,7 @@ export {
 } from './data/events/index';
 export { MODULOS_DE_FANTASMA, MODULOS_POR_ID, moduloAtivo } from './data/ghosts';
 export type { GhostModule } from './data/ghosts';
-export { MODOS, modo, AGRAVAMENTOS } from './data/modes/index';
+export { MODOS, modo, AGRAVAMENTOS, noitesDaMaldicao } from './data/modes/index';
 export type { ModeHooks } from './data/modes/index';
 export { MISSOES_DO_CORINGA, MISSOES_POR_ID } from './data/missions';
 export { MOTIVOS, motivoDe, complementoDe } from './data/motivos';

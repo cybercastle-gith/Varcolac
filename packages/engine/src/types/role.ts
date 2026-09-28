@@ -63,7 +63,51 @@ export function etapaEfetiva(role: Role, variante?: VariantId): Role['etapa'] {
   return v?.etapa ?? role.etapa;
 }
 
+/**
+ * Usos iniciais que dependem do TAMANHO DA MESA.
+ *
+ * Uma exceção, hoje: a revista do Delegado revela a facção em público, o que é
+ * a informação mais cara do jogo. Numa mesa de seis ela resolveria a partida
+ * sozinha; numa de doze, um uso só seria irrelevante. Um a cada quatro
+ * jogadores escala junto com o problema — decisão do usuário em 2026-09-27.
+ *
+ * Devolve `null` quando a carta não tem regra própria e vale o `usoLimitado`.
+ */
+export function usosPorMesa(
+  roleId: RoleId,
+  variante: VariantId | undefined,
+  totalDeJogadores: number,
+): number | null {
+  if (roleId === 'detetive' && variante === 'delegado') {
+    return Math.max(1, Math.floor(totalDeJogadores / 4));
+  }
+  return null;
+}
+
 /** Quantos usos a role começa a partida tendo. `Infinity` quando ilimitado. */
 export function usosIniciais(limite: UsageLimit): number {
   return limite.kind === 'por-partida' ? limite.total : Infinity;
+}
+
+/**
+ * O nome que a mesa deve OUVIR: o da variante, quando existe.
+ *
+ * "Ana era Xerife" e "Ana era Boca Calada" contam histórias diferentes, e a
+ * segunda é a verdadeira — foi a carta da variante que esteve em jogo a noite
+ * toda. Até 2026-09-26 o app dizia o nome da função base em todo lugar: no
+ * amanhecer, na execução, na tela final. Quem escolheu a variante no setup
+ * nunca a via de novo.
+ *
+ * Recebe a role já resolvida para poder ser chamada de dentro do engine sem
+ * consultar o catálogo de novo.
+ */
+export function nomeDaCarta(role: Role, variante?: VariantId): string {
+  if (!variante) return role.nome;
+  return role.variantes.find((v) => v.id === variante)?.nome ?? role.nome;
+}
+
+/** A descrição curta da carta em jogo — da variante quando houver. */
+export function descricaoDaCarta(role: Role, variante?: VariantId): string {
+  if (!variante) return role.descricaoCurta;
+  return role.variantes.find((v) => v.id === variante)?.descricao ?? role.descricaoCurta;
 }

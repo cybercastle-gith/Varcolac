@@ -3,12 +3,14 @@ import { vivos, mortos } from '../types/game-state';
 import type { PlayerId } from '../types/player';
 import { temEfeito } from '../types/effect';
 import { role } from '../data/roles/index';
+import { nomeDaCarta } from '../types/role';
 import { disputaVitoriaPropria } from '../victory/win-conditions';
 import { moduloAtivo } from '../data/ghosts';
 import { retomarRng } from '../utils/rng';
 import { dispararEstertores } from '../resolution/estertor-chain';
 import { anunciar, gravar, marcar, matar } from '../resolution/steps/_helpers';
 import { ecosDaMorte } from '../resolution/steps/_mortes';
+import { trocarCarta } from '../turn/troca-de-carta';
 import type { LogEntry } from '../resolution/resolution-log';
 
 /** Voto declarado. `null` = absteve-se. */
@@ -36,7 +38,9 @@ export function elegiveisParaVotar(estado: GameState): {
   const impedidos: { id: PlayerId; motivo: string }[] = [];
 
   for (const p of vivos(estado)) {
-    if (p.marcas.semVotoSempre) {
+    if (p.marcas.mortoVivo) {
+      impedidos.push({ id: p.id, motivo: 'Morto-vivo: fala, mas não vota mais.' });
+    } else if (p.marcas.semVotoSempre) {
       impedidos.push({ id: p.id, motivo: 'Uivo de Troca: perdeu o voto pelo resto da partida.' });
     } else if (p.semVoto) {
       impedidos.push({ id: p.id, motivo: 'Perdeu o voto (custo da Vidente ou evento).' });
@@ -198,7 +202,26 @@ export function resolverDia(estado: GameState, votos: Votos): DayResult {
     const anterior = atual.historicoVotos.at(-1);
     const semVotoAntes = anterior ? !Object.values(anterior.votos).some((v) => v === b.id) : false;
     if (semVotoAgora && semVotoAntes) {
+      /*
+       * Vira Aldeão DE VERDADE, com tela e anúncio.
+       *
+       * `marcas.virouAldeao` sozinho deixava a carta de Bobo na mão dele: o
+       * ícone, a revelação ao morrer e a tela final continuavam dizendo Bobo, e
+       * ninguém era avisado de nada. É a mesma correção que a Cova Aberta e a
+       * Herança Amarga já tinham recebido.
+       */
+      atual = trocarCarta(atual, b.id, {
+        roleId: 'aldeao',
+        usos: Infinity,
+        motivo: 'Duas votações e ninguém olhou para você. Cansou: agora é um Aldeão comum.',
+      });
       atual = gravar(atual, b.id, { virouAldeao: true });
+      atual = anunciar(
+        atual,
+        `${b.nome} desistiu da própria piada. É um Aldeão comum a partir de agora.`,
+        'votacao',
+        { rotulo: 'Uma carta virou cinza' },
+      );
       registrar(
         `${b.nome} desistiu.`,
         'Variante Bobo Desesperado: duas votações seguidas sem receber um voto.',
@@ -299,7 +322,11 @@ export function resolverDia(estado: GameState, votos: Votos): DayResult {
     );
 
     if (atual.config.revelarRoleAoMorrer && !martir) {
-      atual = anunciar(atual, `${executado.nome} era ${role(executado.roleId).nome}.`, 'votacao');
+      atual = anunciar(
+        atual,
+        `${executado.nome} era ${nomeDaCarta(role(executado.roleId), executado.varianteId)}.`,
+        'votacao',
+      );
     }
 
     // `disputaVitoriaPropria`, e não só `virouAldeao`: o Bobo ressuscitado pela
@@ -371,6 +398,19 @@ function fecharODia(estado: GameState, log: Omit<LogEntry, 'etapa' | 'ordem'>[])
     if (!rastro && !vela) continue;
     atual = matar(atual, p.id, rastro ? 'matilha' : 'estertor');
     atual = marcar(atual, p.id, { estertorPendente: true });
+    /*
+     * As duas mortes de fim de dia eram SILENCIOSAS: o corpo aparecia na lista
+     * e ninguém dizia por quê. Relatado sobre a Última Vela: "o cara voltou
+     * pra cova e nada foi anunciado nem nada".
+     */
+    atual = anunciar(
+      atual,
+      rastro
+        ? `${p.nome} não chegou ao fim do dia. A mordida de ontem cobrou o preço.`
+        : `A vela apagou. ${p.nome} voltou para a cova.`,
+      'morte',
+      { rotulo: rastro ? 'O rastro cobrou' : 'A vela apagou' },
+    );
     registrar(
       `${p.nome} morreu ao fim do dia.`,
       rastro

@@ -2,7 +2,17 @@ import type { GameState } from '../types/game-state';
 import { vivos } from '../types/game-state';
 import type { PlayerId } from '../types/player';
 import { role } from '../data/roles/index';
-import { agendar, anunciar, gravar, marcar, matar } from './steps/_helpers';
+import { nomeDaCarta } from '../types/role';
+import {
+  agendar,
+  anunciar,
+  gravar,
+  marcar,
+  matar,
+  nome as nomeDe,
+  reviver,
+} from './steps/_helpers';
+import { trocarCarta } from '../turn/troca-de-carta';
 
 /**
  * A cadeia de estertores, isolada do pipeline noturno.
@@ -30,6 +40,20 @@ export interface ResultadoEstertores {
  * `jaDispararam` é o que impede laço infinito quando dois estertores se apontam:
  * cada jogador dispara o seu no máximo uma vez.
  */
+/**
+ * O nome que este morto tinha declarado, venha de onde vier.
+ *
+ * `declarados` é o mapa da NOITE em curso; `marcas.levaJunto` é a declaração
+ * que atravessou as noites. A cadeia do dia é chamada sem o mapa, e sem a
+ * marca a escolha do jogador sumia exatamente quando ele era linchado.
+ */
+function escolhaDe(
+  morto: { readonly id: PlayerId; readonly marcas: { readonly levaJunto?: PlayerId } },
+  declarados: ReadonlyMap<PlayerId, PlayerId>,
+): PlayerId | undefined {
+  return declarados.get(morto.id) ?? morto.marcas.levaJunto;
+}
+
 export function dispararEstertores(
   estadoInicial: GameState,
   iniciais: readonly PlayerId[],
@@ -76,10 +100,14 @@ export function dispararEstertores(
 
     if (r.id === 'cacador') {
       if (morto.varianteId === 'ultimo-uivo') {
-        const alvo = declarados.get(id) ?? candidatos[0]?.id;
+        const alvo = escolhaDe(morto, declarados) ?? candidatos[0]?.id;
         if (alvo) {
           const alvoP = estado.players.find((p) => p.id === alvo)!;
-          estado = anunciar(estado, `${alvoP.nome} é ${role(alvoP.roleId).nome}.`, 'role');
+          estado = anunciar(
+            estado,
+            `${alvoP.nome} é ${nomeDaCarta(role(alvoP.roleId), alvoP.varianteId)}.`,
+            'role',
+          );
           registros.push({
             mensagem: `${morto.nome} revelou a role de ${alvoP.nome}.`,
             motivo: 'Variante Último Uivo: revela em vez de matar.',
@@ -102,7 +130,7 @@ export function dispararEstertores(
         elegiveis = candidatos.filter((p) => votaram.has(p.id));
       }
 
-      const escolhido = declarados.get(id) ?? elegiveis[0]?.id;
+      const escolhido = escolhaDe(morto, declarados) ?? elegiveis[0]?.id;
       if (!escolhido || !elegiveis.some((p) => p.id === escolhido)) {
         registros.push({
           mensagem: `${morto.nome} morreu sem levar ninguém.`,
@@ -128,8 +156,42 @@ export function dispararEstertores(
        * compensação ele não mata, não vota e não age nunca mais.
        */
       if (morto.varianteId === 'morto-vivo') {
+        /**
+         * Ele NÃO sai do jogo na primeira morte.
+         *
+         * A carta diz "continua em jogo (...) e pode ser morto novamente", e
+         * isso não é enfeite narrativo: enquanto ele estiver em jogo, a matilha
+         * ainda tem um representante na contagem. Relatado em mesa: o
+         * Carniceiro Morto-Vivo foi linchado, virou "morto", e a vila venceu na
+         * hora com um lobo ainda sentado à mesa.
+         *
+         * Volta a `vivo` com `mortoVivo` e `semPoder`: conta na paridade, fala,
+         * e não age nem vota (ver `elegiveisParaVotar` e `acoesDe`). A segunda
+         * morte é definitiva, porque aí `mortoVivo` já está gravado e este
+         * ramo não roda de novo.
+         */
+        if (!morto.marcas.mortoVivo) {
+          estado = reviver(estado, id);
+          estado = gravar(estado, id, { mortoVivo: true, semPoder: true });
+          estado = anunciar(
+            estado,
+            `${morto.nome} caiu — e levantou. Continua entre vocês, calado no que importa.`,
+            'role',
+            { rotulo: 'Não terminou' },
+          );
+          registros.push({
+            mensagem: `${morto.nome} virou morto-vivo.`,
+            motivo:
+              'Variante Morto-Vivo: a primeira morte não o tira do jogo. Ele fala, não age, ' +
+              'não vota, e ainda conta para a matilha até morrer de novo.',
+            atores: [id],
+            alvos: [],
+          });
+          continue;
+        }
+
         estado = gravar(estado, id, { mortoVivo: true });
-        estado = anunciar(estado, `${morto.nome} caiu, e continua falando.`, 'role');
+        estado = anunciar(estado, `${morto.nome} caiu de novo. Desta vez ficou.`, 'role');
         registros.push({
           mensagem: `${morto.nome} virou morto-vivo.`,
           motivo: 'Variante Morto-Vivo: fala à mesa, mas não mata, não vota e não age.',
@@ -191,7 +253,7 @@ export function dispararEstertores(
         continue;
       }
 
-      const escolhido = declarados.get(id) ?? candidatos[0]?.id;
+      const escolhido = escolhaDe(morto, declarados) ?? candidatos[0]?.id;
       if (escolhido) abater(escolhido, `O Carniçal ${morto.nome} levou alguém junto.`, id);
       // "Não morre na hora": a expiração adiada é o vestígio dessa noite extra.
       estado = agendar(estado, { kind: 'expira', naRodada: estado.rodada + 1, playerId: id });
@@ -245,7 +307,7 @@ export function dispararEstertores(
     }
 
     if (r.id === 'ancia') {
-      const escolhido = declarados.get(id) ?? morto.marcas.alvoTravado;
+      const escolhido = escolhaDe(morto, declarados) ?? morto.marcas.alvoTravado;
       const amanha = estado.rodada + 1;
 
       switch (morto.varianteId) {
@@ -263,7 +325,11 @@ export function dispararEstertores(
             naRodada: amanha,
             ...(escolhido ? { exceto: escolhido } : {}),
           });
-          estado = anunciar(estado, 'A vila perdeu suas forças — quase todas.', 'role');
+          estado = anunciar(
+            estado,
+            'Amanhã à noite, a vila não terá forças. Quase ninguém.',
+            'role',
+          );
           registros.push({
             mensagem: escolhido
               ? `${morto.nome} deixou o poder com ${estado.players.find((x) => x.id === escolhido)?.nome ?? '?'}.`
@@ -283,7 +349,11 @@ export function dispararEstertores(
          */
         case 'luto-da-vila':
           estado = agendar(estado, { kind: 'poderes-suspensos', naRodada: amanha, todos: true });
-          estado = anunciar(estado, 'Ninguém tem forças esta noite. Ninguém mesmo.', 'role');
+          estado = anunciar(
+            estado,
+            'Amanhã à noite ninguém terá forças. Nem a vila, nem o que caça nela.',
+            'role',
+          );
           registros.push({
             mensagem: `${morto.nome} era a Anciã — TODOS perdem os poderes por uma noite.`,
             motivo: 'Variante Luto da Vila: a matilha e os solitários caem junto.',
@@ -302,9 +372,30 @@ export function dispararEstertores(
         case 'heranca-amarga':
           estado = agendar(estado, { kind: 'poderes-suspensos', naRodada: amanha, todos: true });
           if (escolhido) {
+            estado = trocarCarta(estado, escolhido, {
+              roleId: 'aldeao',
+              usos: Infinity,
+              motivo: 'A Anciã levou o seu poder junto com ela.',
+            });
             estado = gravar(estado, escolhido, { virouAldeao: true });
           }
-          estado = anunciar(estado, 'A Anciã levou alguma coisa com ela.', 'role');
+          /*
+           * Quem MUDOU de papel é dito em voz alta, com o nome.
+           *
+           * Relatado em mesa: "não avisou quem foi transformado". Vale para
+           * toda variante que troca a carta de alguém — a pessoa precisa saber
+           * que perdeu o poder, e a mesa precisa saber que ela perdeu, senão
+           * continua contando com uma função que não existe mais.
+           */
+          estado = escolhido
+            ? anunciar(
+                estado,
+                `A Anciã levou o poder de ${nomeDe(estado, escolhido)} com ela. ` +
+                  `${nomeDe(estado, escolhido)} é um Aldeão comum a partir de agora.`,
+                'role',
+                { rotulo: 'Uma carta virou cinza' },
+              )
+            : anunciar(estado, 'A Anciã se foi sem levar ninguém com ela.', 'role');
           registros.push({
             mensagem: escolhido
               ? `${estado.players.find((x) => x.id === escolhido)?.nome ?? '?'} virou Aldeão para sempre.`
@@ -318,7 +409,7 @@ export function dispararEstertores(
 
         default:
           estado = agendar(estado, { kind: 'poderes-suspensos', naRodada: amanha });
-          estado = anunciar(estado, 'A vila perdeu suas forças esta noite.', 'role');
+          estado = anunciar(estado, 'Amanhã à noite, a vila não terá forças.', 'role');
           registros.push({
             mensagem: `${morto.nome} era a Anciã — a vila perde todos os poderes por uma noite.`,
             motivo: 'Vale para morte por qualquer causa, inclusive linchamento.',

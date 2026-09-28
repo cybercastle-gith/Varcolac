@@ -1,5 +1,5 @@
 import type { StepFn } from '../night-pipeline';
-import { acoesDe, entregarInfo, gravar, marcar, nome } from './_helpers';
+import { acoesDe, entregarInfo, gastarUso, gravar, marcar, nome, temUso } from './_helpers';
 
 /**
  * Etapa 6 — Feiticeiro. Remove proteções e imunidades do alvo da matilha.
@@ -24,6 +24,25 @@ export const perfuracao: StepFn = (ctx) => {
     const alvo = acao.alvos[0];
     const ator = estado.players.find((p) => p.id === acao.actorId);
     if (!alvo || !ator) continue;
+
+    /**
+     * A perfuração é UMA por partida, e ninguém gastava o uso.
+     *
+     * Mesmo defeito que a poção da Bruxa: `usoLimitado` dizia
+     * `por-partida: 1` desde sempre e nenhuma etapa chamava `gastarUso`, então
+     * o Feiticeiro atravessava curas TODA noite. Achado varrendo o catálogo
+     * atrás de cartas com uso limitado que nunca gastam o uso — vale repetir a
+     * varredura sempre que uma carta nova com limite entrar.
+     */
+    if (!temUso(estado, ator.id)) {
+      ctx.log.registrar('perfuracao', {
+        mensagem: `${ator.nome} já gastou a perfuração.`,
+        motivo: 'Uma vez por partida.',
+        atores: [ator.id],
+      });
+      continue;
+    }
+    estado = gastarUso(estado, ator.id);
 
     const vitima = estado.players.find((p) => p.id === alvo)!;
     const estavaProtegido = vitima.flags.protegido;

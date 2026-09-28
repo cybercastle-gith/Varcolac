@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Animated, Easing, type StyleProp, type ViewStyle } from 'react-native';
-import { duracaoMaximaMs } from '../theme';
+import { tempos } from '../theme';
 
 /**
  * As animações do app, num lugar só.
@@ -26,11 +26,22 @@ export function Aparicao({
   const v = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    /*
+     * Uma bézier no lugar de `Easing.out(Easing.cubic)`.
+     *
+     * A diferença é toda no FIM: esta curva sai rápido e passa a maior parte do
+     * tempo desacelerando, então o elemento parece POUSAR em vez de escorregar
+     * até parar. Numa lista com atraso escalonado, cubic faz as últimas linhas
+     * parecerem lentas mesmo tendo a mesma duração das primeiras.
+     *
+     * (`Easing.quart` não existe no React Native — só `quad`, `cubic` e
+     * `poly(n)`. Esta bézier é a curva que eu queria e não estava lá.)
+     */
     Animated.timing(v, {
       toValue: 1,
-      duration: duracaoMaximaMs,
+      duration: tempos.transicao,
       delay: atraso,
-      easing: Easing.out(Easing.cubic),
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
       useNativeDriver: true,
     }).start();
   }, [v, atraso]);
@@ -43,6 +54,13 @@ export function Aparicao({
           opacity: v,
           transform: [
             { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [distancia, 0] }) },
+            /*
+             * Uma escala quase imperceptível (0.99) junto do deslocamento.
+             * Sozinho, o translate parece um texto rolando; com a escala, o
+             * bloco parece se aproximar — que é o que o olho lê como "isto
+             * chegou agora".
+             */
+            { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.99, 1] }) },
           ],
         },
       ]}
@@ -62,9 +80,10 @@ export function Revelacao({ children, atraso = 0 }: { children: ReactNode; atras
   useEffect(() => {
     Animated.timing(v, {
       toValue: 1,
-      duration: 420,
+      duration: tempos.momento,
       delay: atraso,
-      easing: Easing.out(Easing.cubic),
+      // `back` dá um leve passar-do-ponto: a carta assenta em vez de parar seca.
+      easing: Easing.out(Easing.back(1.1)),
       useNativeDriver: true,
     }).start();
   }, [v, atraso]);
@@ -125,4 +144,39 @@ export function useNumeroAnimado(alvo: number, duracao = 400): Animated.Value {
     }).start();
   }, [alvo, duracao, v]);
   return v;
+}
+
+/**
+ * Surge com mola: para o que APARECE por causa de um toque.
+ *
+ * Diferente de `Aparicao`, que é entrada de conteúdo e desacelera até parar.
+ * Aqui a mola existe porque o elemento é a RESPOSTA a um dedo — o losango que
+ * confirma o alvo escolhido, um selo que acende. Sem ela o marcador pisca
+ * ligado/desligado e a escolha não parece ter peso.
+ *
+ * Roda no driver nativo e não anima cor nem layout, só escala: é o que mantém
+ * a lista inteira fluida mesmo com dez linhas na tela.
+ */
+export function Surge({ children }: { children: ReactNode }) {
+  const v = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(v, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 12,
+    }).start();
+  }, [v]);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: v,
+        transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
 }

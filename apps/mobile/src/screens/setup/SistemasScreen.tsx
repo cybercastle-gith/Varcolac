@@ -128,6 +128,19 @@ export function SistemasScreen({ navigation }: Props) {
         />
 
         <Linha
+          titulo="Noite 1 sem sangue"
+          descricao="A matilha não age na primeira noite. Ninguém morre antes de ter falado."
+          direita={
+            <Interruptor
+              ligado={config.semMorteNaPrimeiraNoite}
+              onPress={() =>
+                setConfig({ semMorteNaPrimeiraNoite: !config.semMorteNaPrimeiraNoite })
+              }
+            />
+          }
+        />
+
+        <Linha
           titulo="Contagem de lobos"
           descricao="Quanto a mesa sabe sobre o tamanho da matilha."
           direita={null}
@@ -254,5 +267,39 @@ export function SistemasScreen({ navigation }: Props) {
         <Botao onPress={() => navigation.navigate('Revisao')}>Revisar e começar</Botao>
       </View>
     </TelaOperacao>
+  );
+}
+
+/**
+ * O interruptor de sim ou não.
+ *
+ * Extraído quando a segunda opção booleana apareceu ("Noite 1 sem sangue"):
+ * trinta linhas de `View` aninhada copiadas é o começo de duas opções que
+ * divergem no visual sem ninguém decidir isso.
+ */
+function Interruptor({ ligado, onPress }: { ligado: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} hitSlop={10}>
+      <View
+        style={{
+          width: 42,
+          height: 25,
+          borderRadius: 15,
+          backgroundColor: ligado ? cores.folhaDeOuro : cores.ferrugem,
+          justifyContent: 'center',
+          padding: 3,
+        }}
+      >
+        <View
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: 12,
+            backgroundColor: ligado ? cores.fuligem : cores.linhoCru,
+            alignSelf: ligado ? 'flex-end' : 'flex-start',
+          }}
+        />
+      </View>
+    </Pressable>
   );
 }

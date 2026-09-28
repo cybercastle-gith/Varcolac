@@ -3,7 +3,7 @@ import { View, Text, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTelaAcesa } from '../../hooks/useTelaAcesa';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { role, contagemDeLobosVisivel } from '@jogo/engine';
+import { role, nomeDaCarta, contagemDeLobosVisivel } from '@jogo/engine';
 import type { RootStackParamList } from '../../navigation/types';
 import { useJogo } from '../../store/jogo';
 import { Botao, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
@@ -100,7 +100,9 @@ export function DiscussaoScreen({ navigation }: Props) {
                   nome={p.nome}
                   morto
                   detalhe={
-                    estado.config.revelarRoleAoMorrer ? `era ${role(p.roleId).nome}` : undefined
+                    estado.config.revelarRoleAoMorrer
+                      ? `era ${nomeDaCarta(role(p.roleId), p.varianteId)}`
+                      : undefined
                   }
                   direita={
                     estado.config.revelarRoleAoMorrer ? (

@@ -49,6 +49,22 @@ export function RootNavigator() {
           headerTitleStyle: { fontFamily: fonte.sans, fontSize: 15, color: cores.linhoCru },
           headerShadowVisible: false,
           animationDuration: duracaoMaximaMs,
+          /**
+           * As telas DESLIZAM, e não aparecem cortadas.
+           *
+           * O padrão do `native-stack` no Android é `slide_from_right`, mas na
+           * web ele cai em `default`, que troca sem transição nenhuma — e é na
+           * web que este app é testado o tempo todo. Declarar explicitamente
+           * dá a mesma leitura nos dois lugares: a mesa vê para onde o app
+           * está indo, o que é metade do que faz um fluxo parecer fluido.
+           */
+          animation: 'slide_from_right',
+          /*
+           * O gesto de voltar fica LIGADO no setup e a tela de jogo o desliga
+           * (ver `Passagem`, `Votacao` e `Execucao`): arrastar a borda no meio
+           * de uma passagem voltaria para a revisão com a partida em curso.
+           */
+          gestureEnabled: true,
         }}
       >
         <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
@@ -87,9 +103,13 @@ export function RootNavigator() {
         <Stack.Screen
           name="Discussao"
           component={DiscussaoScreen}
-          options={{ title: 'Discussão' }}
+          options={{ gestureEnabled: false, title: 'Discussão' }}
         />
-        <Stack.Screen name="Votacao" component={VotacaoScreen} options={{ title: 'Votação' }} />
+        <Stack.Screen
+          name="Votacao"
+          component={VotacaoScreen}
+          options={{ gestureEnabled: false, title: 'Votação' }}
+        />
         <Stack.Screen
           name="Execucao"
           component={ExecucaoScreen}

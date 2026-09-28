@@ -17,6 +17,19 @@ import { cores, espaco, tipografia } from '../theme';
  * clarão na mesa: a identidade reduz o brilho nas fases noturnas, e uma carta
  * branca acesa no escuro fere o olho e ilumina o rosto de quem está agindo.
  */
+/**
+ * O nome da facção como se ESCREVE, e não como se guarda.
+ *
+ * `r.faccao` é um id — `'solitario'`, sem acento, porque chave de dado não
+ * leva acento. Imprimir o id no rodapé da carta deixava "SOLITARIO" na cara de
+ * quem joga.
+ */
+const FACCAO_ESCRITA: Record<string, string> = {
+  vila: 'vila',
+  lobos: 'lobos',
+  solitario: 'solitário',
+};
+
 const TINTA = '#160F0A';
 const TINTA_FRACA = '#3B2A1D';
 
@@ -50,6 +63,8 @@ export function CartaDeRole({
   const variante = varianteId ? r.variantes.find((v) => v.id === varianteId) : undefined;
   const cor = corDaFaccao(roleId);
   const Icone = viva ? IconeDeRoleVivo : IconeDeRole;
+  const nome = variante?.nome ?? r.nome;
+  const descricao = variante?.descricao ?? r.descricaoCurta;
 
   return (
     <View
@@ -93,37 +108,101 @@ export function CartaDeRole({
       */}
       <Material material="papel" opacidade={0.9} modo="cobrir" />
 
+      {/*
+        A carta tem ALTURA FIXA (3:4) e `overflow: 'hidden'`, então tudo que não
+        couber é cortado em silêncio — foi o que aconteceu com "Sobrevivente
+        Invisível", "Bobo Desesperado" e qualquer variante de nome comprido ou
+        descrição de três frases.
+
+        A correção é dar a cada bloco o seu espaço em vez de empilhar e torcer:
+        o motivo tem tamanho proporcional e não cresce, o nome tem no máximo
+        duas linhas, e a descrição fica num bloco elástico que absorve o que
+        sobra. `numberOfLines` corta com reticências, que é honesto — o texto
+        inteiro está na Biblioteca. Cortar no meio de uma palavra, sem aviso,
+        não é.
+      */}
       <View
         style={{
           flex: 1,
           alignItems: 'center',
-          justifyContent: 'center',
-          paddingHorizontal: espaco.lg,
-          gap: espaco.sm,
+          justifyContent: 'flex-start',
+          paddingHorizontal: espaco.md,
+          paddingTop: espaco.md,
+          gap: espaco.xs,
         }}
       >
-        {/* Amplia o motivo para esconder eventuais bordas claras da imagem. */}
-        <Icone roleId={roleId} varianteId={varianteId} tamanho={largura * 0.48} cor={cor} />
+        <Icone roleId={roleId} varianteId={varianteId} tamanho={largura * 0.36} cor={cor} />
 
+        {/*
+          O nome encolhe quando é comprido, em vez de sumir.
+
+          "Sobrevivente Invisível" tem 22 caracteres contra os 5 de "Bobo": com
+          um tamanho único, ou o curto fica minúsculo ou o comprido estoura.
+          A escala é por FAIXA e não contínua — três degraus são previsíveis de
+          conferir, uma fórmula contínua dá um tamanho diferente por carta.
+        */}
         <Text
+          numberOfLines={2}
           style={[
             tipografia.nomeDeRole,
-            { color: TINTA, textAlign: 'center', fontSize: largura * 0.11 },
+            {
+              color: TINTA,
+              textAlign: 'center',
+              fontSize: largura * (nome.length > 18 ? 0.082 : nome.length > 12 ? 0.095 : 0.11),
+              lineHeight: largura * (nome.length > 18 ? 0.1 : 0.125),
+            },
           ]}
         >
-          {variante?.nome ?? r.nome}
+          {nome}
         </Text>
 
-        {variante && <Text style={[tipografia.rotulo, { color: cor, fontSize: 9 }]}>{r.nome}</Text>}
+        {/*
+          A função de origem, quando a carta é uma variante.
 
-        <Text
-          style={[
-            tipografia.pequeno,
-            { color: TINTA_FRACA, textAlign: 'center', fontSize: largura * 0.055 },
-          ]}
-        >
-          {variante?.descricao ?? r.descricaoCurta}
-        </Text>
+          Era `fontSize: 9` fixo — ilegível numa carta de 200px e perdido numa
+          de 300. E é a informação que responde "isto é um quê?": sem ela,
+          "Boca Calada" não diz a ninguém que é um Xerife.
+        */}
+        {variante && (
+          <View style={{ alignItems: 'center', gap: 2 }}>
+            <View style={{ width: largura * 0.18, height: 1, backgroundColor: TINTA_FRACA }} />
+            {/*
+              TINTA, e não a cor da facção.
+
+              `corDaFaccao` é feita para brilhar sobre Fuligem; sobre o papel
+              claro da carta ela vira um borrão dourado ilegível — e esta é
+              justamente a linha que responde "Boca Calada é um quê?". A carta
+              inverte a regra de cor do app inteiro, e este rótulo tinha ficado
+              de fora da inversão.
+            */}
+            <Text
+              style={[
+                tipografia.rotulo,
+                { color: TINTA_FRACA, fontSize: Math.max(9, largura * 0.045), letterSpacing: 1.2 },
+              ]}
+            >
+              {r.nome}
+            </Text>
+          </View>
+        )}
+
+        {/* O bloco elástico: absorve o que sobrar da altura, e só ele rola. */}
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <Text
+            numberOfLines={descricao.length > 110 ? 5 : 4}
+            style={[
+              tipografia.pequeno,
+              {
+                color: TINTA_FRACA,
+                textAlign: 'center',
+                fontSize: largura * (descricao.length > 110 ? 0.046 : 0.053),
+                lineHeight: largura * (descricao.length > 110 ? 0.062 : 0.07),
+              },
+            ]}
+          >
+            {descricao}
+          </Text>
+        </View>
       </View>
 
       {/* Rodapé: a facção, como no verso de uma carta de verdade. */}
@@ -133,12 +212,26 @@ export function CartaDeRole({
           alignItems: 'center',
           justifyContent: 'center',
           paddingHorizontal: espaco.lg,
-          paddingTop: espaco.sm,
-          paddingBottom: espaco.md,
+          paddingTop: espaco.xs,
+          paddingBottom: espaco.sm,
           marginHorizontal: espaco.md,
+          borderTopWidth: 1,
+          borderTopColor: 'rgba(22, 15, 10, 0.18)',
         }}
       >
-        <Text style={[tipografia.rotulo, { color: cores.nogueira, fontSize: 14 }]}>{r.faccao}</Text>
+        {/*
+          Um fio separando o rodapé do corpo. Sem ele a facção encostava na
+          descrição e a carta virava um bloco só de texto — "tudo meio junto",
+          nas palavras de quem jogou.
+        */}
+        <Text
+          style={[
+            tipografia.rotulo,
+            { color: cores.nogueira, fontSize: Math.max(10, largura * 0.05), letterSpacing: 1.5 },
+          ]}
+        >
+          {FACCAO_ESCRITA[r.faccao]}
+        </Text>
       </View>
     </View>
   );

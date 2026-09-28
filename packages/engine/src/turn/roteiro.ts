@@ -8,6 +8,7 @@ import { role } from '../data/roles/index';
 import { moduloAtivo } from '../data/ghosts';
 import { MISSOES_POR_ID } from '../data/missions';
 import { faccaoEfetiva } from './faccao';
+import { efeitosDaRodada } from '../types/effect';
 import { cotaDaMatilha } from '../resolution/steps/_ataques';
 import { roleEfetivaId } from '../resolution/steps/_helpers';
 
@@ -149,24 +150,60 @@ export interface Passagem {
    * maneira oposta. Vem atrás do "segurar para revelar", como a carta.
    */
   readonly lembrete: string | null;
+  /**
+   * A carta deste jogador MUDOU e ele ainda não foi avisado.
+   *
+   * Seis mecânicas trocam o papel de alguém no meio da partida, e todas faziam
+   * isso em silêncio: a pessoa pegava o aparelho na noite seguinte e a pergunta
+   * era outra, sem uma palavra sobre por quê. Pedido do usuário em 2026-09-28:
+   * "após a pessoa mudar de role, seja por qualquer motivo, até para aldeão,
+   * deve aparecer uma tela especial antes da ação".
+   *
+   * A tela mostra isto ANTES da pergunta e consome a marca (ver
+   * `marcarTrocaVista`) — aparece uma vez, e só para quem trocou.
+   */
+  readonly trocaDeCarta: Player['marcas']['viraCarta'];
 }
 
 /**
- * A frase de lembrete de quem não age nunca. `null` para quem age.
+ * A carta na mão, para consulta — de TODO mundo.
  *
- * O critério é a CARTA não ter etapa noturna — e não "a pergunta desta noite
- * ser falsa". Quem tem poder e já o gastou continua recebendo toque falso e
- * NÃO recebe lembrete: dizer "você é o Padre" a um Padre sem usos o obrigaria
- * a esconder a tela, que é justamente o que o toque falso evita.
+ * Nasceu só para quem nunca age (Bobo, Sobrevivente, Coringa, Aldeão), com o
+ * receio de que dizer "você é o Padre" a um Padre sem usos o obrigasse a
+ * esconder a tela. O receio não se sustenta desde que o lembrete virou uma
+ * sobreposição que só abre quando o jogador TOCA: nada aparece sozinho, e o
+ * botão é idêntico em todas as passagens — inclusive no toque falso.
+ *
+ * É essa uniformidade que protege o segredo. Um botão que aparecesse só para
+ * algumas cartas entregaria, pela própria presença, quem tem poder e quem não
+ * tem. Decisão do usuário em 2026-09-28.
  */
 function lembreteDe(p: Player): string | null {
-  const r = role(roleEfetivaId(p));
-  if (r.etapa) return null;
-  const variante = p.varianteId ? r.variantes.find((v) => v.id === p.varianteId) : undefined;
-  if (variante?.etapa) return null;
+  const efetiva = roleEfetivaId(p);
+  const r = role(efetiva);
+  // Com poder emprestado, a variante é do dono da CARTA, não do poder.
+  const variante =
+    efetiva === p.roleId && p.varianteId
+      ? r.variantes.find((v) => v.id === p.varianteId)
+      : undefined;
   const nome = variante ? variante.nome : r.nome;
-  const descricao = variante ? variante.descricao : r.descricaoCurta;
+  const descricao = variante ? variante.descricao : r.descricaoLonga;
   return `${nome} — ${descricao}`;
+}
+
+/**
+ * A suspensão de poderes da Anciã alcança este jogador?
+ *
+ * Espelha a checagem de `acoesDe` — e as duas PRECISAM concordar: se o roteiro
+ * perguntar a quem a resolução vai descartar, o jogador gasta a noite à toa.
+ */
+function suspensaoAlcanca(estado: GameState, p: Player): boolean {
+  const suspensao = efeitosDaRodada(estado.efeitos, estado.rodada).find(
+    (e) => e.kind === 'poderes-suspensos',
+  );
+  if (!suspensao || suspensao.kind !== 'poderes-suspensos') return false;
+  if (suspensao.exceto === p.id) return false;
+  return suspensao.todos === true || role(roleEfetivaId(p)).faccao === 'vila';
 }
 
 /** Um jogador ainda tem uso disponível para a habilidade nesta noite? */
@@ -336,8 +373,14 @@ function alvosValidos(
       return estado.rodada === 1 ? vivosAgora.map((x) => x.id) : [];
 
     case 'lobo-carnical':
-      // Última Carne: a aposta é feita depois de morrer.
-      return vivos(estado).map((x) => x.id);
+      /*
+       * Serve às duas opções dele: caçar (a matilha é filtrada mais abaixo) e
+       * marcar quem leva junto — que pode ser um lobo, porque cair levando um
+       * companheiro é decisão dele.
+       */
+      return vivos(estado)
+        .filter((x) => x.id !== p.id)
+        .map((x) => x.id);
 
     case 'lobo-sombra':
       // Nome Roubado veste um morto; Sombra de Alguém veste um vivo.
@@ -495,6 +538,20 @@ function perguntarA(estado: GameState, p: Player): Pergunta {
   if (p.flags.preso) {
     return impedido('A cela.', 'Você foi preso pelo Xerife: não age esta noite.');
   }
+  /**
+   * Poderes suspensos pela Anciã: a tela DIZ, em vez de engolir a ação.
+   *
+   * `acoesDe` descartava a ação na resolução, então o jogador escolhia um
+   * alvo, confirmava, gastava o uso na cabeça dele e nada acontecia — sem uma
+   * palavra. É o mesmo tratamento que a matilha ganhou na noite sem sangue.
+   */
+  if (suspensaoAlcanca(estado, p)) {
+    return impedido(
+      'As forças não vêm.',
+      'A Anciã morreu, e esta noite ninguém da vila consegue usar o que sabe.',
+    );
+  }
+
   if (p.flags.embriagado) {
     return impedido(
       'A cabeça pesa.',
@@ -511,8 +568,7 @@ function perguntarA(estado: GameState, p: Player): Pergunta {
    * vingança e o Ladrão escolhe de quem rouba. Para todo o resto, `estado-inicial`
    * é arrumação interna e a resposta certa é o toque falso.
    */
-  const escolheNaPrimeiraNoite =
-    (r.id === 'vingador' || r.id === 'ladrao') && estado.rodada === 1;
+  const escolheNaPrimeiraNoite = (r.id === 'vingador' || r.id === 'ladrao') && estado.rodada === 1;
   if (!etapa || (etapa === 'estado-inicial' && !escolheNaPrimeiraNoite)) return toqueFalso;
   /**
    * A etapa `estertores` é reação à morte, não ação da noite — mas quatro
@@ -528,10 +584,47 @@ function perguntarA(estado: GameState, p: Player): Pergunta {
    * engine — o primeiro vivo da lista. A carta diz "leva alguém junto" e quem
    * escolhe esse alguém tem de ser ele.
    */
-  const declaraNoEstertor =
-    r.id === 'cacador' || DECLARA_NO_ESTERTOR.includes(varianteAtiva ?? '');
+  /*
+   * O Carniçal VIVO saiu daqui: a etapa dele virou `ataque` e a marca virou a
+   * segunda opção da noite. Morto, ele só volta se for a Última Carne.
+   */
+  const declaraNoEstertor = r.id === 'cacador' || DECLARA_NO_ESTERTOR.includes(varianteAtiva ?? '');
   if (etapa === 'estertores' && !declaraNoEstertor) return toqueFalso;
-  const escolheEntreDuas = r.id === 'feiticeiro' || r.id === 'alfa' || r.id === 'lobo-sombra';
+
+  /*
+   * A Última Carne é a ÚNICA declarada depois de morrer.
+   *
+   * Vivo, ele estava sendo perguntado "em quem você aposta para poder voltar?"
+   * — uma pergunta sem sentido para quem não morreu, e cuja resposta a etapa 9
+   * descartava em silêncio. Gastava a passagem dele e não fazia nada.
+   */
+  if (varianteAtiva === 'ultima-carne' && p.status === 'vivo') return toqueFalso;
+  /*
+   * O Carniçal escolhe entre duas coisas — enquanto está VIVO.
+   *
+   * Morto, só a Última Carne o traz de volta ao roteiro, e aí ele tem uma
+   * pergunta só: em quem apostar. Oferecer "caçar com a matilha" a um morto
+   * seria uma opção que a etapa 7 descarta em silêncio.
+   */
+  const carnicalVivo = r.id === 'lobo-carnical' && p.status === 'vivo';
+  /**
+   * Quem escolhe ENTRE DUAS coisas não pode ser barrado por falta de uso.
+   *
+   * O Uivador faltava nesta lista, e o bloco de escolha dupla lá embaixo já o
+   * incluía — só que nunca era alcançado. Gasto o uivo, `podeAgir` devolvia
+   * falso e ele recebia "Já foi" **para sempre**: um lobo que entregou um
+   * companheiro e, como castigo, nunca mais mordeu. Relatado assim: "não
+   * consegue matar na noite seguinte depois de uivar".
+   *
+   * A regra destas cartas é justamente essa: o poder especial acaba, a caçada
+   * continua. Quem entra aqui tem de estar nas DUAS listas.
+   */
+  const escolheEntreDuas =
+    r.id === 'feiticeiro' ||
+    r.id === 'alfa' ||
+    r.id === 'lobo-sombra' ||
+    r.id === 'uivador' ||
+    carnicalVivo;
   if (!podeAgir(estado, p, r, emprestado) && !escolheEntreDuas) {
     /*
      * "Não pode agir" tem duas causas muito diferentes, e antes as duas caíam
@@ -563,9 +656,54 @@ function perguntarA(estado: GameState, p: Player): Pergunta {
   // Sem alvo possível, o toque falso é a resposta honesta.
   // O Padre base e o Lobo Sombra não miram ninguém, então a lista vazia é normal
   // para eles — menos para o Exorcista, que precisa de um nome.
-  const dispensaAlvo =
-    (r.id === 'padre' && varianteAtiva !== 'exorcista') || r.id === 'lobo-sombra';
-  if (alvos.length === 0 && !dispensaAlvo) return toqueFalso;
+  /*
+   * Quem NÃO mira ninguém não pode cair no toque falso por falta de alvos.
+   *
+   * A lista era `padre` e `lobo-sombra`, escrita quando só esses dois existiam.
+   * A Testemunha do Aldeão e o Bobo da Forca nasceram depois, também não miram
+   * ninguém, e caíam aqui: o jogador recebia toque falso a partida inteira e o
+   * único uso da carta dele nunca era oferecido.
+   *
+   * O critério agora é a PERGUNTA, e não uma lista de nomes: quem responde sim
+   * ou não não precisa de alvo nenhum, e quem precisa, precisa.
+   */
+  const perguntaBinaria =
+    (r.id === 'padre' && varianteAtiva !== 'exorcista') ||
+    r.id === 'lobo-sombra' ||
+    varianteAtiva === 'testemunha' ||
+    varianteAtiva === 'bobo-da-forca';
+  if (alvos.length === 0 && !perguntaBinaria) {
+    /*
+     * Sem alvo E sem ser binária: o motivo importa. O Médico de Plantão só
+     * cura quem foi atacado ontem, e numa noite em que ninguém sobreviveu a um
+     * ataque ele simplesmente não tem a quem ir — dizer isso é diferente de
+     * fingir que ele não tem poder.
+     */
+    if (varianteAtiva === 'de-plantao') {
+      return impedido(
+        'Ninguém para atender.',
+        'Você só pode curar quem foi atacado na noite passada, e não há ninguém nessa ' +
+          'situação vivo esta noite.',
+      );
+    }
+    if (varianteAtiva === 'curandeiro') {
+      return impedido(
+        'Não sobrou ninguém.',
+        'Você já curou todo mundo uma vez, e não repete alvo.',
+      );
+    }
+    if (varianteAtiva === 'ultima-dose') {
+      return impedido('A adega secou.', 'Todo mundo já bebeu uma vez, e você não serve duas.');
+    }
+    if (
+      r.id === 'necromante' ||
+      varianteAtiva === 'ossos' ||
+      varianteAtiva === 'troca-com-mortos'
+    ) {
+      return impedido('Ainda não há mortos.', 'Sua carta só funciona quando alguém já caiu.');
+    }
+    return toqueFalso;
+  }
 
   const base = { playerId: p.id, etapa, falsa: false, titulo, detalhe };
 
@@ -672,7 +810,13 @@ function perguntarA(estado: GameState, p: Player): Pergunta {
     .filter((x) => x.id !== p.id && role(x.roleId).faccao !== 'lobos')
     .map((x) => x.id);
 
-  if (r.id === 'feiticeiro' || r.id === 'alfa' || r.id === 'lobo-sombra' || r.id === 'uivador') {
+  if (
+    r.id === 'feiticeiro' ||
+    r.id === 'alfa' ||
+    r.id === 'lobo-sombra' ||
+    r.id === 'uivador' ||
+    carnicalVivo
+  ) {
     const especial: OpcaoDePergunta =
       r.id === 'feiticeiro'
         ? {
@@ -683,26 +827,39 @@ function perguntarA(estado: GameState, p: Player): Pergunta {
           }
         : r.id === 'alfa'
           ? { valor: 'converter', rotulo: 'Converter', pedeAlvo: true, etapa: 'ataque' }
-          : r.id === 'uivador'
+          : r.id === 'lobo-carnical'
             ? {
-                valor: 'uivar',
-                // O Uivo de Manada anuncia um NÚMERO: não há quem delatar.
-                rotulo:
-                  varianteAtiva === 'uivo-de-manada'
-                    ? 'Uivar: dizer quantos lobos restam'
-                    : 'Uivar: delatar um lobo (ou você)',
-                pedeAlvo: varianteAtiva !== 'uivo-de-manada',
-                etapa: 'ataque',
+                /*
+                 * A marca é declarada EM VIDA e cobrada quando ele cair. A
+                 * etapa é `estertores` porque é lá que ela é gravada — e de lá
+                 * vira `marcas.levaJunto`, que atravessa as noites e sobrevive
+                 * até a um linchamento.
+                 */
+                valor: 'marcar',
+                rotulo: 'Marcar quem você leva junto ao cair',
+                pedeAlvo: true,
+                etapa: 'estertores',
               }
-            : {
-                // A etapa é `protecao` porque é lá que o esconderijo é
-                // resolvido e o uso é gasto — ver `05-protecao.ts`. Ele NÃO
-                // vale nesta noite: entra em vigor na seguinte.
-                valor: 'esconder',
-                rotulo: 'Sumir da investigação (vale amanhã)',
-                pedeAlvo: false,
-                etapa: 'protecao',
-              };
+            : r.id === 'uivador'
+              ? {
+                  valor: 'uivar',
+                  // O Uivo de Manada anuncia um NÚMERO: não há quem delatar.
+                  rotulo:
+                    varianteAtiva === 'uivo-de-manada'
+                      ? 'Uivar: dizer quantos lobos restam'
+                      : 'Uivar: delatar um lobo (ou você)',
+                  pedeAlvo: varianteAtiva !== 'uivo-de-manada',
+                  etapa: 'ataque',
+                }
+              : {
+                  // A etapa é `protecao` porque é lá que o esconderijo é
+                  // resolvido e o uso é gasto — ver `05-protecao.ts`. Ele NÃO
+                  // vale nesta noite: entra em vigor na seguinte.
+                  valor: 'esconder',
+                  rotulo: 'Sumir da investigação (vale amanhã)',
+                  pedeAlvo: false,
+                  etapa: 'protecao',
+                };
 
     // Poder de uma vez por partida já gasto: sobra caçar como qualquer lobo.
     const podeEspecial = podeAgir(estado, p, r, emprestado);
@@ -751,8 +908,18 @@ function perguntarA(estado: GameState, p: Player): Pergunta {
       tipo: 'opcao-e-alvo',
       alvos,
       opcoes: [
-        { valor: 'pocao-vida', rotulo: 'Poção da VIDA — salva o alvo', pedeAlvo: true, etapa: 'ataque' },
-        { valor: 'pocao-morte', rotulo: 'Poção da MORTE — mata o alvo', pedeAlvo: true, etapa: 'ataque' },
+        {
+          valor: 'pocao-vida',
+          rotulo: 'Poção da VIDA — salva o alvo',
+          pedeAlvo: true,
+          etapa: 'ataque',
+        },
+        {
+          valor: 'pocao-morte',
+          rotulo: 'Poção da MORTE — mata o alvo',
+          pedeAlvo: true,
+          etapa: 'ataque',
+        },
       ],
       opcional: true,
     };
@@ -828,6 +995,23 @@ function perguntarA(estado: GameState, p: Player): Pergunta {
    */
   if (r.id === 'vidente' && varianteAtiva === 'confusa') {
     return { ...base, kind: 'investigar', tipo: 'dois-alvos', alvos, opcional: false };
+  }
+
+  /**
+   * Noite sem caçada: a matilha é AVISADA, e não perguntada.
+   *
+   * Com a opção "Noite 1 sem sangue" ligada (ou com Noite Sem Lua em vigor), a
+   * cota é zero e a etapa 7 descarta tudo. O roteiro continuava pedindo um
+   * alvo: o lobo escolhia alguém, confirmava, e não acontecia nada. Relatado
+   * assim: "o lobisomem seleciona alguém pra matar mas nada acontece".
+   */
+  if (etapa === 'ataque' && faccaoEfetiva(estado, p) === 'lobos' && cotaDaMatilha(estado) === 0) {
+    return impedido(
+      'A matilha não caça hoje.',
+      estado.config.semMorteNaPrimeiraNoite && estado.rodada === 1
+        ? 'A mesa escolheu começar sem sangue: ninguém morre na primeira noite.'
+        : 'Alguma coisa segurou a matilha esta noite.',
+    );
   }
 
   /**
@@ -929,6 +1113,7 @@ export function roteiroDaNoite(estado: GameState): readonly Passagem[] {
         ),
         segredo: segredoDe(estado, p),
         lembrete: morto ? null : lembreteDe(p),
+        trocaDeCarta: p.marcas.viraCarta,
       };
     });
 }

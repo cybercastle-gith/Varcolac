@@ -35,6 +35,16 @@ export const estertores: StepFn = (ctx) => {
     declarados.set(a.actorId, a.alvos[0]);
   }
 
+  /*
+   * A declaração vira MARCA, e não só uma entrada no mapa da noite.
+   *
+   * O mapa morre com a noite; a marca acompanha o jogador até ele cair — de
+   * dia ou de noite, por corda ou por mordida.
+   */
+  for (const [quem, alvo] of declarados) {
+    estado = gravar(estado, quem, { levaJunto: alvo });
+  }
+
   for (const { quem, alvo } of apostas) {
     estado = gravar(estado, quem, { ressuscitaSeMorrer: alvo });
     ctx.log.registrar('estertores', {
@@ -45,10 +55,37 @@ export const estertores: StepFn = (ctx) => {
     });
   }
 
+  /**
+   * A declaração em vida deixa rastro, mesmo sem ninguém morrer.
+   *
+   * O Caçador, a Armadilha, o Testamento e a Herança Amarga declaram o alvo
+   * enquanto estão vivos e o efeito só dispara na morte deles. O log não
+   * registrava NADA: o jogador escolhia um nome e, olhando o histórico da
+   * noite, era como se ele não tivesse recebido o aparelho.
+   *
+   * Registrar a promessa é diferente de registrar o disparo, e o texto diz qual
+   * dos dois é — quem lê o log precisa saber que aquilo ainda não aconteceu.
+   */
+  for (const [quem, alvo] of declarados) {
+    const dono = estado.players.find((p) => p.id === quem);
+    if (!dono || dono.flags.estertorPendente) continue;
+    ctx.log.registrar('estertores', {
+      mensagem: `${dono.nome} deixou ${nome(estado, alvo)} marcado.`,
+      motivo:
+        dono.roleId === 'ancia'
+          ? 'Declarado em vida: só vale se a Anciã morrer.'
+          : 'Declarado em vida: o tiro só sai quando ele morrer.',
+      atores: [quem],
+      alvos: [alvo],
+    });
+  }
+
   const pendentes = estado.players.filter((p) => p.flags.estertorPendente).map((p) => p.id);
 
   if (pendentes.length === 0) {
-    if (apostas.length === 0) ctx.log.ignorar('estertores', 'Ninguém morreu na etapa 8.');
+    if (apostas.length === 0 && declarados.size === 0) {
+      ctx.log.ignorar('estertores', 'Ninguém morreu na etapa 8.');
+    }
     return { ...ctx, estado };
   }
 

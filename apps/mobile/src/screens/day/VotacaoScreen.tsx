@@ -61,7 +61,26 @@ export function VotacaoScreen({ navigation }: Props) {
 
   // ── Votação secreta: uma passagem por votante ──────────────────────────────
   if (estado.config.votacao === 'secreta') {
-    const votanteId = elegiveis.podem[indiceSecreto];
+    /**
+     * TODOS recebem o aparelho, inclusive quem não pode votar.
+     *
+     * A fila percorria só `elegiveis.podem`, e pular alguém é anúncio público:
+     * a mesa vê o celular passar por cima da pessoa e sabe na hora que ela
+     * perdeu o voto — ou seja, que ela é a Vidente, ou que está presa, ou que o
+     * Taverneiro a pegou. Num voto que se chama SECRETO isso é o defeito
+     * inteiro.
+     *
+     * Agora a fila é a ordem da mesa. Quem não pode votar recebe o aparelho
+     * como todo mundo, vê a mesma tela, e nela só existe "Abster-se" — com o
+     * motivo escrito, que só ele lê.
+     */
+    const ordemDeVoto = [
+      ...estado.players.filter((p) => p.status === 'vivo'),
+      // Peso da Culpa: o linchado injustamente vota mesmo morto.
+      ...estado.players.filter((p) => p.status === 'morto' && elegiveis.podem.includes(p.id)),
+    ].map((p) => p.id);
+
+    const votanteId = ordemDeVoto[indiceSecreto];
     if (!votanteId) {
       return (
         <Ambiente clima="dia">
@@ -100,37 +119,68 @@ export function VotacaoScreen({ navigation }: Props) {
     }
 
     const travado = estado ? votoTrava(estado, votanteId) : false;
+    const podeVotar = elegiveis.podem.includes(votanteId);
+    const motivoDoImpedimento = elegiveis.impedidos.find((i) => i.id === votanteId)?.motivo;
 
     return (
       <Ambiente clima="dia" tremula={false}>
         <ScrollView contentContainerStyle={{ padding: espaco.lg, gap: espaco.md }}>
           <Rotulo>{nomeDe(votanteId)} vota</Rotulo>
-          <Titulo>Em quem?</Titulo>
+          <Titulo>{podeVotar ? 'Em quem?' : 'Você não vota hoje.'}</Titulo>
+
+          {/*
+            O motivo, só para quem está segurando o aparelho.
+
+            A tela é idêntica à de quem pode votar até este ponto — mesmo
+            cabeçalho, mesmo "passe para". Quem olha de longe não distingue as
+            duas, que é o objetivo.
+          */}
+          {!podeVotar && motivoDoImpedimento && (
+            <View
+              style={{
+                backgroundColor: '#2A1B17',
+                borderLeftWidth: 2,
+                borderLeftColor: cores.garanca,
+                padding: espaco.md,
+                gap: 4,
+              }}
+            >
+              <Text style={[tipografia.rotulo, { color: cores.garanca }]}>Por que não</Text>
+              <Text style={[tipografia.corpoSerif, { color: cores.linhoCru }]}>
+                {motivoDoImpedimento}
+              </Text>
+              <Pequeno cor={cores.nogueira}>
+                Ninguém além de você está vendo isto. Abstenha-se e passe adiante.
+              </Pequeno>
+            </View>
+          )}
+
           <View style={{ gap: espaco.xs }}>
-            {vivos
-              .filter((p) => p.id !== votanteId)
-              .map((p) => (
-                <ItemJogador
-                  key={p.id}
-                  nome={p.nome}
-                  corDoPonto={p.cor}
-                  selecionado={votos[votanteId] === p.id}
-                  /*
-                   * Aldeão Teimoso: o voto trava quando é declarado.
-                   *
-                   * A regra vem do engine (`votoTrava`) e não de uma checagem
-                   * escrita aqui: a apuração recebe a votação fechada e não tem
-                   * como saber que alguém mudou de ideia, então esta tela é o
-                   * único lugar do jogo capaz de cumprir a carta.
-                   */
-                  desabilitado={travado && votos[votanteId] !== undefined}
-                  onPress={() => {
-                    if (travado && votos[votanteId] !== undefined) return;
-                    void Haptics.selectionAsync();
-                    votar(votanteId, p.id);
-                  }}
-                />
-              ))}
+            {podeVotar &&
+              vivos
+                .filter((p) => p.id !== votanteId)
+                .map((p) => (
+                  <ItemJogador
+                    key={p.id}
+                    nome={p.nome}
+                    corDoPonto={p.cor}
+                    selecionado={votos[votanteId] === p.id}
+                    /*
+                     * Aldeão Teimoso: o voto trava quando é declarado.
+                     *
+                     * A regra vem do engine (`votoTrava`) e não de uma checagem
+                     * escrita aqui: a apuração recebe a votação fechada e não tem
+                     * como saber que alguém mudou de ideia, então esta tela é o
+                     * único lugar do jogo capaz de cumprir a carta.
+                     */
+                    desabilitado={travado && votos[votanteId] !== undefined}
+                    onPress={() => {
+                      if (travado && votos[votanteId] !== undefined) return;
+                      void Haptics.selectionAsync();
+                      votar(votanteId, p.id);
+                    }}
+                  />
+                ))}
             <ItemJogador
               nome="Abster-se"
               selecionado={votos[votanteId] === null}

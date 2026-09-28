@@ -1,4 +1,5 @@
 import { role } from '../../data/roles/index';
+import { trocarCarta } from '../../turn/troca-de-carta';
 import type { StepFn } from '../night-pipeline';
 import { acoesDe, agendar, anunciar, gastarUso, gravar, nome, reviver, temUso } from './_helpers';
 
@@ -65,9 +66,35 @@ export const ressurreicao: StepFn = (ctx) => {
       continue;
     }
 
-    estado = reviver(estado, alvo);
+    /**
+     * A Incorporação NÃO ressuscita: ela absorve.
+     *
+     * Decisão do usuário em 2026-09-28. A carta dizia "ressuscita um morto E
+     * utiliza sua habilidade", e as duas coisas juntas faziam dela a
+     * ressurreição do Necromante base MAIS um poder de brinde — a variante mais
+     * forte do jogo, com o mesmo peso das outras duas.
+     *
+     * Incorporar é tomar do morto o que ele sabia. O corpo fica na cova, e é
+     * por isso que ela cabe na etapa de ressurreição sem ser uma.
+     */
+    if (varianteN !== 'incorporacao') estado = reviver(estado, alvo);
     estado = gastarUso(estado, acao.actorId);
-    estado = anunciar(estado, `${morto.nome} voltou.`, 'role');
+    /*
+     * "Fulano voltou." era tudo que a mesa ouvia quando um morto se levantava
+     * — a coisa mais rara do jogo, dita no mesmo tom de um comentário de
+     * clima. Relatado assim: "ressuscitou o cara e aparece só um texto broxa".
+     */
+    estado =
+      varianteN === 'incorporacao'
+        ? anunciar(
+            estado,
+            'Alguma coisa foi tirada de uma cova esta noite. O corpo continua lá.',
+            'role',
+            { rotulo: 'A cova foi mexida' },
+          )
+        : anunciar(estado, `A cova se abriu: ${morto.nome} está de pé outra vez.`, 'role', {
+            rotulo: 'Alguém voltou',
+          });
 
     let motivo = 'Morte de noite anterior. Estertores já disparados continuam valendo.';
 
@@ -80,8 +107,26 @@ export const ressurreicao: StepFn = (ctx) => {
        * barata, e é por isso que pesa menos que a do Necromante base.
        */
       case 'cova-aberta':
-        estado = gravar(estado, alvo, { semPoder: true });
-        motivo = 'Variante Cova Aberta: ele volta sem a habilidade, só com voz e voto.';
+        /**
+         * Cova Aberta troca a CARTA, não só a habilidade.
+         *
+         * `semPoder` deixava o jogador com a carta antiga na mão e nenhuma
+         * ação — ele continuava "sendo" a Vidente na tela final, no ícone e na
+         * revelação ao morrer. Relatado assim: "o cara continua com a role
+         * dele, ele tem que virar aldeão". Agora vira mesmo.
+         */
+        estado = trocarCarta(estado, alvo, {
+          roleId: 'aldeao',
+          usos: Infinity,
+          motivo: 'Você voltou da cova, e não trouxe nada com você.',
+        });
+        estado = anunciar(
+          estado,
+          `${morto.nome} voltou sem nada: é um Aldeão comum agora.`,
+          'role',
+          { rotulo: 'Uma carta virou cinza' },
+        );
+        motivo = 'Variante Cova Aberta: ele volta como Aldeão, com voz e voto e mais nada.';
         break;
 
       /**
@@ -96,6 +141,12 @@ export const ressurreicao: StepFn = (ctx) => {
           naRodada: estado.rodada,
           playerId: alvo,
         });
+        estado = anunciar(
+          estado,
+          `A vela está acesa por ${morto.nome}. Quando o dia acabar, ela apaga.`,
+          'role',
+          { rotulo: 'Uma vela acesa' },
+        );
         motivo = 'Variante Última Vela: qualquer noite serve, mas ele morre de novo ao fim do dia.';
         break;
 
@@ -108,7 +159,10 @@ export const ressurreicao: StepFn = (ctx) => {
        */
       case 'incorporacao':
         estado = gravar(estado, ator.id, { poderDe: morto.roleId });
-        motivo = `Variante Incorporação: ${ator.nome} passa a agir como ${role(morto.roleId).nome}, sem mudar de lado.`;
+        motivo =
+          `Variante Incorporação: ${ator.nome} passa a agir como ` +
+          `${role(morto.roleId).nome}. O morto CONTINUA morto, e a facção do ` +
+          'Necromante não muda.';
         break;
 
       default:

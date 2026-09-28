@@ -368,15 +368,28 @@ describe('avisos verdadeiros em vez de tela muda', () => {
     const { estado, id } = mesa(['bobo', 'vidente', 'aldeao', 'lobo']);
     const passagem = roteiroDaNoite(estado).find((x) => x.player.id === id('bobo'))!;
     expect(passagem.lembrete).toContain('Bobo');
-    // Quem age não recebe: dizer a função a quem tem poder é vazamento.
+
+    /*
+     * SUPERADO em 2026-09-28: antes quem AGE não recebia lembrete, com medo de
+     * entregar a função. O medo se inverteu — um botão presente só em algumas
+     * passagens entrega, pela própria presença, quem tem poder. Agora todo
+     * mundo tem o mesmo botão, e nada aparece até alguém tocar nele.
+     */
     const daVidente = roteiroDaNoite(estado).find((x) => x.player.id === id('vidente'))!;
-    expect(daVidente.lembrete).toBeNull();
+    expect(daVidente.lembrete).toContain('Vidente');
   });
 });
 
 describe('o convertido do Alfa', () => {
-  it('pode caçar com a matilha, mesmo com carta de vila', () => {
+  it('vira um Lobo comum, carta e tudo', () => {
+    /*
+     * SUPERADO em 2026-09-28: antes o convertido MANTINHA a própria carta e só
+     * mudava de lado — um Médico que curava para a matilha. O usuário decidiu
+     * que ele vira um Lobo normal, então o teste antigo ("caça mesmo com carta
+     * de vila") perdeu a premissa: não existe mais carta de vila aqui.
+     */
     const { estado, id, quem } = mesa(['alfa', 'medico', 'aldeao', 'vidente', 'xerife']);
+    const medicoId = id('medico');
     const n1 = resolverNoite(
       estado,
       noite([
@@ -384,26 +397,28 @@ describe('o convertido do Alfa', () => {
           actorId: id('alfa'),
           etapa: 'ataque',
           escolha: 'converter',
-          alvos: [id('medico')],
+          alvos: [medicoId],
         }),
       ]),
     );
+
+    const convertido = n1.estado.players.find((p) => p.id === medicoId)!;
+    expect(convertido.roleId).toBe('lobo');
+    expect(convertido.varianteId).toBeUndefined();
+    expect(n1.estado.objetivosSecretos[medicoId]).toBe('convertido');
+    // E ele é avisado: a marca alimenta a tela de "sua carta mudou".
+    expect(convertido.marcas.viraCarta?.deRoleId).toBe('medico');
+
+    // Na noite seguinte ele caça como qualquer lobo.
     const n2 = prepararNoite(n1.estado);
-    const p = perg(n2, id('medico'));
-    expect(p.opcoes?.some((o) => o.valor === 'matar')).toBe(true);
+    const p = perg(n2, medicoId);
+    expect(p.falsa).toBe(false);
+    expect(p.etapa).toBe('ataque');
 
     const r = resolverNoite(
       n2,
       noite(
-        [
-          acao({
-            actorId: id('medico'),
-            etapa: 'ataque',
-            kind: 'atacar',
-            escolha: 'matar',
-            alvos: [id('aldeao')],
-          }),
-        ],
+        [acao({ actorId: medicoId, etapa: 'ataque', kind: 'atacar', alvos: [id('aldeao')] })],
         2,
       ),
     );
@@ -412,28 +427,35 @@ describe('o convertido do Alfa', () => {
 });
 
 describe('Bobo ressuscitado pela Cova Aberta', () => {
-  it('não ganha mais na corda', () => {
-    const { estado, id, quem } = mesa(['necromante', 'bobo', 'aldeao', 'lobo', 'vidente'], {
+  it('não ganha mais na corda — porque virou Aldeão', () => {
+    /*
+     * SUPERADO em 2026-09-27: o teste antigo procurava o jogador por
+     * `roleId === 'bobo'` depois da ressurreição. A Cova Aberta agora TROCA a
+     * carta, então ele nem é mais Bobo — o que resolve o defeito relatado de
+     * um jeito mais forte do que a marca `semPoder` resolvia.
+     */
+    const { estado, id } = mesa(['necromante', 'bobo', 'aldeao', 'lobo', 'vidente'], {
       variantes: { necromante: 'cova-aberta' },
     });
+    const boboId = id('bobo');
     const n1 = resolverNoite(
       estado,
-      noite([acao({ actorId: id('lobo'), etapa: 'ataque', alvos: [id('bobo')] })]),
+      noite([acao({ actorId: id('lobo'), etapa: 'ataque', alvos: [boboId] })]),
     );
     const n2 = resolverNoite(
       prepararNoite(n1.estado),
-      noite([acao({ actorId: id('necromante'), etapa: 'ressurreicao', alvos: [id('bobo')] })], 2),
+      noite([acao({ actorId: id('necromante'), etapa: 'ressurreicao', alvos: [boboId] })], 2),
     );
-    expect(quem(n2.estado, 'bobo').status).toBe('vivo');
-    expect(quem(n2.estado, 'bobo').marcas.semPoder).toBe(true);
+    const voltou = n2.estado.players.find((p) => p.id === boboId)!;
+    expect(voltou.status).toBe('vivo');
+    expect(voltou.roleId).toBe('aldeao');
 
     const dia = resolverDia(n2.estado, {
-      [id('aldeao')]: id('bobo'),
-      [id('vidente')]: id('bobo'),
-      [id('lobo')]: id('bobo'),
-      [id('necromante')]: id('bobo'),
+      [id('aldeao')]: boboId,
+      [id('vidente')]: boboId,
+      [id('lobo')]: boboId,
+      [id('necromante')]: boboId,
     });
-    // O defeito relatado: ele voltava sem poder e ganhava linchado do mesmo jeito.
     expect(dia.estado.vencedores).toBeNull();
   });
 
@@ -445,5 +467,70 @@ describe('Bobo ressuscitado pela Cova Aberta', () => {
       [id('lobo')]: id('bobo'),
     });
     expect(dia.estado.anuncios.some((a) => a.texto === 'O Bobo enganou a todos.')).toBe(true);
+  });
+});
+
+describe('perguntas que não deviam existir', () => {
+  it('Última Carne só é perguntada ao Carniçal MORTO', () => {
+    const { estado, id } = mesa(['lobo-carnical', 'aldeao', 'vidente', 'medico', 'lobo'], {
+      variantes: { 'lobo-carnical': 'ultima-carne' },
+    });
+    // Vivo: a aposta "para poder voltar" não faz sentido, e a etapa 9 a
+    // descartava em silêncio — gastava a passagem dele por nada.
+    expect(perg(estado, id('lobo-carnical')).falsa).toBe(true);
+
+    const n1 = resolverNoite(
+      estado,
+      noite([acao({ actorId: id('lobo'), etapa: 'ataque', alvos: [id('lobo-carnical')] })]),
+    );
+    const n2 = prepararNoite(n1.estado);
+    const morto = roteiroDaNoite(n2).find((x) => x.player.id === id('lobo-carnical'));
+    expect(morto?.pergunta.falsa).toBe(false);
+    expect(morto?.pergunta.titulo).toContain('aposta');
+  });
+
+  it('o Carniçal CAÇA com a matilha, e marcar quem leva junto é a outra opção', () => {
+    /*
+     * SUPERADO em 2026-09-28: antes a etapa dele era `estertores` e este teste
+     * afirmava isso. Ele é um LOBO e nunca recebia a pergunta de ataque — um
+     * lobo que não mordia, e cujo voto na matilha não existia. Levantado em
+     * três sessões e decidido pelo usuário.
+     */
+    const { estado, id } = mesa(['lobo-carnical', 'aldeao', 'vidente', 'medico', 'lobo']);
+    const p = perg(estado, id('lobo-carnical'));
+    expect(p.falsa).toBe(false);
+    expect(p.tipo).toBe('opcao-e-alvo');
+    expect(p.opcoes?.map((o) => o.valor)).toEqual(['marcar', 'matar']);
+    expect(p.opcoes?.find((o) => o.valor === 'marcar')?.etapa).toBe('estertores');
+    expect(p.opcoes?.find((o) => o.valor === 'matar')?.etapa).toBe('ataque');
+  });
+
+  it('a marca do Carniçal sobrevive até a um linchamento', () => {
+    /*
+     * A declaração vivia só no mapa da noite, e a cadeia de estertores do DIA é
+     * chamada sem esse mapa: o Caçador e o Carniçal escolhiam um nome, eram
+     * linchados, e o tiro saía no "primeiro vivo da lista".
+     */
+    const { estado, id, quem } = mesa(['lobo-carnical', 'aldeao', 'vidente', 'medico', 'lobo']);
+    const n1 = resolverNoite(
+      estado,
+      noite([
+        acao({
+          actorId: id('lobo-carnical'),
+          etapa: 'estertores',
+          escolha: 'marcar',
+          alvos: [id('medico')],
+        }),
+      ]),
+    );
+    expect(quem(n1.estado, 'lobo-carnical').marcas.levaJunto).toBe(id('medico'));
+
+    const dia = resolverDia(n1.estado, {
+      [id('aldeao')]: id('lobo-carnical'),
+      [id('vidente')]: id('lobo-carnical'),
+      [id('medico')]: id('lobo-carnical'),
+    });
+    expect(quem(dia.estado, 'lobo-carnical').status).toBe('morto');
+    expect(quem(dia.estado, 'medico').status).toBe('morto');
   });
 });
