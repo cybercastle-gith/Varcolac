@@ -466,7 +466,7 @@ describe('Bobo ressuscitado pela Cova Aberta', () => {
       [id('vidente')]: id('bobo'),
       [id('lobo')]: id('bobo'),
     });
-    expect(dia.estado.anuncios.some((a) => a.texto === 'O Bobo enganou a todos.')).toBe(true);
+    expect(dia.estado.anuncios.some((a) => a.texto === 'O Bobo foi condenado e venceu a partida.')).toBe(true);
   });
 });
 

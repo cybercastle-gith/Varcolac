@@ -111,7 +111,7 @@ export function FimScreen({ navigation }: Props) {
           {estado.players.filter((p) => p.status === 'morto').length} mortos ·{' '}
           {estado.eventosUsados.length} evento(s) · semente {estado.config.semente}
         </Pequeno>
-        <Pequeno cor={cores.nogueira}>
+        <Pequeno cor={cores.nogueiraTexto}>
           Guarde a semente para repetir exatamente esta partida.
         </Pequeno>
       </ScrollView>

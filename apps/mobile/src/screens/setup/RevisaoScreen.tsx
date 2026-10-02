@@ -40,6 +40,12 @@ export function RevisaoScreen({ navigation }: Props) {
     : equilibrio.aceitavel
       ? cores.horezu
       : cores.garanca;
+  const corDoIndiceTexto =
+    corDoIndice === cores.nogueira
+      ? cores.nogueiraTexto
+      : corDoIndice === cores.garanca
+        ? cores.garancaTexto
+        : corDoIndice;
 
   return (
     <TelaOperacao>
@@ -54,10 +60,10 @@ export function RevisaoScreen({ navigation }: Props) {
         {equilibrio && (
           <View style={{ gap: espaco.sm, marginTop: espaco.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: espaco.sm }}>
-              <Text style={[tipografia.titulo, { color: corDoIndice, fontSize: 30 }]}>
+              <Text style={[tipografia.titulo, { color: corDoIndiceTexto, fontSize: 30 }]}>
                 {equilibrio.ie > 0 ? `+${equilibrio.ie}` : equilibrio.ie}
               </Text>
-              <Text style={[tipografia.rotulo, { color: corDoIndice, flex: 1 }]}>
+              <Text style={[tipografia.rotulo, { color: corDoIndiceTexto, flex: 1 }]}>
                 {equilibrio.leitura}
               </Text>
             </View>
@@ -96,10 +102,10 @@ export function RevisaoScreen({ navigation }: Props) {
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={[tipografia.pequeno, { color: cores.nogueira, fontSize: 10 }]}>
+              <Text style={[tipografia.pequeno, { color: cores.nogueiraTexto, fontSize: 10 }]}>
                 matilha forte
               </Text>
-              <Text style={[tipografia.pequeno, { color: cores.nogueira, fontSize: 10 }]}>
+              <Text style={[tipografia.pequeno, { color: cores.nogueiraTexto, fontSize: 10 }]}>
                 vila forte
               </Text>
             </View>
@@ -109,7 +115,7 @@ export function RevisaoScreen({ navigation }: Props) {
               isso o botão de começar continua ativo mesmo com violação.
             */}
             {equilibrio.violacoes.map((v, i) => (
-              <Text key={`v${i}`} style={[tipografia.pequeno, { color: cores.garanca }]}>
+              <Text key={`v${i}`} style={[tipografia.pequeno, { color: cores.garancaTexto }]}>
                 {v}
               </Text>
             ))}
@@ -148,7 +154,7 @@ export function RevisaoScreen({ navigation }: Props) {
               paddingLeft: espaco.md,
             }}
           >
-            <Rotulo cor={cores.garanca}>A maldição tem prazo</Rotulo>
+            <Rotulo cor={cores.garancaTexto}>A maldição tem prazo</Rotulo>
             <Pequeno cor={cores.linhoCru}>
               {noitesDaMaldicao(jogadores.length)} noites. Se os lobos continuarem de pé depois da
               última, a vila inteira se perde — não importa quantos restem.
@@ -171,7 +177,7 @@ export function RevisaoScreen({ navigation }: Props) {
               Sem esta linha o host lê "vila forte" como um fato sobre a partida
               que está prestes a começar, e ela é um fato sobre outra partida.
             */}
-            <Pequeno cor={cores.nogueira}>
+            <Pequeno cor={cores.nogueiraTexto}>
               O índice acima é uma estimativa: ele mede um sorteio de exemplo entre as cartas
               marcadas, e não a mesa que vai sair.
             </Pequeno>

@@ -11,32 +11,33 @@ export const lobo: Role = {
   etapa: 'ataque',
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: false,
-  descricaoCurta: 'Mata com a matilha.',
+  descricaoCurta: 'Toda noite, você e os outros lobos escolhem uma pessoa para matar.',
   descricaoLonga:
-    'A matilha declara um alvo por noite na etapa 7; a morte só é decidida na etapa 8. ' +
-    'No modo Traição a matilha é cega: nenhum lobo conhece nenhum outro.',
+    'Toda noite, a matilha escolhe uma vítima. Se os lobos apontarem pessoas ' +
+    'diferentes, o app sorteia entre elas. Uma proteção pode salvar a vítima. No ' +
+    'modo Traição, nenhum lobo sabe quem são os outros.',
   variantes: [
     {
       id: 'rastro',
       nome: 'Rastro',
       descricao:
-        'O alvo do ataque é revelado no início do dia e permanece vivo até o fim da ' +
-        'votação, morrendo depois.',
+        'A vítima do ataque não morre na hora. No amanhecer, todos ficam sabendo quem ' +
+        'foi atacado; essa pessoa participa do dia e morre depois da votação.',
       peso: 3,
       etapa: 'ataque',
     },
     {
       id: 'voto-de-sangue',
       nome: 'Voto de Sangue',
-      descricao: 'Depois de participar de um ataque, o Lobo não pode votar no dia seguinte.',
+      descricao: 'Na noite em que você participa de um ataque, perde o voto do dia seguinte.',
       peso: 2,
     },
     {
       id: 'desgarrado',
       nome: 'Lobo Desgarrado',
       descricao:
-        'Escolhe um alvo diferente dos demais Lobos e, se houver qualquer repetição, ' +
-        'a matilha não mata ninguém.',
+        'Você escolhe sua vítima separado dos outros lobos. Se dois lobos escolherem a ' +
+        'mesma pessoa, ninguém morre naquela noite.',
       peso: 2,
       etapa: 'ataque',
     },
@@ -52,15 +53,18 @@ export const alfa: Role = {
   etapa: 'ataque',
   usoLimitado: { kind: 'por-partida', total: 1 },
   vitoriaPropria: false,
-  descricaoCurta: 'Uma vez por partida, converte em vez de matar.',
-  descricaoLonga: 'O convertido mantém a própria role e passa a jogar pelos lobos.',
+  descricaoCurta: 'Uma vez por partida, em vez de matar, transforme a vítima em lobo.',
+  descricaoLonga:
+    'Toda noite, você caça com a matilha. Uma vez por partida, pode converter ' +
+    'alguém em vez de caçar: essa pessoa vira um Lobo comum e passa a jogar pela ' +
+    'matilha.',
   variantes: [
     {
       id: 'sangue-novo',
       nome: 'Sangue Novo',
       descricao:
-        'O convertido mantém sua antiga habilidade durante a primeira noite em que ' +
-        'agir como Lobo.',
+        'O convertido mantém a função antiga por uma noite e pode usá-la a favor da ' +
+        'matilha. Depois disso, vira Lobo comum.',
       // 4 → 3: o Alfa base entrega um convertido que mantém a habilidade para
       // SEMPRE; este empresta por uma noite. Menos poder, mesmo peso, até aqui.
       peso: 3,
@@ -70,14 +74,16 @@ export const alfa: Role = {
     {
       id: 'sangue-marcado',
       nome: 'Sangue Marcado',
-      descricao: 'Se o convertido morrer, a identidade do Alfa é revelada à Vila.',
+      descricao: 'Se o convertido morrer, o app revela para todos que foi você quem o converteu.',
       peso: 3,
       usoLimitado: { kind: 'por-partida', total: 1 },
     },
     {
       id: 'treinamento',
       nome: 'Treinamento',
-      descricao: 'O convertido só pode participar dos ataques depois que o Alfa morrer.',
+      descricao:
+        'Enquanto você estiver vivo, o convertido acompanha a matilha, mas não decide ' +
+        'quem morre.',
       peso: 3,
       etapa: 'ataque',
       usoLimitado: { kind: 'por-partida', total: 1 },
@@ -94,15 +100,18 @@ export const feiticeiro: Role = {
   etapa: 'perfuracao',
   usoLimitado: { kind: 'por-partida', total: 1 },
   vitoriaPropria: false,
-  descricaoCurta: 'Uma vez por partida, o ataque da matilha atravessa curas e imunidades.',
+  descricaoCurta: 'Uma vez por partida, mate alguém mesmo que essa pessoa esteja protegida.',
   descricaoLonga:
-    'Não é bloqueador — é perfurador. Perde para o Padre, que cancela a noite inteira ' +
-    'em vez de proteger alguém em particular.',
+    'Toda noite, você caça com a matilha. Uma vez por partida, pode atacar sozinho ' +
+    'uma pessoa: nem o Médico, nem o Guarda-costas, nem a prisão do Xerife a ' +
+    'salvam. Só o Padre, que impede todas as mortes da noite, consegue evitar.',
   variantes: [
     {
       id: 'fio-de-prata',
       nome: 'Fio de Prata',
-      descricao: 'A perfuração atravessa a proteção, mas não atravessa uma imunidade.',
+      descricao:
+        'Seu ataque especial atravessa o Médico e o Guarda-costas, mas não mata quem ' +
+        'está preso pelo Xerife.',
       peso: 3,
       etapa: 'perfuracao',
       usoLimitado: { kind: 'por-partida', total: 1 },
@@ -110,7 +119,9 @@ export const feiticeiro: Role = {
     {
       id: 'marca-de-ferro',
       nome: 'Marca de Ferro',
-      descricao: 'A perfuração impede o alvo de receber proteção pelo resto da partida.',
+      descricao:
+        'A pessoa que você atacar com o ataque especial fica marcada: até o fim da ' +
+        'partida, nenhuma proteção funciona nela.',
       peso: 3,
       etapa: 'perfuracao',
       usoLimitado: { kind: 'por-partida', total: 1 },
@@ -119,8 +130,8 @@ export const feiticeiro: Role = {
       id: 'olho-do-diabo',
       nome: 'Olho do Diabo',
       descricao:
-        'A perfuração informa ao Feiticeiro se o alvo foi protegido ou curado e, se ' +
-        'foi, por quem.',
+        'Ao usar o ataque especial, você descobre se a pessoa estava protegida naquela ' +
+        'noite e por quem.',
       peso: 3,
       etapa: 'perfuracao',
       usoLimitado: { kind: 'por-partida', total: 1 },
@@ -148,15 +159,22 @@ export const loboCarnical: Role = {
   etapa: 'ataque',
   usoLimitado: { kind: 'por-partida', total: 1 },
   vitoriaPropria: false,
-  descricaoCurta: 'Ao ser morto, não morre na hora: mata alguém e só expira na noite seguinte.',
-  descricaoLonga: 'Entra na cadeia de estertores e pode disparar outros.',
+  descricaoCurta:
+    'Toda noite, marque uma pessoa. Quando você for morto, ela morre, e você só sai ' +
+    'do jogo na noite seguinte.',
+  descricaoLonga:
+    'Toda noite, escolha entre caçar com a matilha ou marcar uma pessoa. Quando ' +
+    'você for morto, de noite ou na votação, a última pessoa marcada morre, e você ' +
+    'ainda fica no jogo até a noite seguinte. Se não tiver marcado ninguém, o app ' +
+    'escolhe por você.',
   variantes: [
     {
       id: 'morto-vivo',
       nome: 'Morto-Vivo',
       descricao:
-        'Ao morrer, continua em jogo sem poder matar, votar ou agir, mas pode falar e ' +
-        'ser morto novamente.',
+        'Na primeira vez que morre, você não sai do jogo: continua à mesa, conta como ' +
+        'lobo e pode falar, mas não ataca, não vota e não usa poder. Na segunda morte, ' +
+        'sai de vez. Você não leva ninguém junto.',
       // 4 → 3: o Carniçal base leva alguém junto ao morrer. Este não leva
       // ninguém — troca uma morte por voz, e voz vale menos que uma morte.
       peso: 3,
@@ -165,15 +183,17 @@ export const loboCarnical: Role = {
       id: 'sangue-derramado',
       nome: 'Sangue Derramado',
       descricao:
-        'Quando o Carniceiro morre, quem causou sua morte perde seu poder na noite ' + 'seguinte.',
+        'Quando alguém mata você à noite, você não leva ninguém junto, mas essa pessoa ' +
+        'perde o poder na noite seguinte. Se você for condenado na votação, nada ' +
+        'acontece.',
       peso: 3,
     },
     {
       id: 'ultima-carne',
       nome: 'Última Carne',
       descricao:
-        'Na noite após morrer, escolhe um jogador e, se ele morrer durante a noite ou ' +
-        'o dia seguinte, o Carniceiro volta à vida.',
+        'Quando você morre, não leva ninguém junto. Na noite seguinte, você aposta em ' +
+        'uma pessoa: se ela morrer naquela noite ou no dia seguinte, você ressuscita.',
       peso: 4,
       etapa: 'estertores',
       usoLimitado: { kind: 'por-partida', total: 1 },
@@ -190,31 +210,34 @@ export const loboSombra: Role = {
   etapa: 'protecao',
   usoLimitado: { kind: 'por-partida', total: 1 },
   vitoriaPropria: false,
-  descricaoCurta: 'Escolhe uma noite para ficar imune a investigação.',
+  descricaoCurta: 'Uma vez por partida, fique escondido das investigações por uma noite.',
   descricaoLonga:
-    'Na noite seguinte, a matilha não mata. Pode errar o timing e queimar a imunidade à toa.',
+    'Toda noite, você caça com a matilha. Uma vez por partida, pode se esconder em ' +
+    'vez de caçar: na noite seguinte, quem investigar você vai ver "da vila".',
   variantes: [
     {
       id: 'sombra-de-alguem',
       nome: 'Sombra de Alguém',
       descricao:
-        'Escolhe um jogador e, na noite seguinte, utiliza o papel dele por uma noite, ' +
-        'ficando imune à investigação se não tiver escolhido um Lobo.',
+        'Em vez de se esconder, escolha uma pessoa: na noite seguinte, você usa a ' +
+        'função dela. Se ela não for lobo, você também fica escondido das investigações ' +
+        'nessa noite.',
       peso: 3,
     },
     {
       id: 'mascara-de-luto',
       nome: 'Máscara de Luto',
       descricao:
-        'Se nenhuma morte acontecer naquela noite, fica imune à investigação ' + 'automaticamente.',
+        'O esconderijo só funciona se ninguém morrer na noite em que você o usar. Se ' +
+        'funcionar, na noite seguinte quem investigar você vai ver "da vila".',
       peso: 3,
     },
     {
       id: 'nome-roubado',
       nome: 'Nome Roubado',
       descricao:
-        'Escolhe um jogador morto e, naquela noite, qualquer investigação contra o ' +
-        'Lobo-Sombra retorna o papel desse morto.',
+        'Em vez de se esconder, escolha um morto. Na noite seguinte, quem investigar ' +
+        'você recebe a resposta que receberia sobre esse morto.',
       peso: 3,
     },
   ],
@@ -229,15 +252,20 @@ export const uivador: Role = {
   etapa: 'ataque',
   usoLimitado: { kind: 'por-partida', total: 1 },
   vitoriaPropria: false,
-  descricaoCurta: 'Revela publicamente um lobo — ou a si mesmo.',
-  descricaoLonga: 'Em troca, na noite seguinte a matilha mata dois.',
+  descricaoCurta:
+    'Uma vez por partida, revele um lobo para todos. Em troca, a matilha mata duas ' +
+    'pessoas na noite seguinte.',
+  descricaoLonga:
+    'Toda noite, você caça com a matilha. Uma vez por partida, pode uivar em vez de ' +
+    'caçar: escolha um lobo, que pode ser você, e o app anuncia no amanhecer que ' +
+    'ele é lobo. Em troca, na noite seguinte a matilha mata duas pessoas.',
   variantes: [
     {
       id: 'uivo-comprado',
       nome: 'Uivo Comprado',
       descricao:
-        'Revela publicamente um Lobo, mas o revelado ganha o direito de votar duas ' +
-        'vezes no dia da revelação.',
+        'O lobo revelado vota duas vezes no dia da revelação. A matilha não ganha a ' +
+        'segunda morte.',
       peso: 3,
       // A etapa é `ataque`, como a do Uivador base: o uivo SUBSTITUI a caçada
       // da noite e é resolvido lá. Estas três estavam marcadas como
@@ -249,8 +277,8 @@ export const uivador: Role = {
       id: 'uivo-de-troca',
       nome: 'Uivo de Troca',
       descricao:
-        'Revela publicamente um Lobo, mas perde permanentemente o direito de votar ' +
-        'pelo resto da partida.',
+        'Ao uivar, você perde o direito de votar até o fim da partida. A matilha não ' +
+        'ganha a segunda morte.',
       peso: 3,
       // A etapa é `ataque`, como a do Uivador base: o uivo SUBSTITUI a caçada
       // da noite e é resolvido lá. Estas três estavam marcadas como
@@ -261,7 +289,9 @@ export const uivador: Role = {
     {
       id: 'uivo-de-manada',
       nome: 'Uivo de Manada',
-      descricao: 'Revela publicamente quantos Lobos ainda estão vivos, sem revelar seus nomes.',
+      descricao:
+        'Em vez de revelar um nome, o app anuncia quantos lobos ainda estão vivos. A ' +
+        'matilha não ganha a segunda morte.',
       peso: 3,
       // A etapa é `ataque`, como a do Uivador base: o uivo SUBSTITUI a caçada
       // da noite e é resolvido lá. Estas três estavam marcadas como
@@ -282,15 +312,20 @@ export const loboBranco: Role = {
   etapa: 'ataque',
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: true,
-  descricaoCurta: 'Mata lobos também. Pode vencer sozinho ou com a matilha.',
-  descricaoLonga: 'Ataca em separado da matilha, na mesma etapa 7.',
+  descricaoCurta:
+    'Você ataca sozinho e pode matar lobos. Vence com a matilha, ou sozinho se for ' +
+    'o último lobo.',
+  descricaoLonga:
+    'Toda noite, você escolhe sua vítima separado da matilha, e ela pode ser um ' +
+    'lobo. Você vence junto com a matilha, ou sozinho se for o único lobo vivo ' +
+    'quando os lobos vencerem.',
   variantes: [
     {
       id: 'sangue-acumulado',
       nome: 'Sangue Acumulado',
       descricao:
-        'Escolhe um Lobo em vez de matar e, se esse Lobo morrer, mata dois Aldeões na ' +
-        'noite seguinte.',
+        'Em vez de matar, você pode marcar um lobo. Quando esse lobo morrer, por ' +
+        'qualquer motivo, você mata duas pessoas na noite seguinte.',
       peso: 2,
       etapa: 'ataque',
     },
@@ -298,8 +333,8 @@ export const loboBranco: Role = {
       id: 'ultimo-da-matilha',
       nome: 'Último da Matilha',
       descricao:
-        'Só pode matar um Lobo se houver exatamente ele e mais um Lobo vivos; com ' +
-        'três ou mais Lobos, não pode realizar o ataque.',
+        'Você só pode matar um lobo quando restarem apenas você e mais um lobo vivos. ' +
+        'Antes disso, só ataca quem não é lobo.',
       peso: 2,
       etapa: 'ataque',
     },
@@ -307,7 +342,8 @@ export const loboBranco: Role = {
       id: 'jejum-forcado',
       nome: 'Jejum Forçado',
       descricao:
-        'Se a matilha matar um Aldeão, na noite seguinte o Lobo-Branco só pode matar ' + 'um Lobo.',
+        'Se a matilha matar alguém numa noite, na noite seguinte você só pode atacar ' +
+        'lobos.',
       peso: 2,
       etapa: 'ataque',
     },

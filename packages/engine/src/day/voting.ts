@@ -16,6 +16,32 @@ import type { LogEntry } from '../resolution/resolution-log';
 /** Voto declarado. `null` = absteve-se. */
 export type Votos = Readonly<Record<PlayerId, PlayerId | null>>;
 
+/**
+ * A votação simultânea, contada em voz alta.
+ *
+ * Na mesa, a votação simultânea é todo mundo apontando ao mesmo tempo — e o
+ * host só precisa contar quantos dedos sobraram em cada pessoa. Registrar
+ * voto a voto ("em quem a Ana apontou? e o Bruno? e a Célia?") é transcrever
+ * uma coisa que já aconteceu, e com oito pessoas leva mais tempo do que a
+ * própria votação.
+ *
+ * O que se PERDE ao contar em vez de registrar é a identidade de quem votou, e
+ * com ela duas mecânicas: o voto duplo do Uivo Comprado e a anulação mútua do
+ * Bobo Acusado. As duas precisam saber quem apontou para quem. `resolverDia`
+ * avisa no log quando elas são puladas, em vez de fingir que foram aplicadas.
+ */
+export type VotosContados = Readonly<Record<PlayerId, number>>;
+
+/** O que a mesa entregou: a lista nominal, ou só a contagem. */
+export type Apuracao =
+  | { readonly tipo: 'nominal'; readonly votos: Votos }
+  | { readonly tipo: 'contagem'; readonly contagem: VotosContados };
+
+/** Aceita os dois formatos; o antigo continua valendo como `nominal`. */
+function normalizar(entrada: Votos | Apuracao): Apuracao {
+  return 'tipo' in entrada ? (entrada as Apuracao) : { tipo: 'nominal', votos: entrada as Votos };
+}
+
 export interface DayResult {
   readonly estado: GameState;
   /** Mesmo formato do log da noite, para o laboratório exibir junto. */
@@ -93,13 +119,35 @@ export function apurar(
   return { contagem, maisVotados };
 }
 
+/** A contagem já vem pronta: só falta achar o topo e tratar empate. */
+function apurarContagem(contagem: VotosContados): {
+  contagem: ReadonlyMap<PlayerId, number>;
+  maisVotados: readonly PlayerId[];
+} {
+  const mapa = new Map<PlayerId, number>();
+  for (const [id, n] of Object.entries(contagem)) {
+    if (n > 0) mapa.set(id, n);
+  }
+  let max = 0;
+  for (const n of mapa.values()) max = Math.max(max, n);
+  const maisVotados = max === 0 ? [] : [...mapa].filter(([, n]) => n === max).map(([id]) => id);
+  return { contagem: mapa, maisVotados };
+}
+
 /**
  * Resolve o dia inteiro: votação, desempate, execução e estertores.
  *
  * O Bobo é o único caso que encerra a partida aqui dentro: ser linchado É a
  * vitória dele, e continuar jogando depois disso não faria sentido.
  */
-export function resolverDia(estado: GameState, votos: Votos): DayResult {
+export function resolverDia(estado: GameState, entrada: Votos | Apuracao): DayResult {
+  const apuracao = normalizar(entrada);
+  /*
+   * `votos` continua existindo para o resto da função e para o histórico. Na
+   * contagem ele vem VAZIO: ninguém sabe quem apontou para quem, e inventar
+   * uma atribuição faria o Bobo Acusado anular votos que nunca existiram.
+   */
+  const votos: Votos = apuracao.tipo === 'nominal' ? apuracao.votos : {};
   const log: Omit<LogEntry, 'etapa' | 'ordem'>[] = [];
   const registrar = (mensagem: string, motivo: string, alvos: PlayerId[] = []) =>
     log.push({ rodada: estado.rodada, mensagem, motivo, atores: [], alvos, ignorada: false });
@@ -152,7 +200,18 @@ export function resolverDia(estado: GameState, votos: Votos): DayResult {
     if (p.marcas.votoDuploNaRodada === atual.rodada) pesos[p.id] = 2;
   }
 
-  const { contagem, maisVotados } = apurar(votosValidos, podem, pesos);
+  const { contagem, maisVotados } =
+    apuracao.tipo === 'contagem'
+      ? apurarContagem(apuracao.contagem)
+      : apurar(votosValidos, podem, pesos);
+
+  if (apuracao.tipo === 'contagem') {
+    registrar(
+      'Votação contada em voz alta.',
+      'Sem a lista de quem apontou para quem, o voto duplo do Uivo Comprado e a ' +
+        'anulação mútua do Bobo Acusado não entram nesta apuração.',
+    );
+  }
 
   /**
    * Quem recebeu voto deixa de ser invisível.
@@ -181,6 +240,11 @@ export function resolverDia(estado: GameState, votos: Votos): DayResult {
       );
       return { estado: registrarVoto(fecharODia(atual, log), votosValidos, null, false), log };
     }
+    atual = trocarCarta(atual, b.id, {
+      roleId: 'aldeao',
+      usos: Infinity,
+      motivo: 'Ninguém votou em você na votação marcada. Agora você é Aldeão comum.',
+    });
     atual = gravar(atual, b.id, { virouAldeao: true });
     registrar(
       `${b.nome} virou Aldeão comum.`,
@@ -218,9 +282,9 @@ export function resolverDia(estado: GameState, votos: Votos): DayResult {
       atual = gravar(atual, b.id, { virouAldeao: true });
       atual = anunciar(
         atual,
-        `${b.nome} desistiu da própria piada. É um Aldeão comum a partir de agora.`,
+        `${b.nome} era o Bobo e perdeu o objetivo. Agora é um Aldeão comum.`,
         'votacao',
-        { rotulo: 'Uma carta virou cinza' },
+        { rotulo: 'Perdeu a função' },
       );
       registrar(
         `${b.nome} desistiu.`,
@@ -234,7 +298,7 @@ export function resolverDia(estado: GameState, votos: Votos): DayResult {
     for (const [quem, alvo] of Object.entries(votos)) {
       if (quem !== alvo || !alvo) continue;
       const p = atual.players.find((x) => x.id === quem)!;
-      atual = anunciar(atual, `${p.nome} é ${role(p.roleId).faccao}.`, 'evento');
+      atual = anunciar(atual, `${p.nome} é ${({ vila: 'da vila', lobos: 'lobo', solitario: 'solitário' } as const)[role(p.roleId).faccao]}.`, 'evento');
       registrar(`Delação: ${p.nome} votou em si mesmo.`, 'O app revela a facção publicamente.');
     }
   }
@@ -353,7 +417,7 @@ export function resolverDia(estado: GameState, votos: Votos): DayResult {
   if (moduloAtivo('julgamento-do-alem', atual.config.modulosDeFantasma, mortos(atual).length)) {
     atual = anunciar(
       atual,
-      inocente ? 'Os mortos estão inquietos.' : 'Os mortos aprovam.',
+      inocente ? 'Os mortos dizem: o condenado não era lobo.' : 'Os mortos dizem: o condenado era lobo.',
       'fantasma',
     );
     registrar('Julgamento do Além.', 'Sentimento agregado dos mortos, sem placar.');
@@ -364,7 +428,7 @@ export function resolverDia(estado: GameState, votos: Votos): DayResult {
   if (bobo) {
     atual = { ...atual, fase: 'fim', vencedores: [bobo] };
     // A frase é do usuário, e ela é o fecho da piada: a mesa precisa OUVIR isso.
-    atual = anunciar(atual, 'O Bobo enganou a todos.', 'votacao');
+    atual = anunciar(atual, 'O Bobo foi condenado e venceu a partida.', 'votacao');
     registrar('O Bobo venceu.', 'Ser linchado é a condição de vitória dele: a partida acaba aqui.');
   }
 
@@ -406,8 +470,8 @@ function fecharODia(estado: GameState, log: Omit<LogEntry, 'etapa' | 'ordem'>[])
     atual = anunciar(
       atual,
       rastro
-        ? `${p.nome} não chegou ao fim do dia. A mordida de ontem cobrou o preço.`
-        : `A vela apagou. ${p.nome} voltou para a cova.`,
+        ? `${p.nome} morreu: o ataque da noite passada se cumpriu depois da votação.`
+        : `${p.nome} morreu de novo: a ressurreição durava só um dia.`,
       'morte',
       { rotulo: rastro ? 'O rastro cobrou' : 'A vela apagou' },
     );

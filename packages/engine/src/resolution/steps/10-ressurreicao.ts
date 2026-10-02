@@ -1,4 +1,5 @@
 import { role } from '../../data/roles/index';
+import { usosIniciais } from '../../types/role';
 import { trocarCarta } from '../../turn/troca-de-carta';
 import type { StepFn } from '../night-pipeline';
 import { acoesDe, agendar, anunciar, gastarUso, gravar, nome, reviver, temUso } from './_helpers';
@@ -88,12 +89,12 @@ export const ressurreicao: StepFn = (ctx) => {
       varianteN === 'incorporacao'
         ? anunciar(
             estado,
-            'Alguma coisa foi tirada de uma cova esta noite. O corpo continua lá.',
+            'O Necromante tomou para si a função de um morto esta noite.',
             'role',
-            { rotulo: 'A cova foi mexida' },
+            { rotulo: 'Função tomada' },
           )
-        : anunciar(estado, `A cova se abriu: ${morto.nome} está de pé outra vez.`, 'role', {
-            rotulo: 'Alguém voltou',
+        : anunciar(estado, `${morto.nome} ressuscitou e voltou ao jogo.`, 'role', {
+            rotulo: 'Ressurreição',
           });
 
     let motivo = 'Morte de noite anterior. Estertores já disparados continuam valendo.';
@@ -122,9 +123,9 @@ export const ressurreicao: StepFn = (ctx) => {
         });
         estado = anunciar(
           estado,
-          `${morto.nome} voltou sem nada: é um Aldeão comum agora.`,
+          `${morto.nome} voltou sem a função que tinha: agora é um Aldeão comum.`,
           'role',
-          { rotulo: 'Uma carta virou cinza' },
+          { rotulo: 'Perdeu a função' },
         );
         motivo = 'Variante Cova Aberta: ele volta como Aldeão, com voz e voto e mais nada.';
         break;
@@ -143,27 +144,36 @@ export const ressurreicao: StepFn = (ctx) => {
         });
         estado = anunciar(
           estado,
-          `A vela está acesa por ${morto.nome}. Quando o dia acabar, ela apaga.`,
+          `${morto.nome} ressuscitou só por hoje: morre de novo no fim do dia.`,
           'role',
-          { rotulo: 'Uma vela acesa' },
+          { rotulo: 'Ressurreição por um dia' },
         );
         motivo = 'Variante Última Vela: qualquer noite serve, mas ele morre de novo ao fim do dia.';
         break;
 
       /**
-       * Incorporação: o Necromante fica com a habilidade do morto.
+       * Incorporação: o Necromante VIRA a carta do morto.
        *
-       * O ressuscitado volta inteiro e o Necromante passa a agir com a carta
-       * dele até o fim da partida. Note que a FACÇÃO não muda: incorporar um
-       * lobo dá ao Necromante o poder do lobo, e não o lado dele.
+       * SUPERADO em 2026-10-02: era `marcas.poderDe` — o Necromante agia com o
+       * poder do morto, mas a carta na mão, o ícone e a descrição continuavam
+       * de Necromante, e a tela de "sua carta mudou" nunca aparecia. Decisão do
+       * usuário: toda transformação troca a carta inteira, como o Herdeiro e a
+       * Troca com Mortos. Com a carta vem o lado: incorporar um lobo faz dele
+       * um lobo.
        */
-      case 'incorporacao':
-        estado = gravar(estado, ator.id, { poderDe: morto.roleId });
+      case 'incorporacao': {
+        const novaRole = role(morto.roleId);
+        estado = trocarCarta(estado, ator.id, {
+          roleId: morto.roleId,
+          ...(morto.varianteId ? { varianteId: morto.varianteId } : {}),
+          usos: usosIniciais(novaRole.usoLimitado),
+          motivo: `Você incorporou ${morto.nome}. Agora a carta dele é a sua.`,
+        });
         motivo =
-          `Variante Incorporação: ${ator.nome} passa a agir como ` +
-          `${role(morto.roleId).nome}. O morto CONTINUA morto, e a facção do ` +
-          'Necromante não muda.';
+          `Variante Incorporação: ${ator.nome} virou ${novaRole.nome}, a carta de ` +
+          `${morto.nome}. O morto CONTINUA morto.`;
         break;
+      }
 
       default:
         break;

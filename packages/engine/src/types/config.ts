@@ -76,17 +76,16 @@ export const DEFAULT_CONFIG: GameConfig = {
   revelarRoleAoMorrer: true,
   contagemDeLobos: 'publica',
   /**
-   * `frequente` (45%) e nao `raro` (20%), desde 2026-09-25.
+   * DESLIGADO por decisão do usuário em 2026-10-02.
    *
-   * Com `raro`, quatro em cada cinco manhãs não tinham evento nenhum, e o
-   * sistema inteiro — dezesseis eventos, tela própria, efeitos que atravessam
-   * cinco etapas — parecia desligado para quem joga. A calculadora de peso já
-   * compensa a frequência (`ajusteDeConfiguracao`), então isto não desequilibra
-   * a mesa; só faz o que existe aparecer.
+   * SUPERADO: até 2026-10-02 o padrão era `frequente`, posto em 2026-09-25 para
+   * que o sistema de eventos deixasse de parecer desligado. Depois de mesas de
+   * verdade, o veredito foi o oposto — eventos entram quando forem revistos, e
+   * três deles ainda são anunciados sem fazer nada (ver `docs/EVENTOS.md`).
    *
    * Continua ajustável no setup: Desligado, Raro, Frequente, Caótico.
    */
-  frequenciaEventos: 'frequente',
+  frequenciaEventos: 'desligado',
   selecaoAleatoria: false,
   semMorteNaPrimeiraNoite: false,
   modulosDeFantasma: [],

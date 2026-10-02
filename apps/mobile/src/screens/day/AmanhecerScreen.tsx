@@ -63,7 +63,7 @@ export function AmanhecerScreen({ navigation }: Props) {
       >
         <Revelacao>
           <View style={{ alignItems: 'center', gap: espaco.sm }}>
-            <Text style={{ color: houveMorte ? cores.sangueSeco : cores.cera, fontSize: 26 }}>
+            <Text style={{ color: houveMorte ? cores.sangueSecoTexto : cores.cera, fontSize: 26 }}>
               {houveMorte ? '✝' : '☉'}
             </Text>
             <Rotulo>
@@ -82,7 +82,7 @@ export function AmanhecerScreen({ navigation }: Props) {
           <Revelacao atraso={220}>
             <View style={{ alignItems: 'center', gap: espaco.sm }}>
               <Titulo>Ninguém morreu.</Titulo>
-              <Pequeno cor={cores.ferrugem}>Isso é pior do que parece.</Pequeno>
+              <Pequeno cor={cores.ferrugem}>Ninguém foi atacado, ou todos os ataques falharam.</Pequeno>
             </View>
           </Revelacao>
         ) : (

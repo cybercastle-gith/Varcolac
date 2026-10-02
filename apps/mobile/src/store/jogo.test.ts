@@ -278,3 +278,25 @@ describe('seleção aleatória é balanceada', () => {
     }
   });
 });
+
+describe('modo Traição no caminho do app', () => {
+  it('converte alguém a cada noite resolvida', () => {
+    const s = useJogo.getState();
+    s.limparSelecao();
+    // Traição esconde os lobos do baralho: a mesa é só vila e solitários.
+    for (const k of ['aldeao', 'vidente', 'medico', 'xerife', 'padre', 'cacador']) {
+      s.alternarCarta(k);
+    }
+    s.setConfig({ modo: 'traicao', selecaoAleatoria: false, semente: 'traicao-app' });
+    useJogo.getState().comecar();
+
+    const comecou = useJogo.getState().estado!;
+    expect(comecou.players.every((p) => role(p.roleId).faccao !== 'lobos')).toBe(true);
+
+    // Fecha a noite 1 sem nenhuma ação: o amanhecer é que converte.
+    useJogo.getState().fecharNoiteAgora();
+    const depois = useJogo.getState().estado!;
+    const convertidos = Object.values(depois.objetivosSecretos).filter((o) => o === 'convertido');
+    expect(convertidos.length, 'o amanhecer não converteu ninguém').toBe(1);
+  });
+});

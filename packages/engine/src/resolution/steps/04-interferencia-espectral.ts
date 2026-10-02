@@ -69,7 +69,7 @@ export const interferenciaEspectral: StepFn = (ctx) => {
         origem: 'fantasma',
         texto:
           acao.texto ??
-          `${nome(estado, sobre)} é ${role(estado.players.find((p) => p.id === sobre)!.roleId).faccao}.`,
+          `${nome(estado, sobre)} é ${({ vila: 'da vila', lobos: 'lobo', solitario: 'solitário' } as const)[role(estado.players.find((p) => p.id === sobre)!.roleId).faccao]}.`,
         verdadeira,
         sobre: [sobre],
       });

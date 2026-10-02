@@ -65,7 +65,7 @@ export function BaralhoScreen({ navigation }: Props) {
       <View style={{ paddingHorizontal: espaco.lg, paddingTop: espaco.md, gap: espaco.xs }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: espaco.sm }}>
           <Titulo>O baralho</Titulo>
-          <Text style={[tipografia.interface, { color: pronto ? cores.cera : cores.garanca }]}>
+          <Text style={[tipografia.interface, { color: pronto ? cores.cera : cores.garancaTexto }]}>
             {s.selecionadas.length} / {s.jogadores.length}
           </Text>
         </View>
@@ -159,7 +159,7 @@ export function BaralhoScreen({ navigation }: Props) {
 
       <View style={{ padding: espaco.lg, gap: espaco.xs }}>
         {!pronto && (
-          <Pequeno cor={cores.garanca}>
+          <Pequeno cor={cores.garancaTexto}>
             {saldo < 0
               ? `Faltam ${-saldo} carta(s) para cobrir a mesa.`
               : `Há ${saldo} carta(s) a mais. Ligue a seleção aleatória, ou desmarque.`}
@@ -270,12 +270,12 @@ function LinhaDeCarta({
             gap: 2,
           }}
         >
-          <Text style={[tipografia.rotulo, { color: cores.nogueira, fontSize: 10 }]}>
+          <Text style={[tipografia.rotulo, { color: cores.nogueiraTexto, fontSize: 10 }]}>
             {variantesMarcadas > 0
               ? `${variantesMarcadas}/${r.variantes.length}`
               : r.variantes.length}
           </Text>
-          <Text style={{ color: cores.nogueira, fontSize: 11 }}>{aberta ? '▴' : '▾'}</Text>
+          <Text style={{ color: cores.nogueiraTexto, fontSize: 11 }}>{aberta ? '▴' : '▾'}</Text>
         </Pressable>
       </View>
 
@@ -306,7 +306,7 @@ function LinhaDeCarta({
                   </Text>
                   <Text style={[tipografia.pequeno, { color: cores.ferrugem }]}>{v.descricao}</Text>
                   {/* O host precisa saber ANTES de escolher, não depois de jogar. */}
-                  {pendencia && <Pequeno cor={cores.nogueira}>{pendencia}</Pequeno>}
+                  {pendencia && <Pequeno cor={cores.nogueiraTexto}>{pendencia}</Pequeno>}
                 </View>
               </Pressable>
             );

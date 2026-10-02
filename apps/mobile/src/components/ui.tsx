@@ -271,7 +271,7 @@ export function ItemJogador({
           {detalhe ? <Pequeno cor={cores.linhoCru}>{detalhe}</Pequeno> : null}
         </View>
         {/* Nunca cor sozinha: o estado sempre vem com ícone ou texto. */}
-        {morto ? <Text style={{ color: cores.sangueSeco, fontSize: 16 }}>✝</Text> : null}
+        {morto ? <Text style={{ color: cores.sangueSecoTexto, fontSize: 16 }}>✝</Text> : null}
         {direita}
       </Animated.View>
     </Pressable>

@@ -84,14 +84,27 @@ export const informacao: StepFn = (ctx) => {
           : estado.rodada === 2
             ? `${alvoP.nome} é ${nomeDaCarta(role(roleEfetivaId(alvoP)), alvoP.varianteId)}.`
             : (() => {
-                const ultima = antes.historicoVotos.at(-1);
-                const votou = ultima?.votos[travado];
-                const nomeVotado = votou
-                  ? (antes.players.find((x) => x.id === votou)?.nome ?? '?')
-                  : null;
-                return nomeVotado
-                  ? `${alvoP.nome} votou em ${nomeVotado}.`
-                  : `${alvoP.nome} não votou em ninguém.`;
+                /**
+                 * A terceira leitura mostra o que ele FEZ na noite passada.
+                 *
+                 * Era "em quem ele votou", e voto é público: a mesa inteira viu.
+                 * Pagar três noites de vigilância para saber o que todo mundo já
+                 * sabe é o mesmo que não ter terceira leitura. O que ninguém vê
+                 * é a ação da noite — e é isso que a vigilância devia pegar.
+                 *
+                 * Sai de `informacoes`: tudo que o alvo RECEBEU na noite
+                 * anterior, que é o rastro do que ele fez. Quem não agiu não
+                 * deixa rastro, e isso também é informação.
+                 */
+                const daNoite = antes.informacoes.filter(
+                  (i) => i.paraId === travado && i.rodada === estado.rodada - 1,
+                );
+                if (daNoite.length === 0) {
+                  return `${alvoP.nome} não fez nada na noite passada.`;
+                }
+                return `Na noite passada, ${alvoP.nome} soube: ${daNoite
+                  .map((i) => i.texto)
+                  .join(' ')}`;
               })();
 
       estado = entregarInfo(estado, {
@@ -121,8 +134,8 @@ export const informacao: StepFn = (ctx) => {
     if (r.id === 'aldeao' && ator.varianteId === 'testemunha') {
       if (!temUso(estado, ator.id)) continue;
       estado = gastarUso(estado, ator.id);
-      estado = anunciar(estado, `O app confirma, e não mente: ${ator.nome} é Aldeão.`, 'role', {
-        rotulo: 'Uma prova',
+      estado = anunciar(estado, `O app confirma: ${ator.nome} é Aldeão.`, 'role', {
+        rotulo: 'Confirmação',
       });
       ctx.log.registrar('informacao', {
         mensagem: `${ator.nome} usou a testemunha.`,
@@ -270,8 +283,8 @@ export const informacao: StepFn = (ctx) => {
         const ehLobo = leitura(antes, a) === 'lobo';
         estado = anunciar(
           estado,
-          `A revista em ${nome(antes, a)} terminou. ${nome(antes, a)} é ` +
-            (ehLobo ? 'LOBO.' : 'da vila.'),
+          `Resultado da revista do Delegado: ${nome(antes, a)} é ` +
+            (ehLobo ? 'lobo.' : 'da vila.'),
           'role',
           { rotulo: 'Revista pública' },
         );

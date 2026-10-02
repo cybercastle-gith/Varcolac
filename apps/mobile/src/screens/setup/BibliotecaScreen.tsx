@@ -57,14 +57,14 @@ function Carta({ r }: { r: Role }) {
         <Text
           style={[
             tipografia.rotulo,
-            { color: r.variantes.length > 0 ? cores.cera : cores.nogueira, fontSize: 10 },
+            { color: r.variantes.length > 0 ? cores.cera : cores.nogueiraTexto, fontSize: 10 },
           ]}
         >
           {r.variantes.length > 0
             ? `${r.variantes.length} ${r.variantes.length === 1 ? 'variante' : 'variantes'}`
             : 'sem variantes'}
         </Text>
-        <Text style={[tipografia.rotulo, { color: cores.nogueira, fontSize: 10 }]}>
+        <Text style={[tipografia.rotulo, { color: cores.nogueiraTexto, fontSize: 10 }]}>
           {aberta ? '▴' : '▾'}
         </Text>
       </View>
@@ -72,16 +72,13 @@ function Carta({ r }: { r: Role }) {
       {aberta && (
         <View style={{ gap: espaco.sm, marginTop: espaco.xs }}>
           <Text style={[tipografia.corpoSerif, { color: cores.linhoCru }]}>{r.descricaoLonga}</Text>
-          {r.etapa && (
-            <Pequeno cor={cores.nogueira}>Age na etapa: {r.etapa.replace('-', ' ')}</Pequeno>
-          )}
           {r.usoLimitado.kind === 'por-partida' && (
             <Pequeno cor={cores.cera}>
               {r.usoLimitado.total === 1 ? 'Uma vez por partida.' : `${r.usoLimitado.total} usos.`}
             </Pequeno>
           )}
           {r.variantes.length === 0 && (
-            <Pequeno cor={cores.nogueira}>Esta função ainda não tem variantes.</Pequeno>
+            <Pequeno cor={cores.nogueiraTexto}>Esta função ainda não tem variantes.</Pequeno>
           )}
 
           {r.variantes.length > 0 && (
@@ -114,7 +111,7 @@ function Carta({ r }: { r: Role }) {
                         <Text style={[tipografia.rotulo, { color: cores.ferrugem, fontSize: 9 }]}>
                           regra ainda não implementada
                         </Text>
-                        <Pequeno cor={cores.nogueira}>{motivoDaPendencia(v.id)}</Pequeno>
+                        <Pequeno cor={cores.nogueiraTexto}>{motivoDaPendencia(v.id)}</Pequeno>
                       </View>
                     )}
                   </View>

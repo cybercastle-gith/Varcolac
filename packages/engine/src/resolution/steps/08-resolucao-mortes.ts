@@ -1,3 +1,4 @@
+import { trocarCarta } from '../../turn/troca-de-carta';
 import type { CauseOfDeath, PlayerId } from '../../types/player';
 import type { GameState } from '../../types/game-state';
 import { role } from '../../data/roles/index';
@@ -166,6 +167,11 @@ export const resolucaoMortes: StepFn = (ctx) => {
           alvos: [alvo.id],
         });
       } else {
+        estado = trocarCarta(estado, atacante.id, {
+          roleId: 'aldeao',
+          usos: Infinity,
+          motivo: 'Você benzeu quem não era lobo e perdeu o poder. Agora é Aldeão comum.',
+        });
         estado = gravar(estado, atacante.id, { virouAldeao: true });
         ctx.log.registrar('resolucao-mortes', {
           mensagem: `${atacante.nome} benzeu ${alvo.nome} e errou.`,
@@ -398,9 +404,9 @@ export const resolucaoMortes: StepFn = (ctx) => {
       estado = gravar(estado, alvo, { morreDepoisDaVotacao: estado.rodada });
       estado = anunciar(
         estado,
-        `Há sangue na porta de ${vitima.nome}. Ele ainda está de pé — até o fim do dia.`,
+        `Os lobos atacaram ${vitima.nome}. Essa pessoa continua no jogo hoje e morre depois da votação.`,
         'morte',
-        { rotulo: 'Um rastro na soleira' },
+        { rotulo: 'Ataque anunciado' },
       );
       ctx.log.registrar('resolucao-mortes', {
         mensagem: `${vitima.nome} foi marcado, e não morre agora.`,
@@ -574,7 +580,7 @@ function resolverPocao(
    * já tem lobos, saber que há mais um assassino muda toda a leitura do dia.
    */
   if (bruxa.varianteId === 'pocao-ressonante') {
-    e = anunciar(e, 'Havia cheiro de ervas no ar. Existe uma Bruxa nesta vila.', 'role');
+    e = anunciar(e, 'Existe uma Bruxa na vila: ela usou a poção da morte esta noite.', 'role');
   }
 
   for (const alvo of atingidos) investidas.push({ alvo, atacanteId: bruxaId, causa: 'bruxa' });

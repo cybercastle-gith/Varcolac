@@ -268,7 +268,7 @@ describe('Delegado', () => {
     );
     const dito = r.estado.anuncios.map((a) => a.texto).join(' | ');
     // A revista grita o lado em maiúsculas: é o ponto dela.
-    expect(dito).toContain('LOBO');
+    expect(dito).toContain('é lobo');
   });
 });
 
@@ -310,7 +310,7 @@ describe('narração', () => {
     const dia = resolverDia(n2.estado, {});
     expect(quem(dia.estado, 'vidente').status).toBe('morto');
     // A vela apagando é um acontecimento, e a mesa tem de ouvir.
-    expect(dia.estado.anuncios.some((a) => a.rodada === 2 && a.texto.includes('vela'))).toBe(true);
+    expect(dia.estado.anuncios.some((a) => a.rodada === 2 && a.texto.includes('ressuscitou só por hoje'))).toBe(true);
   });
 
   it('quem muda de papel é anunciado', () => {

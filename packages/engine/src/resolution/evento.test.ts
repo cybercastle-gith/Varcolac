@@ -90,7 +90,14 @@ describe('evento da noite', () => {
     }
   });
 
-  it('o padrão de fábrica faz evento aparecer na maioria das mesas', () => {
-    expect(DEFAULT_CONFIG.frequenciaEventos).toBe('frequente');
+  it('o padrão de fábrica é DESLIGADO', () => {
+    /*
+     * SUPERADO em 2026-10-02: até aqui o padrão era `frequente`, posto em
+     * 2026-09-25 para que o sistema de eventos deixasse de parecer desligado.
+     * Depois de mesas de verdade o veredito foi o oposto — eventos voltam
+     * quando forem revistos, e três deles ainda são anunciados sem fazer nada
+     * (ver `docs/EVENTOS.md`). O setup continua oferecendo as quatro opções.
+     */
+    expect(DEFAULT_CONFIG.frequenciaEventos).toBe('desligado');
   });
 });

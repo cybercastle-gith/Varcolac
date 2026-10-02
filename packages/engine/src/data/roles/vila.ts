@@ -13,15 +13,18 @@ export const aldeao: Role = {
   peso: 0,
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: false,
-  descricaoCurta: 'Nenhuma habilidade. Só voz e voto.',
+  descricaoCurta: 'Você não tem poder noturno. Sua força está na conversa e no voto.',
   descricaoLonga:
-    'O Aldeão não age à noite. Recebe o celular e um toque falso, como todo mundo, ' +
-    'para que quem tem poder não se revele pela chamada.',
+    'Você não age à noite. Quando o celular chegar, aparece uma tela de espera, ' +
+    'igual à de todo mundo, para que ninguém descubra quem tem poder pelo tempo que ' +
+    'cada um leva. De dia, você discute e vota.',
   variantes: [
     {
       id: 'herdeiro',
       nome: 'Herdeiro',
-      descricao: 'Uma vez por partida, herda a role de alguém que morreu.',
+      descricao:
+        'Uma vez por partida, à noite, escolha um morto: você passa a ter a carta dele, ' +
+        'inclusive o lado. Vale a partir da noite seguinte.',
       peso: 2,
       // O Aldeão base não age à noite, então a variante precisa da própria
       // etapa — sem ela o roteiro devolvia toque falso e a herança não existia.
@@ -31,13 +34,17 @@ export const aldeao: Role = {
     {
       id: 'teimoso',
       nome: 'Teimoso',
-      descricao: 'Não pode mudar o voto depois de declarado.',
+      descricao:
+        'Na votação, seu primeiro voto é o definitivo: depois de votar, você não pode ' +
+        'mudar.',
       peso: 0,
     },
     {
       id: 'testemunha',
       nome: 'Testemunha',
-      descricao: 'Uma vez por partida, o app confirma publicamente que ele é aldeão.',
+      descricao:
+        'Uma vez por partida, à noite, você pode pedir que o app confirme para todos, ' +
+        'no amanhecer, que você é Aldeão.',
       peso: 1,
       etapa: 'informacao',
       usoLimitado: { kind: 'por-partida', total: 1 },
@@ -54,29 +61,43 @@ export const vidente: Role = {
   etapa: 'informacao',
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: false,
-  descricaoCurta: 'Vê a facção de um jogador por noite. Perde o voto do dia seguinte.',
+  descricaoCurta:
+    'Toda noite, descubra se uma pessoa é lobo ou não. Em troca, seu voto não conta ' +
+    'no dia seguinte.',
   descricaoLonga:
-    'Ela não precisa se manifestar sobre o custo — o app simplesmente não conta o voto. ' +
-    'A leitura usa o estado do início da noite: investigar quem morreu naquela noite ' +
-    'ainda devolve a facção, para que a informação não vaze o resultado.',
+    'Toda noite, escolha uma pessoa: o app diz se ela é lobo ou da vila. A maioria ' +
+    'dos solitários aparece como da vila. O preço é o voto: no dia seguinte, o seu ' +
+    'não é contado, e você não precisa avisar ninguém. Se a pessoa morrer na mesma ' +
+    'noite, você recebe a resposta assim mesmo.',
   variantes: [
-    { id: 'ossos', nome: 'Vidente dos Ossos', descricao: 'Só enxerga mortos.', peso: 1 },
+    {
+      id: 'ossos',
+      nome: 'Vidente dos Ossos',
+      descricao:
+        'Você só consegue ler mortos: escolha alguém que já morreu e descubra se era lobo ' +
+        'ou não. Se escolher um vivo, não vê nada.',
+      peso: 1,
+    },
     {
       id: 'espelho',
       nome: 'Vidente do Espelho',
-      descricao: 'Vê a facção, e o alvo é avisado de que alguém o observou.',
+      descricao:
+        'Funciona como a Vidente comum, mas a pessoa investigada é avisada de que ' +
+        'alguém a observou naquela noite.',
       peso: 3,
     },
     {
       id: 'sonhos',
       nome: 'Vidente dos Sonhos',
-      descricao: 'A visão chega uma noite depois.',
+      descricao: 'Funciona como a Vidente comum, mas a resposta só chega na noite seguinte.',
       peso: 2,
     },
     {
       id: 'confusa',
       nome: 'Vidente Confusa',
-      descricao: 'Duas visões por noite — uma verdadeira, uma falsa. Não sabe qual é qual.',
+      descricao:
+        'Toda noite, escolha duas pessoas e receba uma resposta para cada. Uma das duas ' +
+        'é falsa, e você não sabe qual.',
       peso: 2,
     },
   ],
@@ -91,27 +112,35 @@ export const detetive: Role = {
   etapa: 'informacao',
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: false,
-  descricaoCurta: 'Compara dois jogadores: mesma facção ou não.',
-  descricaoLonga: 'Não revela quais facções — apenas se coincidem.',
+  descricaoCurta: 'Toda noite, compare duas pessoas e descubra se elas estão do mesmo lado.',
+  descricaoLonga:
+    'Toda noite, escolha duas pessoas. O app diz se as duas estão do mesmo lado ou ' +
+    'não, mas não diz que lado é esse.',
   variantes: [
     {
       id: 'obsessivo',
       nome: 'Obsessivo',
       // TODO: peso não consta no dossiê; mantido igual ao base até calibrar.
-      descricao: 'Trava um alvo na noite 1. N1: facção · N2: role · N3: em quem votou.',
+      descricao:
+        'Na sua primeira noite, escolha uma pessoa: você fica preso a ela até o fim. Na ' +
+        '1ª noite, descobre o lado dela; na 2ª, a função; na 3ª, o que ela fez na noite ' +
+        'anterior.',
       peso: 3,
     },
     {
       id: 'cansado',
       nome: 'Cansado',
-      descricao: 'Só age em noites ímpares.',
+      descricao: 'Você só age nas noites ímpares: 1, 3, 5 e assim por diante.',
       peso: 2,
       usoLimitado: { kind: 'noites-alternadas', paridade: 'impar' },
     },
     {
       id: 'delegado',
       nome: 'Delegado',
-      descricao: 'Revista pública: a mesa descobre se o alvo tem poder, mas não a facção.',
+      descricao:
+        'Em vez de comparar duas pessoas, você revista uma, e o app anuncia para todos ' +
+        'no amanhecer se ela é lobo ou da vila. Você tem um uso para cada quatro ' +
+        'jogadores na mesa.',
       peso: 3,
     },
   ],
@@ -126,22 +155,30 @@ export const medico: Role = {
   etapa: 'protecao',
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: false,
-  descricaoCurta: 'Protege um jogador por noite.',
+  descricaoCurta: 'Toda noite, proteja uma pessoa. Se ela for atacada, sobrevive.',
   descricaoLonga:
-    'A proteção só marca; a morte é decidida na etapa 8. Médico bloqueado não cura, ' +
-    'e o Feiticeiro perfura a proteção.',
+    'Toda noite, escolha uma pessoa para proteger. Se ela for atacada naquela ' +
+    'noite, sobrevive. Se você estiver preso ou embriagado, a proteção não ' +
+    'acontece. O ataque especial do Feiticeiro atravessa a sua proteção.',
   variantes: [
-    { id: 'curandeiro', nome: 'Curandeiro', descricao: 'Nunca pode repetir alvo.', peso: 2 },
+    {
+      id: 'curandeiro',
+      nome: 'Curandeiro',
+      descricao: 'Você não pode proteger a mesma pessoa duas vezes na partida.',
+      peso: 2,
+    },
     {
       id: 'de-guerra',
       nome: 'Médico de Guerra',
-      descricao: 'Cura duas pessoas, mas amanhece publicamente revelado.',
+      descricao:
+        'Você pode proteger duas pessoas por noite. Na noite em que proteger duas, o ' +
+        'app revela para todos, no amanhecer, que você é o Médico.',
       peso: 4,
     },
     {
       id: 'de-plantao',
       nome: 'Médico de Plantão',
-      descricao: 'Só pode curar quem foi atacado na noite anterior.',
+      descricao: 'Você só pode proteger quem foi atacado na noite anterior.',
       peso: 2,
     },
   ],
@@ -156,25 +193,32 @@ export const guardaCostas: Role = {
   etapa: 'protecao',
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: false,
-  descricaoCurta: 'Morre no lugar do protegido.',
-  descricaoLonga: 'Troca a própria vida pela do alvo quando o ataque acontece.',
+  descricaoCurta: 'Toda noite, escolha uma pessoa. Se ela for atacada, você morre no lugar dela.',
+  descricaoLonga:
+    'Toda noite, escolha uma pessoa. Se ela for atacada, quem morre é você, e ela ' +
+    'sobrevive. O ataque especial do Feiticeiro passa por você: nesse caso, ela ' +
+    'morre e você não.',
   variantes: [
     {
       id: 'sacrificio',
       nome: 'Sacrifício',
-      descricao: 'Morre no lugar do alvo e leva o atacante junto.',
+      descricao: 'Quando você morre no lugar de alguém, quem atacou morre junto.',
       peso: 4,
     },
     {
       id: 'escudo',
       nome: 'Escudo',
-      descricao: 'Absorve o ataque e morre uma noite depois.',
+      descricao:
+        'Quando você recebe um ataque no lugar de alguém, não morre na hora: morre na ' +
+        'noite seguinte.',
       peso: 3,
     },
     {
       id: 'muralha',
       nome: 'Muralha',
-      descricao: 'Protege dois jogadores, mas se qualquer um for atacado, ele morre.',
+      descricao:
+        'Você protege duas pessoas por noite. Se qualquer uma delas for atacada, você ' +
+        'morre no lugar dela.',
       peso: 3,
     },
   ],
@@ -189,19 +233,19 @@ export const xerife: Role = {
   etapa: 'bloqueio',
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: false,
-  descricaoCurta:
-    'Prende um jogador para a NOITE seguinte: ele não age e não morre. Continua falando.',
+  descricaoCurta: 'Prenda uma pessoa. Na noite seguinte, ela não usa o poder e não pode morrer.',
   descricaoLonga:
-    'Prender o Médico anula a cura daquela noite — o Xerife pode atrapalhar a própria vila. ' +
-    'A imunidade do preso é perfurável pelo Feiticeiro.',
+    'Toda noite, escolha uma pessoa para prender. A prisão vale na noite seguinte: ' +
+    'nessa noite, ela não usa o poder e não pode ser morta. De dia, ela continua ' +
+    'falando e votando. Cuidado: prender o Médico também cancela a proteção dele. O ' +
+    'ataque especial do Feiticeiro mata mesmo quem está preso.',
   variantes: [
     {
       id: 'testemunha-da-cela',
       nome: 'Testemunha da Cela',
       descricao:
-        'Prende um jogador, revela a prisão no dia seguinte, mantém o preso sem poder ' +
-        'agir na segunda noite e o liberta no segundo dia revelando-o como Lobo ou ' +
-        'Aldeão.',
+        'Funciona como o Xerife comum. No amanhecer em que a prisão termina, o app ' +
+        'anuncia para todos se o preso é lobo ou da vila.',
       peso: 3,
       etapa: 'bloqueio',
     },
@@ -209,15 +253,17 @@ export const xerife: Role = {
       id: 'xerife-de-si-mesmo',
       nome: 'Xerife de Si Mesmo',
       descricao:
-        'Pode prender a si próprio e fica imune a ataques e investigações naquela ' +
-        'noite, mas não age nem vota no dia seguinte.',
+        'Você pode prender a si mesmo. Na noite em que estiver preso, ninguém consegue ' +
+        'matar nem investigar você, mas você não age e não vota.',
       peso: 3,
       etapa: 'bloqueio',
     },
     {
       id: 'boca-calada',
       nome: 'Boca Calada',
-      descricao: 'Prende um jogador normalmente, e o preso não fala nem vota no dia seguinte.',
+      descricao:
+        'Funciona como o Xerife comum, e o preso também não pode falar nem votar no dia ' +
+        'seguinte à noite em que ficou preso.',
       peso: 3,
       etapa: 'bloqueio',
     },
@@ -233,15 +279,17 @@ export const necromante: Role = {
   etapa: 'ressurreicao',
   usoLimitado: { kind: 'por-partida', total: 1 },
   vitoriaPropria: false,
-  descricaoCurta: 'Ressuscita um morto, uma vez por partida.',
+  descricaoCurta: 'Uma vez por partida, traga de volta à vida alguém que morreu.',
   descricaoLonga:
-    'Apenas mortes de noites anteriores. A ressurreição não desfaz estertores já ' +
-    'disparados: se o Caçador atirou, o tiro vale.',
+    'Uma vez por partida, à noite, escolha alguém que morreu antes desta noite. ' +
+    'Essa pessoa ressuscita e volta ao jogo com a mesma função. O que a morte dela ' +
+    'já causou continua valendo: se ela era o Caçador e já atirou, o tiro não é ' +
+    'desfeito.',
   variantes: [
     {
       id: 'cova-aberta',
       nome: 'Cova Aberta',
-      descricao: 'Ressuscita um morto da noite anterior, mas ele volta sem sua habilidade.',
+      descricao: 'A pessoa ressuscita, mas como Aldeão comum: perde a função que tinha.',
       peso: 3,
       etapa: 'ressurreicao',
       usoLimitado: { kind: 'por-partida', total: 1 },
@@ -250,7 +298,8 @@ export const necromante: Role = {
       id: 'ultima-vela',
       nome: 'Última Vela',
       descricao:
-        'Ressuscita um morto de qualquer noite, mas ele morre novamente ao fim do ' + 'dia.',
+        'Você pode ressuscitar qualquer morto, inclusive quem morreu nesta mesma noite. ' +
+        'Mas ele morre de novo no fim do dia seguinte.',
       peso: 3,
       etapa: 'ressurreicao',
       usoLimitado: { kind: 'por-partida', total: 1 },
@@ -259,8 +308,8 @@ export const necromante: Role = {
       id: 'incorporacao',
       nome: 'Incorporação',
       descricao:
-        'Toma de um morto a habilidade dele e a usa até o fim da partida. O morto NÃO ' +
-        'volta, e a sua facção não muda.',
+        'Em vez de ressuscitar alguém, você vira a carta de um morto: fica com a função ' +
+        'dele e com o lado dele até o fim da partida. O morto continua morto.',
       peso: 4,
       etapa: 'ressurreicao',
       usoLimitado: { kind: 'por-partida', total: 1 },
@@ -277,17 +326,17 @@ export const padre: Role = {
   etapa: 'protecao',
   usoLimitado: { kind: 'por-partida', total: 1 },
   vitoriaPropria: false,
-  descricaoCurta: 'Uma vez por partida, anula todas as mortes da noite.',
+  descricaoCurta: 'Uma vez por partida, impeça todas as mortes de uma noite.',
   descricaoLonga:
-    'O Padre não protege ninguém: cancela a noite inteira. Por isso vence o Feiticeiro, ' +
-    'que só perfura proteções individuais.',
+    'Uma vez por partida, à noite, você pode decidir que ninguém morre nesta noite. ' +
+    'Vale contra qualquer ataque, inclusive o do Feiticeiro.',
   variantes: [
     {
       id: 'exorcista',
       nome: 'Exorcista',
       descricao:
-        'Uma vez por partida, benze um jogador. Se for lobo, o lobo morre; se não for, ' +
-        'o Padre perde a moral e vira Aldeão comum.',
+        'Uma vez por partida, escolha uma pessoa. Se ela for lobo, morre, a não ser que ' +
+        'esteja protegida. Se não for, você perde o poder e vira Aldeão comum.',
       // Aposta tudo num nome: o Padre base garante uma noite sem mortes, e este
       // troca essa garantia pela chance de tirar um lobo — e pelo risco de sair
       // do jogo como Aldeão se errar. Por isso pesa mais que o Padre base.
@@ -300,7 +349,7 @@ export const padre: Role = {
     {
       id: 'sino',
       nome: 'Sino da Igreja',
-      descricao: 'Uma vez por partida, cancela a votação do dia seguinte.',
+      descricao: 'Uma vez por partida, à noite, você cancela a votação do dia seguinte.',
       peso: 2,
       usoLimitado: { kind: 'por-partida', total: 1 },
     },
@@ -308,8 +357,8 @@ export const padre: Role = {
       id: 'martir',
       nome: 'Mártir',
       descricao:
-        'Marca um protegido à noite. Se ele for condenado no dia seguinte, o Mártir morre ' +
-        'no lugar, automaticamente — sem passagem de celular, sem revelação.',
+        'Toda noite, escolha uma pessoa. Se ela for condenada na votação do dia ' +
+        'seguinte, você morre no lugar dela, sem precisar fazer nada.',
       peso: 3,
     },
   ],
@@ -324,26 +373,35 @@ export const cacador: Role = {
   etapa: 'estertores',
   usoLimitado: { kind: 'por-partida', total: 1 },
   vitoriaPropria: false,
-  descricaoCurta: 'Ao morrer, leva alguém junto.',
-  descricaoLonga: 'O tiro entra na cadeia de estertores e pode disparar outros estertores.',
+  descricaoCurta: 'Toda noite, marque uma pessoa. Quando você morrer, ela morre junto.',
+  descricaoLonga:
+    'Toda noite, você marca uma pessoa. Quando você morrer, de noite ou na votação, ' +
+    'a última pessoa que você marcou morre junto. Se não tiver marcado ninguém, o ' +
+    'app escolhe por você.',
   variantes: [
     {
       id: 'armadilha',
       nome: 'Armadilha',
-      descricao: 'Declara o alvo à noite, antes de morrer. O tiro só dispara se ele morrer.',
+      descricao:
+        'Toda noite, você arma a armadilha em uma pessoa. Se você for atacado à noite, ' +
+        'não morre: quem morre é a pessoa da armadilha. Nem o Feiticeiro desarma.',
       peso: 2,
     },
     {
       id: 'ultimo-uivo',
       nome: 'Último Uivo',
-      descricao: 'Em vez de matar, revela publicamente a role de um jogador.',
+      descricao:
+        'Quando você morrer, em vez de matar a pessoa marcada, o app revela a função ' +
+        'dela para todos.',
       peso: 2,
       usoLimitado: { kind: 'por-partida', total: 1 },
     },
     {
       id: 'vingativo',
       nome: 'Vingativo',
-      descricao: 'Só pode atirar em quem votou nele.',
+      descricao:
+        'Quando você morrer, só pode levar junto alguém que votou em você na última ' +
+        'votação. Se ninguém votou, você morre sozinho.',
       peso: 1,
     },
   ],
@@ -358,21 +416,25 @@ export const taverneiro: Role = {
   etapa: 'bloqueio',
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: false,
-  descricaoCurta: 'Embebeda um jogador: na noite seguinte o poder dele falha, e ele não é avisado.',
-  descricaoLonga: 'Pode atrapalhar a própria vila — e frequentemente atrapalha.',
+  descricaoCurta:
+    'Embriague uma pessoa. Na noite seguinte, o poder dela falha, e ela não fica ' +
+    'sabendo.',
+  descricaoLonga:
+    'Toda noite, escolha uma pessoa para embriagar. Na noite seguinte, o poder dela ' +
+    'não funciona: ela age normalmente, nada acontece, e o app não avisa. Você pode ' +
+    'acabar atrapalhando alguém da própria vila.',
   variantes: [
     {
       id: 'ultima-dose',
       nome: 'Última Dose',
-      descricao: 'Só pode embebedar jogadores que ainda não tenham sido embebedados.',
+      descricao: 'Você não pode embriagar a mesma pessoa duas vezes na partida.',
       peso: 1,
       etapa: 'bloqueio',
     },
     {
       id: 'ressaca-da-vila',
       nome: 'Ressaca da Vila',
-      descricao:
-        'O jogador embebedado só descobre na noite seguinte que sua ação foi ' + 'bloqueada.',
+      descricao: 'A pessoa embriagada descobre que o poder falhou, mas só uma noite depois.',
       peso: 2,
       etapa: 'bloqueio',
     },
@@ -380,8 +442,8 @@ export const taverneiro: Role = {
       id: 'bebida-forte',
       nome: 'Bebida Forte',
       descricao:
-        'O alvo não pode agir nem votar até a próxima noite, quando pode repetir o ' +
-        'mesmo tipo de ação duas vezes.',
+        'A pessoa embriagada não vota no dia seguinte e não age na noite seguinte. Na ' +
+        'noite depois dessa, ela age duas vezes.',
       peso: 2,
       etapa: 'bloqueio',
     },
@@ -400,14 +462,18 @@ export const ancia: Role = {
   etapa: 'estertores',
   usoLimitado: { kind: 'ilimitado' },
   vitoriaPropria: false,
-  descricaoCurta: 'Se morrer por qualquer causa, a vila perde todos os poderes por uma noite.',
+  descricaoCurta: 'Se você morrer, por qualquer motivo, a vila fica sem poderes na noite seguinte.',
   descricaoLonga:
-    'Inclui linchamento. É a razão pela qual revelar a Anciã cedo é perigoso para a vila.',
+    'Se você morrer, de noite ou na votação, ninguém da vila consegue usar o poder ' +
+    'na noite seguinte. Os lobos continuam atacando normalmente. Por isso, revelar ' +
+    'quem você é coloca a vila em risco.',
   variantes: [
     {
       id: 'testamento',
       nome: 'Testamento',
-      descricao: 'Ao morrer, escolhe um jogador vivo para manter seu poder na noite seguinte.',
+      descricao:
+        'Toda noite, escolha uma pessoa. Se você morrer, ela é a única da vila que ' +
+        'mantém o poder na noite sem poderes.',
       peso: 3,
       // A escolha é declarada EM VIDA, na passagem: num pass-and-play o morto
       // não recebe mais o aparelho para escolher nada.
@@ -416,15 +482,17 @@ export const ancia: Role = {
     {
       id: 'luto-da-vila',
       nome: 'Luto da Vila',
-      descricao: 'Se a Anciã morrer, todos os jogadores perdem seus poderes durante uma noite.',
+      descricao:
+        'Se você morrer, ninguém usa poder na noite seguinte: nem a vila, nem os lobos. ' +
+        'Ninguém é atacado.',
       peso: 3,
     },
     {
       id: 'heranca-amarga',
       nome: 'Herança Amarga',
       descricao:
-        'Escolhe um jogador à noite e, se a Anciã morrer, todos perdem seus poderes ' +
-        'por uma noite e o escolhido vira Aldeão para sempre.',
+        'Toda noite, escolha uma pessoa. Se você morrer, ninguém usa poder na noite ' +
+        'seguinte, nem os lobos, e a pessoa escolhida vira Aldeão comum para sempre.',
       peso: 3,
       etapa: 'estertores',
     },

@@ -56,7 +56,7 @@ export function ModoScreen({ navigation }: Props) {
                 >
                   <Text
                     style={{
-                      color: escolhido ? cores.garanca : cores.nogueira,
+                      color: escolhido ? cores.garancaTexto : cores.nogueiraTexto,
                       fontSize: 20,
                       marginTop: 2,
                     }}

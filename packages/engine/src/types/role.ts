@@ -103,7 +103,23 @@ export function usosIniciais(limite: UsageLimit): number {
  */
 export function nomeDaCarta(role: Role, variante?: VariantId): string {
   if (!variante) return role.nome;
-  return role.variantes.find((v) => v.id === variante)?.nome ?? role.nome;
+  const v = role.variantes.find((x) => x.id === variante);
+  if (!v) return role.nome;
+
+  /**
+   * O nome é sempre FUNÇÃO + VARIANTE.
+   *
+   * Relatado depois de uma mesa de verdade: ninguém sabe o que é "Boca
+   * Calada". A variante é um ajuste sobre uma função, e o nome dela sozinho
+   * esconde justamente a informação que explica como ela funciona — quem lê
+   * "Xerife Boca Calada" já sabe que prende alguém.
+   *
+   * Quando o nome da variante JÁ começa com o da função ("Vidente dos Ossos",
+   * "Médico de Guerra"), repetir viraria "Vidente Vidente dos Ossos".
+   */
+  return v.nome.toLowerCase().startsWith(role.nome.toLowerCase())
+    ? v.nome
+    : `${role.nome} ${v.nome}`;
 }
 
 /** A descrição curta da carta em jogo — da variante quando houver. */

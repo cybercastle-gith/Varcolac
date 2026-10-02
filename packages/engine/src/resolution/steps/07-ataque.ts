@@ -37,7 +37,7 @@ export const ataque: StepFn = (ctx) => {
       const n = quantosLobosVivos(estado);
       estado = anunciar(
         estado,
-        `Uivos na mata: ${n} ${n === 1 ? 'lobo ainda respira' : 'lobos ainda respiram'}.`,
+        `O Uivador anunciou: ${n === 1 ? 'resta 1 lobo vivo' : `restam ${n} lobos vivos`}.`,
         'role',
       );
       ctx.log.registrar('ataque', {
@@ -50,8 +50,8 @@ export const ataque: StepFn = (ctx) => {
 
     const delatado = acao.alvos[0] ? estado.players.find((p) => p.id === acao.alvos[0]) : ator;
     if (!delatado) continue;
-    estado = anunciar(estado, `Um uivo atravessou a vila: ${delatado.nome} é lobo.`, 'role', {
-      rotulo: 'Um uivo na mata',
+    estado = anunciar(estado, `O Uivador revelou: ${delatado.nome} é lobo.`, 'role', {
+      rotulo: 'Lobo revelado',
     });
 
     switch (ator.varianteId) {
@@ -64,7 +64,7 @@ export const ataque: StepFn = (ctx) => {
        */
       case 'uivo-comprado':
         estado = gravar(estado, delatado.id, { votoDuploNaRodada: estado.rodada });
-        estado = anunciar(estado, `${delatado.nome} fala por dois hoje.`, 'role');
+        estado = anunciar(estado, `${delatado.nome} vota duas vezes hoje.`, 'role');
         ctx.log.registrar('ataque', {
           mensagem: `${ator.nome} delatou ${delatado.nome}, que hoje vota duas vezes.`,
           motivo: 'Variante Uivo Comprado. A matilha não mata dois amanhã: o preço é outro.',

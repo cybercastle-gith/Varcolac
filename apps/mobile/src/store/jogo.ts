@@ -100,6 +100,14 @@ interface JogoStore {
 
   // ── Dia ──
   votos: Record<PlayerId, PlayerId | null>;
+  /**
+   * Quantos votos cada um recebeu, na votação SIMULTÂNEA.
+   *
+   * Vive separado de `votos` porque é outra coisa: `votos` guarda quem apontou
+   * para quem (votação secreta, um por vez), e isto guarda só o placar — que é
+   * tudo que o host consegue ver quando oito pessoas apontam ao mesmo tempo.
+   */
+  votosContados: Record<PlayerId, number>;
 
   // ── Ações de setup ──
   adicionarJogador: (nome: string) => void;
@@ -125,6 +133,8 @@ interface JogoStore {
   proximaPassagem: () => void;
   fecharNoiteAgora: () => void;
   votar: (de: PlayerId, em: PlayerId | null) => void;
+  /** Soma ou tira um voto do placar de alguém, na votação simultânea. */
+  ajustarVoto: (em: PlayerId, delta: number) => void;
   fecharVotacao: () => void;
   seguirParaNoite: () => void;
   encerrar: () => void;
@@ -266,6 +276,7 @@ export const useJogo = create<JogoStore>((set, get) => ({
   indice: 0,
   acoes: [],
   votos: {},
+  votosContados: {},
 
   adicionarJogador: (nome) => {
     const { jogadores, deck, estilo } = get();
@@ -527,13 +538,38 @@ export const useJogo = create<JogoStore>((set, get) => ({
     });
   },
 
+  ajustarVoto: (em, delta) => {
+    const atual = get().votosContados;
+    const novo = Math.max(0, (atual[em] ?? 0) + delta);
+    set({ votosContados: { ...atual, [em]: novo } });
+  },
+
   votar: (de, em) => set({ votos: { ...get().votos, [de]: em } }),
 
   fecharVotacao: () => {
-    const { estado, votos } = get();
+    const { estado, votos, votosContados, config } = get();
     if (!estado) return;
 
-    const { estado: depois } = resolverDia(estado, votos);
+    const { estado: depois } = resolverDia(
+      estado,
+      /*
+       * Simultânea manda a CONTAGEM; secreta manda a lista nominal. São dois
+       * formatos porque são duas situações: numa o host conta dedos levantados,
+       * na outra o aparelho passa de mão em mão e sabe quem apontou o quê.
+       */
+      /*
+       * A contagem só manda quando ELA foi preenchida.
+       *
+       * O modo simultâneo passou a registrar placar em vez de lista nominal,
+       * mas `votar()` continua existindo — o laboratório e os testes de
+       * partida inteira usam. Mandar uma contagem vazia por causa do modo
+       * jogaria fora votos que alguém registrou de verdade, e a partida nunca
+       * lincharia ninguém.
+       */
+      config.votacao === 'simultanea' && Object.values(votosContados).some((n) => n > 0)
+        ? { tipo: 'contagem' as const, contagem: votosContados }
+        : { tipo: 'nominal' as const, votos },
+    );
     const vitoria = verificarVitoria(depois);
 
     set({

@@ -33,7 +33,7 @@ export function ecosDaMorte(
   if (morto.marcas.delataSeMorrer) {
     const alfa = e.players.find((p) => p.id === morto.marcas.delataSeMorrer);
     if (alfa) {
-      e = anunciar(e, `A marca no corpo de ${morto.nome} é de ${alfa.nome}.`, 'role');
+      e = anunciar(e, `Quem converteu ${morto.nome} em lobo foi ${alfa.nome}, o Alfa.`, 'role');
       ecos.push({
         mensagem: `${alfa.nome} foi revelado como Alfa.`,
         motivo: 'Variante Sangue Marcado: o convertido morreu.',
@@ -47,7 +47,7 @@ export function ecosDaMorte(
   );
   if (apostador) {
     e = reviver(e, apostador.id);
-    e = anunciar(e, `${apostador.nome} se levantou de novo.`, 'role');
+    e = anunciar(e, `${apostador.nome} ressuscitou e voltou ao jogo.`, 'role');
     ecos.push({
       mensagem: `${apostador.nome} voltou à vida.`,
       motivo: `Variante Última Carne: ${morto.nome}, o alvo da aposta, morreu.`,

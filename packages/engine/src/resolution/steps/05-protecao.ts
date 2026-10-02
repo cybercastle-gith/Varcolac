@@ -195,7 +195,7 @@ export const protecao: StepFn = (ctx) => {
          * coisa a quem tocou o sino.
          */
         estado = agendar(estado, { kind: 'sem-votacao', naRodada: estado.rodada });
-        estado = anunciar(estado, 'O sino da igreja tocou a noite toda.', 'role');
+        estado = anunciar(estado, 'O Padre tocou o sino: não haverá votação hoje.', 'role');
         ctx.log.registrar('protecao', {
           mensagem: `${ator.nome} tocou o sino: não haverá votação amanhã.`,
           motivo: 'Variante Sino da Igreja. Uma vez por partida.',
@@ -261,9 +261,9 @@ export const protecao: StepFn = (ctx) => {
     if (comoAge === 'medico' && ator.varianteId === 'de-guerra' && acao.alvos.length >= 2) {
       estado = anunciar(
         estado,
-        `${ator.nome} é o Médico. Ele curou duas pessoas esta noite, e por isso está exposto.`,
+        `${ator.nome} é o Médico: protegeu duas pessoas esta noite.`,
         'role',
-        { rotulo: 'O Médico se revelou' },
+        { rotulo: 'Médico revelado' },
       );
       ctx.log.registrar('protecao', {
         mensagem: `${ator.nome} amanheceu revelado.`,

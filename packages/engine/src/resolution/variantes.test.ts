@@ -134,7 +134,7 @@ describe('Alfa: a conversão, que não existia', () => {
       [id('aldeao')]: id('medico'),
       [id('vidente')]: id('medico'),
     });
-    expect(vozes(dia.estado)).toContain('A marca no corpo');
+    expect(vozes(dia.estado)).toContain('o Alfa');
   });
 });
 
@@ -253,9 +253,9 @@ describe('Xerife', () => {
     );
     const n2 = resolverNoite(prepararNoite(n1.estado), noite([], 2));
     const n3 = prepararNoite(n2.estado);
-    expect(vozes(n3)).toContain('A cela se abriu');
+    expect(vozes(n3)).toContain('saiu da prisão');
     // O texto passou a gritar o lado, como a revista do Delegado.
-    expect(vozes(n3)).toContain('é LOBO');
+    expect(vozes(n3)).toContain('é lobo');
   });
 
   it('Xerife de Si Mesmo pode aparecer na própria lista de alvos', () => {
@@ -348,7 +348,7 @@ describe('Uivador', () => {
       noite([acao({ actorId: id('uivador'), etapa: 'ataque', escolha: 'uivar' })]),
     );
     const dito = vozes(r.estado);
-    expect(dito).toContain('2 lobos ainda respiram');
+    expect(dito).toContain('restam 2 lobos vivos');
     expect(dito).not.toContain('Ana');
   });
 
@@ -390,7 +390,7 @@ describe('Lobo', () => {
       noite([acao({ actorId: id('lobo'), etapa: 'ataque', alvos: [id('vidente')] })]),
     );
     expect(quem(n1.estado, 'vidente').status).toBe('vivo');
-    expect(vozes(n1.estado)).toContain('sangue na porta');
+    expect(vozes(n1.estado)).toContain('morre depois da votação');
 
     const dia = resolverDia(n1.estado, {});
     expect(quem(dia.estado, 'vidente').status).toBe('morto');
@@ -663,7 +663,10 @@ describe('as regras que o usuário definiu em 2026-09-26', () => {
       noite([acao({ actorId: id('padre'), etapa: 'ataque', alvos: [id('aldeao')] })]),
     );
     expect(quem(n1.estado, 'aldeao').status).toBe('vivo');
-    expect(quem(n1.estado, 'padre').marcas.virouAldeao).toBe(true);
+    const padre = n1.estado.players.find((p) => p.id === id('padre'))!;
+    expect(padre.marcas.virouAldeao).toBe(true);
+    expect(padre.roleId).toBe('aldeao');
+    expect(padre.marcas.viraCarta?.paraRoleId).toBe('aldeao');
 
     // Virou Aldeão de verdade: na noite seguinte a passagem dele é toque falso.
     const n2 = prepararNoite(n1.estado);
@@ -735,7 +738,10 @@ describe('as regras que o usuário definiu em 2026-09-26', () => {
       objetivosSecretos: { ...estado.objetivosSecretos, [id('coringa')]: 'acusar-lobo' },
     };
     for (let i = 0; i < 4; i += 1) atual = prepararNoite(atual);
-    expect(quem(atual, 'coringa').marcas.virouAldeao).toBe(true);
+    const coringa = atual.players.find((p) => p.id === id('coringa'))!;
+    expect(coringa.marcas.virouAldeao).toBe(true);
+    expect(coringa.roleId).toBe('aldeao');
+    expect(coringa.marcas.viraCarta?.paraRoleId).toBe('aldeao');
 
     const r = verificarVitoria({ ...atual, players: atual.players.map((p) => p) });
     const doCoringa = r.camadas.filter((c) => c.motivo.includes('virou Aldeão'));

@@ -79,6 +79,7 @@ export { roteiroDaNoite, contagemDeLobosVisivel } from './turn/roteiro';
 export type { Passagem, Pergunta, TipoDePergunta } from './turn/roteiro';
 
 // ── Dia ─────────────────────────────────────────────────────────────────────
+export type { Apuracao, VotosContados } from './day/voting';
 export { resolverDia, elegiveisParaVotar, votoTrava, apurar } from './day/voting';
 export type { Votos, DayResult } from './day/voting';
 

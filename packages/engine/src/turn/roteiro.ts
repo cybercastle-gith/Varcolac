@@ -467,7 +467,7 @@ function enunciado(
     medico: 'Quem você protege esta noite?',
     'guarda-costas': 'Quem você protege com a própria vida?',
     xerife: 'Quem você prende esta noite?',
-    taverneiro: 'Quem você embebeda?',
+    taverneiro: 'Quem você embriaga?',
     necromante: 'Quem você traz de volta?',
     padre: 'Anular todas as mortes desta noite?',
     feiticeiro: 'Quem a matilha atravessa esta noite?',
@@ -569,6 +569,69 @@ function perguntarA(estado: GameState, p: Player): Pergunta {
    * é arrumação interna e a resposta certa é o toque falso.
    */
   const escolheNaPrimeiraNoite = (r.id === 'vingador' || r.id === 'ladrao') && estado.rodada === 1;
+
+  /**
+   * O convertido caça — e esta checagem vem ANTES do corte por falta de etapa.
+   *
+   * Era o defeito por trás de "o modo Traição não converte ninguém". A
+   * conversão acontecia certinho e parte dos convertidos nunca agia.
+   *
+   * O modo sorteia QUALQUER UM da vila. Quem caía com carta de ação noturna
+   * (Vidente, Médico) chegava ao bloco de escolha dupla e caçava; quem caía sem
+   * etapa — Aldeão, que é o recheio de todo baralho — batia no corte logo
+   * abaixo e recebia toque falso. Nas noites em que o sorteio pegava um desses,
+   * a matilha secreta simplesmente não mordia, e a mesa concluía, com razão,
+   * que o modo não fazia nada.
+   *
+   * Quem tem carta COM etapa escolhe entre as duas coisas; quem não tem (o
+   * Aldeão) só caça. Nos dois casos a facção vem de `faccaoEfetiva`, que lê a
+   * marca `'convertido'`.
+   */
+  const convertido = estado.objetivosSecretos[p.id] === 'convertido';
+  if (convertido && etapa !== 'ataque' && p.status === 'vivo') {
+    const presas = vivos(estado)
+      .filter((x) => x.id !== p.id && faccaoEfetiva(estado, x) !== 'lobos')
+      .map((x) => x.id);
+
+    if (presas.length > 0) {
+      const alvosProprios = etapa ? alvosValidos(estado, p, r, etapa, varianteAtiva) : [];
+
+      // Sem carta própria para usar (Aldeão convertido), sobra caçar.
+      if (!etapa || alvosProprios.length === 0) {
+        return {
+          // `base` ainda não existe aqui: este bloco precisa vir ANTES do corte
+          // por falta de etapa, e `base` é montado depois dele.
+          playerId: p.id,
+          falsa: false,
+          etapa: 'ataque',
+          titulo: 'Quem a matilha mata?',
+          detalhe: 'Você virou. A fome agora é sua também.',
+          kind: 'atacar',
+          tipo: 'alvo',
+          alvos: presas,
+          opcional: false,
+        };
+      }
+
+      return {
+        playerId: p.id,
+        falsa: false,
+        etapa,
+        titulo: 'O que você faz esta noite?',
+        detalhe: 'Você virou. O poder antigo continua seu, mas a matilha também.',
+        kind: 'atacar',
+        tipo: 'opcao-e-alvo',
+        alvos: presas,
+        alvosPorOpcao: { proprio: alvosProprios, matar: presas },
+        opcoes: [
+          { valor: 'proprio', rotulo: `Usar seu poder de ${r.nome}`, pedeAlvo: true, etapa },
+          { valor: 'matar', rotulo: 'Caçar com a matilha', pedeAlvo: true, etapa: 'ataque' },
+        ],
+        opcional: false,
+      };
+    }
+  }
+
   if (!etapa || (etapa === 'estado-inicial' && !escolheNaPrimeiraNoite)) return toqueFalso;
   /**
    * A etapa `estertores` é reação à morte, não ação da noite — mas quatro
@@ -754,51 +817,6 @@ function perguntarA(estado: GameState, p: Player): Pergunta {
   }
 
   /**
-   * O convertido caça com a matilha, mesmo com carta de vila.
-   *
-   * O Alfa converte e o convertido MANTÉM a habilidade original — um Médico
-   * convertido continua curando. Só que ele também é lobo agora, e a matilha
-   * mata junta: sem esta pergunta ele era um lobo que não podia morder, e a
-   * conversão de um Aldeão não dava à matilha nada além de um voto.
-   *
-   * Vira uma escolha dupla pela mesma razão das roles da matilha: a habilidade
-   * dele e a caçada acontecem em etapas diferentes, e ele só faz uma por noite.
-   */
-  const convertido = estado.objetivosSecretos[p.id] === 'convertido';
-  if (convertido && etapa !== 'ataque') {
-    const presas = vivos(estado)
-      .filter((x) => x.id !== p.id && faccaoEfetiva(estado, x) !== 'lobos')
-      .map((x) => x.id);
-
-    // Sem carta própria para usar (Aldeão convertido), sobra caçar.
-    if (alvos.length === 0) {
-      return {
-        ...base,
-        etapa: 'ataque',
-        titulo: 'Quem a matilha mata?',
-        kind: 'atacar',
-        tipo: 'alvo',
-        alvos: presas,
-        opcional: false,
-      };
-    }
-
-    return {
-      ...base,
-      titulo: 'O que você faz esta noite?',
-      kind: 'atacar',
-      tipo: 'opcao-e-alvo',
-      alvos: presas,
-      alvosPorOpcao: { proprio: alvos, matar: presas },
-      opcoes: [
-        { valor: 'proprio', rotulo: `Usar seu poder de ${r.nome}`, pedeAlvo: true, etapa },
-        { valor: 'matar', rotulo: 'Caçar com a matilha', pedeAlvo: true, etapa: 'ataque' },
-      ],
-      opcional: false,
-    };
-  }
-
-  /**
    * As três roles da matilha que escolhem ENTRE duas habilidades.
    *
    * Regra comum: a habilidade especial substitui a caçada daquela noite, não se
@@ -856,8 +874,24 @@ function perguntarA(estado: GameState, p: Player): Pergunta {
                   // resolvido e o uso é gasto — ver `05-protecao.ts`. Ele NÃO
                   // vale nesta noite: entra em vigor na seguinte.
                   valor: 'esconder',
-                  rotulo: 'Sumir da investigação (vale amanhã)',
-                  pedeAlvo: false,
+                  rotulo:
+                    varianteAtiva === 'sombra-de-alguem'
+                      ? 'Vestir o papel de alguém (vale amanhã)'
+                      : varianteAtiva === 'nome-roubado'
+                        ? 'Vestir o nome de um morto (vale amanhã)'
+                        : 'Sumir da investigação (vale amanhã)',
+                  /**
+                   * Duas das três variantes MIRAM alguém, e a opção pedia alvo
+                   * para nenhuma.
+                   *
+                   * Sombra de Alguém veste o papel de um vivo e Nome Roubado
+                   * veste o nome de um morto — as duas leem `acao.alvos[0]` na
+                   * etapa 5, e o alvo chegava sempre vazio. As duas caíam no
+                   * ramo genérico e viravam o Lobo Sombra base: "não está
+                   * funcionando", exatamente como foi relatado.
+                   */
+                  pedeAlvo:
+                    varianteAtiva === 'sombra-de-alguem' || varianteAtiva === 'nome-roubado',
                   etapa: 'protecao',
                 };
 

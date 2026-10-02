@@ -8,7 +8,7 @@ import { useJogo } from '../../store/jogo';
 import { Botao, Titulo, Rotulo, Pequeno, ItemJogador } from '../../components/ui';
 import { Ambiente } from '../../components/Ambiente';
 import { Aparicao, Revelacao } from '../../components/animacoes';
-import { cores, espaco, tipografia } from '../../theme';
+import { cores, espaco, tipografia, alvoMinimo } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Votacao'>;
 
@@ -20,7 +20,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Votacao'>;
  * aparelho de mão em mão, um voto por vez.
  */
 export function VotacaoScreen({ navigation }: Props) {
-  const { estado, votos, votar, fecharVotacao } = useJogo();
+  const { estado, votos, votar, fecharVotacao, votosContados, ajustarVoto } = useJogo();
   const [indiceSecreto, setIndiceSecreto] = useState(0);
   const [mostrandoEntrega, setMostrandoEntrega] = useState(true);
 
@@ -145,11 +145,11 @@ export function VotacaoScreen({ navigation }: Props) {
                 gap: 4,
               }}
             >
-              <Text style={[tipografia.rotulo, { color: cores.garanca }]}>Por que não</Text>
+              <Text style={[tipografia.rotulo, { color: cores.garancaTexto }]}>Por que não</Text>
               <Text style={[tipografia.corpoSerif, { color: cores.linhoCru }]}>
                 {motivoDoImpedimento}
               </Text>
-              <Pequeno cor={cores.nogueira}>
+              <Pequeno cor={cores.nogueiraTexto}>
                 Ninguém além de você está vendo isto. Abstenha-se e passe adiante.
               </Pequeno>
             </View>
@@ -212,8 +212,20 @@ export function VotacaoScreen({ navigation }: Props) {
     );
   }
 
-  // ── Votação simultânea: o host registra o que a mesa apontou ───────────────
-  const registrados = Object.keys(votos).length;
+  // ── Votação simultânea: o host CONTA os dedos levantados ───────────────────
+  /**
+   * Um placar, e não uma entrevista.
+   *
+   * A tela antiga perguntava, pessoa por pessoa, em quem ela tinha apontado —
+   * oito perguntas para transcrever uma votação que já tinha acontecido na
+   * mesa, em três segundos. Relatado assim: "não precisa contabilizar voto a
+   * voto, é só colocar cada pessoa com um - 0 + e adicionar votos conforme".
+   *
+   * O que se perde está dito no log pelo próprio engine: sem saber quem apontou
+   * para quem, o voto duplo do Uivo Comprado e a anulação mútua do Bobo Acusado
+   * ficam de fora desta apuração.
+   */
+  const totalContado = Object.values(votosContados).reduce((n, v) => n + v, 0);
 
   return (
     <Ambiente clima="dia" tremula={false}>
@@ -221,62 +233,124 @@ export function VotacaoScreen({ navigation }: Props) {
         <Rotulo>Dia {estado.rodada} · votação simultânea</Rotulo>
         <Titulo>Todos apontam na contagem de três.</Titulo>
         <Pequeno>
-          Registre em quem cada um apontou. {registrados} de {elegiveis.podem.length} registrados.
+          Conte os dedos e marque aqui. {totalContado} de {elegiveis.podem.length} votos possíveis.
         </Pequeno>
 
+        {/*
+          Quem NÃO pode votar aparece em destaque, e não numa nota de rodapé.
+
+          A mesa precisa saber disso ANTES de apontar — é o que impede alguém de
+          votar sem poder e o host de contar um dedo a mais. Na votação secreta
+          o motivo é privado; aqui é público por necessidade.
+        */}
         {elegiveis.impedidos.length > 0 && (
-          <View style={{ gap: 2 }}>
+          <View
+            style={{
+              borderLeftWidth: 2,
+              borderLeftColor: cores.garanca,
+              backgroundColor: '#2A1B17',
+              padding: espaco.md,
+              gap: espaco.xs,
+            }}
+          >
+            <Text style={[tipografia.rotulo, { color: cores.garancaTexto }]}>Estes não votam hoje</Text>
             {elegiveis.impedidos.map((i) => (
-              <Pequeno key={i.id} cor={cores.nogueira}>
+              <Text key={i.id} style={[tipografia.pequeno, { color: cores.linhoCru }]}>
                 {nomeDe(i.id)} — {i.motivo}
-              </Pequeno>
+              </Text>
             ))}
           </View>
         )}
 
-        {elegiveis.podem.map((id) => (
-          <View key={id} style={{ gap: espaco.xs }}>
-            <Text style={[tipografia.rotulo, { color: cores.ferrugem }]}>
-              {nomeDe(id)} aponta para
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ flexDirection: 'row', gap: espaco.xs }}>
-                {vivos
-                  .filter((p) => p.id !== id)
-                  .map((p) => {
-                    const ativo = votos[id] === p.id;
-                    return (
-                      <Pressable
-                        key={p.id}
-                        onPress={() => {
-                          void Haptics.selectionAsync();
-                          votar(id, ativo ? null : p.id);
-                        }}
-                        style={{
-                          minHeight: 48,
-                          paddingHorizontal: espaco.md,
-                          justifyContent: 'center',
-                          borderRadius: 4,
-                          borderWidth: 1,
-                          borderColor: ativo ? cores.garanca : '#3E362E',
-                          backgroundColor: ativo ? '#241A17' : 'transparent',
-                        }}
-                      >
-                        <Text
-                          style={[
-                            tipografia.pequeno,
-                            { color: ativo ? cores.linhoCru : cores.ferrugem },
-                          ]}
-                        >
-                          {p.nome}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+        <View style={{ gap: espaco.xs }}>
+          {vivos.map((p) => {
+            const n = votosContados[p.id] ?? 0;
+            return (
+              <View
+                key={p.id}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: espaco.md,
+                  minHeight: alvoMinimo,
+                  borderWidth: 1,
+                  borderColor: n > 0 ? cores.garanca : '#2E2721',
+                  backgroundColor: n > 0 ? '#241A17' : '#1A1613',
+                  borderRadius: 4,
+                  paddingHorizontal: espaco.md,
+                  paddingVertical: espaco.sm,
+                }}
+              >
+                <View
+                  style={{
+                    width: 14,
+                    height: 14,
+                    backgroundColor: p.cor,
+                    borderColor: cores.linhoCru,
+                    borderWidth: 0.25,
+                    transform: [{ rotate: '45deg' }],
+                  }}
+                />
+                <Text style={[tipografia.corpo, { color: cores.folhaDeOuro, flex: 1 }]}>
+                  {p.nome}
+                </Text>
+
+                <Pressable
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    ajustarVoto(p.id, -1);
+                  }}
+                  disabled={n === 0}
+                  hitSlop={8}
+                  style={{
+                    minWidth: 44,
+                    minHeight: 44,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: n === 0 ? 0.3 : 1,
+                  }}
+                >
+                  <Text style={{ color: cores.ferrugem, fontSize: 24 }}>−</Text>
+                </Pressable>
+
+                <Text
+                  style={[
+                    tipografia.interface,
+                    {
+                      color: n > 0 ? cores.linhoCru : cores.nogueiraTexto,
+                      minWidth: 22,
+                      textAlign: 'center',
+                    },
+                  ]}
+                >
+                  {n}
+                </Text>
+
+                <Pressable
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    ajustarVoto(p.id, 1);
+                  }}
+                  hitSlop={8}
+                  style={{
+                    minWidth: 44,
+                    minHeight: 44,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: cores.folhaDeOuro, fontSize: 22 }}>+</Text>
+                </Pressable>
               </View>
-            </ScrollView>
-          </View>
-        ))}
+            );
+          })}
+        </View>
+
+        {totalContado > elegiveis.podem.length && (
+          <Pequeno cor={cores.garancaTexto}>
+            Você contou mais votos do que há gente podendo votar. Confira.
+          </Pequeno>
+        )}
       </ScrollView>
 
       <View style={{ padding: espaco.lg }}>

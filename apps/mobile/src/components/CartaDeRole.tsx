@@ -63,8 +63,6 @@ export function CartaDeRole({
   const variante = varianteId ? r.variantes.find((v) => v.id === varianteId) : undefined;
   const cor = corDaFaccao(roleId);
   const Icone = viva ? IconeDeRoleVivo : IconeDeRole;
-  const nome = variante?.nome ?? r.nome;
-  const descricao = variante?.descricao ?? r.descricaoCurta;
 
   return (
     <View
@@ -131,15 +129,19 @@ export function CartaDeRole({
           gap: espaco.xs,
         }}
       >
-        <Icone roleId={roleId} varianteId={varianteId} tamanho={largura * 0.36} cor={cor} />
+        <Icone roleId={roleId} varianteId={varianteId} tamanho={largura * 0.33} cor={cor} />
 
         {/*
-          O nome encolhe quando é comprido, em vez de sumir.
+          A FUNÇÃO vem primeiro, e grande. A variante vem embaixo.
 
-          "Sobrevivente Invisível" tem 22 caracteres contra os 5 de "Bobo": com
-          um tamanho único, ou o curto fica minúsculo ou o comprido estoura.
-          A escala é por FAIXA e não contínua — três degraus são previsíveis de
-          conferir, uma fórmula contínua dá um tamanho diferente por carta.
+          Relatado depois de uma mesa de verdade: a pessoa lê "Boca Calada" e
+          não faz ideia do que aquilo é — nem sempre ela conhece as 24 funções.
+          A variante é um AJUSTE sobre uma função, e ler o ajuste antes da coisa
+          ajustada é ler a frase de trás para frente.
+
+          Por isso a carta inverteu: nome da função em serifada grande, nome da
+          variante logo abaixo em corpo menor, e as DUAS descrições — primeiro o
+          que a função faz, depois o que esta variante muda.
         */}
         <Text
           numberOfLines={2}
@@ -148,60 +150,69 @@ export function CartaDeRole({
             {
               color: TINTA,
               textAlign: 'center',
-              fontSize: largura * (nome.length > 18 ? 0.082 : nome.length > 12 ? 0.095 : 0.11),
-              lineHeight: largura * (nome.length > 18 ? 0.1 : 0.125),
+              fontSize: largura * (r.nome.length > 12 ? 0.095 : 0.11),
+              lineHeight: largura * 0.125,
             },
           ]}
         >
-          {nome}
+          {r.nome}
         </Text>
 
-        {/*
-          A função de origem, quando a carta é uma variante.
-
-          Era `fontSize: 9` fixo — ilegível numa carta de 200px e perdido numa
-          de 300. E é a informação que responde "isto é um quê?": sem ela,
-          "Boca Calada" não diz a ninguém que é um Xerife.
-        */}
         {variante && (
-          <View style={{ alignItems: 'center', gap: 2 }}>
-            <View style={{ width: largura * 0.18, height: 1, backgroundColor: TINTA_FRACA }} />
-            {/*
-              TINTA, e não a cor da facção.
-
-              `corDaFaccao` é feita para brilhar sobre Fuligem; sobre o papel
-              claro da carta ela vira um borrão dourado ilegível — e esta é
-              justamente a linha que responde "Boca Calada é um quê?". A carta
-              inverte a regra de cor do app inteiro, e este rótulo tinha ficado
-              de fora da inversão.
-            */}
+          <View style={{ alignItems: 'center', gap: 3 }}>
+            <View style={{ width: largura * 0.22, height: 1, backgroundColor: TINTA_FRACA }} />
             <Text
+              numberOfLines={2}
               style={[
-                tipografia.rotulo,
-                { color: TINTA_FRACA, fontSize: Math.max(9, largura * 0.045), letterSpacing: 1.2 },
+                tipografia.nomeDeRole,
+                {
+                  color: cor,
+                  textAlign: 'center',
+                  fontSize: largura * (variante.nome.length > 16 ? 0.058 : 0.07),
+                  lineHeight: largura * 0.08,
+                },
               ]}
             >
-              {r.nome}
+              {variante.nome}
             </Text>
           </View>
         )}
 
-        {/* O bloco elástico: absorve o que sobrar da altura, e só ele rola. */}
-        <View style={{ flex: 1, justifyContent: 'center' }}>
+        <View style={{ flex: 1, justifyContent: 'center', gap: espaco.xs }}>
+          {/* O que a FUNÇÃO faz — a parte que a pessoa talvez não saiba. */}
           <Text
-            numberOfLines={descricao.length > 110 ? 5 : 4}
+            numberOfLines={3}
             style={[
               tipografia.pequeno,
               {
-                color: TINTA_FRACA,
+                color: TINTA,
                 textAlign: 'center',
-                fontSize: largura * (descricao.length > 110 ? 0.046 : 0.053),
-                lineHeight: largura * (descricao.length > 110 ? 0.062 : 0.07),
+                fontSize: largura * 0.05,
+                lineHeight: largura * 0.066,
               },
             ]}
           >
-            {descricao}
+            {r.descricaoCurta}
           </Text>
+
+          {/* O que ESTA variante muda. Só aparece quando há variante. */}
+          {variante && (
+            <Text
+              numberOfLines={4}
+              style={[
+                tipografia.pequeno,
+                {
+                  color: TINTA_FRACA,
+                  textAlign: 'center',
+                  fontStyle: 'italic',
+                  fontSize: largura * 0.044,
+                  lineHeight: largura * 0.058,
+                },
+              ]}
+            >
+              {variante.descricao}
+            </Text>
+          )}
         </View>
       </View>
 
@@ -227,7 +238,7 @@ export function CartaDeRole({
         <Text
           style={[
             tipografia.rotulo,
-            { color: cores.nogueira, fontSize: Math.max(10, largura * 0.05), letterSpacing: 1.5 },
+            { color: cores.nogueiraTexto, fontSize: Math.max(10, largura * 0.05), letterSpacing: 1.5 },
           ]}
         >
           {FACCAO_ESCRITA[r.faccao]}

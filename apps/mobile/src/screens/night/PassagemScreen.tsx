@@ -189,7 +189,7 @@ export function PassagemScreen({ navigation }: Props) {
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: espaco.md }}>
             <Revelacao>
               <View style={{ alignItems: 'center', gap: espaco.md }}>
-                <Text style={{ color: cores.nogueira, fontSize: 28 }}>☽</Text>
+                <Text style={{ color: cores.nogueiraTexto, fontSize: 28 }}>☽</Text>
                 <Rotulo>Passe o aparelho para</Rotulo>
                 <Text style={[tipografia.titulo, { color: cores.linhoCru, fontSize: 38 }]}>
                   {p.nome}
@@ -212,7 +212,7 @@ export function PassagemScreen({ navigation }: Props) {
                 Toque quando estiver com ele
               </Text>
             </Pulso>
-            <Text style={[tipografia.pequeno, { color: cores.nogueira, marginTop: espaco.sm }]}>
+            <Text style={[tipografia.pequeno, { color: cores.nogueiraTexto, marginTop: espaco.sm }]}>
               {indice + 1} de {roteiro.length}
             </Text>
           </View>
@@ -242,7 +242,7 @@ export function PassagemScreen({ navigation }: Props) {
                   </View>
                 )}
 
-                <Pequeno cor={cores.nogueira}>{contagemDeLobosVisivel(estado)}</Pequeno>
+                <Pequeno cor={cores.nogueiraTexto}>{contagemDeLobosVisivel(estado)}</Pequeno>
               </View>
             </Revelacao>
           </SegurarParaRevelar>
@@ -282,7 +282,7 @@ export function PassagemScreen({ navigation }: Props) {
           <SegurarParaRevelar>
             <Revelacao>
               <View style={{ alignItems: 'center', gap: espaco.md }}>
-                <Rotulo cor={cores.garanca}>Sua carta mudou</Rotulo>
+                <Rotulo cor={cores.garancaTexto}>Sua carta mudou</Rotulo>
                 <Text
                   style={[
                     tipografia.corpoSerif,
@@ -297,7 +297,7 @@ export function PassagemScreen({ navigation }: Props) {
                 <Text
                   style={[
                     tipografia.pequeno,
-                    { color: cores.nogueira, textDecorationLine: 'line-through' },
+                    { color: cores.nogueiraTexto, textDecorationLine: 'line-through' },
                   ]}
                 >
                   {nomeDaCarta(antes, t.deVarianteId)}
@@ -306,7 +306,7 @@ export function PassagemScreen({ navigation }: Props) {
                 <Pequeno cor={cores.ferrugem}>
                   {apresentacaoDaCarta(t.paraRoleId, t.paraVarianteId).atmosfera}
                 </Pequeno>
-                <Pequeno cor={cores.nogueira}>{depois.descricaoCurta}</Pequeno>
+                <Pequeno cor={cores.nogueiraTexto}>{depois.descricaoCurta}</Pequeno>
               </View>
             </Revelacao>
           </SegurarParaRevelar>
@@ -335,7 +335,7 @@ export function PassagemScreen({ navigation }: Props) {
           <Revelacao>
             <View style={{ alignItems: 'center', gap: espaco.md }}>
               <IconeDeRole roleId={p.roleId} varianteId={p.varianteId} tamanho={64} cor={cor} />
-              <Rotulo cor={resposta.adiada ? cores.nogueira : cores.cera}>
+              <Rotulo cor={resposta.adiada ? cores.nogueiraTexto : cores.cera}>
                 {resposta.adiada ? 'Ainda não' : 'Você viu'}
               </Rotulo>
               {/*
@@ -374,7 +374,7 @@ export function PassagemScreen({ navigation }: Props) {
         </View>
 
         <View style={{ padding: espaco.lg, gap: espaco.sm }}>
-          <Pequeno cor={cores.nogueira}>Guarde para você. Passe o aparelho adiante.</Pequeno>
+          <Pequeno cor={cores.nogueiraTexto}>Guarde para você. Passe o aparelho adiante.</Pequeno>
           <Botao onPress={seguir}>Passar adiante</Botao>
         </View>
       </Ambiente>
@@ -392,6 +392,15 @@ export function PassagemScreen({ navigation }: Props) {
    */
   const vestido = pergunta.falsa ? null : apresentacaoDaCarta(p.roleId, p.varianteId);
   const acento = vestido ? CORES_DE_ACENTO[vestido.acento] : cores.nogueira;
+  // Em TEXTO, o acento precisa do tom claro: índigo e garança somem no escuro.
+  const acentoTexto =
+    acento === cores.indigo
+      ? cores.indigoTexto
+      : acento === cores.garanca
+        ? cores.garancaTexto
+        : acento === cores.nogueira
+          ? cores.nogueiraTexto
+          : acento;
   /*
    * `origem: 'app'` é o que o app conta SOBRE você; o resto é o que você viu.
    * É a única marca que distingue as duas coisas no `InfoEntry`.
@@ -463,7 +472,7 @@ export function PassagemScreen({ navigation }: Props) {
                 escolheu Boca Calada no setup, três noites antes. O toque falso
                 continua mostrando só o nome, porque ele não pode entregar nada.
               */}
-              <Rotulo cor={pergunta.falsa ? cores.nogueira : acento}>
+              <Rotulo cor={pergunta.falsa ? cores.nogueiraTexto : acentoTexto}>
                 {pergunta.falsa ? p.nome : nomeDaCarta(role(p.roleId), p.varianteId)}
               </Rotulo>
               <Text style={[tipografia.subtitulo, { color: cores.linhoCru }]}>
@@ -522,7 +531,7 @@ export function PassagemScreen({ navigation }: Props) {
                 gap: 4,
               }}
             >
-              <Text style={[tipografia.rotulo, { color: cores.garanca }]}>Por que não</Text>
+              <Text style={[tipografia.rotulo, { color: cores.garancaTexto }]}>Por que não</Text>
               <Text style={[tipografia.corpoSerif, { color: cores.linhoCru }]}>
                 {pergunta.aviso}
               </Text>
@@ -679,7 +688,7 @@ export function PassagemScreen({ navigation }: Props) {
                         // Mola: o losango é a RESPOSTA ao dedo, não conteúdo
                         // que chegou. Sem ela a escolha pisca e não tem peso.
                         <Surge>
-                          <Text style={{ color: acento, fontSize: 15 }}>◆</Text>
+                          <Text style={{ color: acentoTexto, fontSize: 15 }}>◆</Text>
                         </Surge>
                       ) : undefined
                     }
@@ -702,9 +711,9 @@ export function PassagemScreen({ navigation }: Props) {
             }}
           >
             <Pulso>
-              <Text style={{ color: cores.nogueira, fontSize: 40 }}>☽</Text>
+              <Text style={{ color: cores.nogueiraTexto, fontSize: 40 }}>☽</Text>
             </Pulso>
-            <Pequeno cor={cores.nogueira}>A vila dorme.</Pequeno>
+            <Pequeno cor={cores.nogueiraTexto}>A vila dorme.</Pequeno>
           </View>
         )}
       </ScrollView>
@@ -734,7 +743,7 @@ export function PassagemScreen({ navigation }: Props) {
             },
           ]}
         >
-          <Text style={[tipografia.rotulo, { color: cores.nogueira, fontSize: 10 }]}>
+          <Text style={[tipografia.rotulo, { color: cores.nogueiraTexto, fontSize: 10 }]}>
             ◈ ver minha carta
           </Text>
         </Pressable>
@@ -766,7 +775,7 @@ export function PassagemScreen({ navigation }: Props) {
           "Confirmar" é o verbo de um formulário, e era o mesmo nas 97 cartas.
         */}
         {confirmando && (
-          <Text style={[tipografia.rotulo, { color: cores.garanca, textAlign: 'center' }]}>
+          <Text style={[tipografia.rotulo, { color: cores.garancaTexto, textAlign: 'center' }]}>
             Isto não tem volta. Toque de novo para confirmar.
           </Text>
         )}

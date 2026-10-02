@@ -52,9 +52,9 @@ export function ExecucaoScreen({ navigation }: Props) {
 
         {!votacao?.linchadoId ? (
           <>
-            <Titulo>A corda ficou vazia.</Titulo>
+            <Titulo>Ninguém foi condenado.</Titulo>
             <Pequeno cor={cores.ferrugem}>
-              {votacao?.empate ? 'A vila empatou e não decidiu nada.' : 'Ninguém foi condenado.'}
+              {votacao?.empate ? 'A votação empatou.' : 'Não houve condenação nesta votação.'}
             </Pequeno>
           </>
         ) : (
@@ -62,7 +62,7 @@ export function ExecucaoScreen({ navigation }: Props) {
             {executados.map((p, i) => (
               <Revelacao key={p.id} atraso={i * 320}>
                 <View style={{ alignItems: 'center', gap: 6 }}>
-                  <Text style={{ color: cores.sangueSeco, fontSize: 26 }}>✝</Text>
+                  <Text style={{ color: cores.sangueSecoTexto, fontSize: 26 }}>✝</Text>
                   <Text style={[tipografia.titulo, { color: cores.linhoCru }]}>{p.nome}</Text>
                   {estado.config.revelarRoleAoMorrer && (
                     <>

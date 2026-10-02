@@ -123,7 +123,7 @@ export const bloqueio: StepFn = (ctx) => {
             kind: 'visao-atrasada',
             naRodada: amanha + 1,
             paraId: alvo,
-            texto: 'Você bebeu demais: sua ação da noite passada não teve efeito.',
+            texto: 'Você estava embriagado: seu poder não funcionou na noite passada.',
           });
           extra = ' Ele só vai descobrir depois de amanhã.';
           break;

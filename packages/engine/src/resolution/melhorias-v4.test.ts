@@ -104,7 +104,7 @@ describe('Uivador', () => {
     );
     // Ninguém morre: o uivo substituiu a caçada dele, e o outro lobo não agiu.
     expect(r.estado.players.filter((x) => x.status === 'morto')).toHaveLength(0);
-    expect(vozes(r.estado)).toContain('uivo');
+    expect(vozes(r.estado)).toContain('Uivador');
   });
 });
 
@@ -189,7 +189,7 @@ describe('Testemunha da Cela', () => {
     );
     const n2 = prepararNoite(n1.estado);
     // O anúncio sai no começo da noite 2, e o Amanhecer do dia 2 o mostra.
-    expect(vozes(n2)).toContain('cela');
+    expect(vozes(n2)).toContain('saiu da prisão');
     expect(n2.anuncios.some((a) => a.rodada === 2 && a.destaque)).toBe(true);
   });
 });
@@ -264,7 +264,7 @@ describe('Vila Amaldiçoada', () => {
     const rng = criarRng('maldicao');
     const comPrazo = ganchos.aoCriarPartida!(estado, rng);
     const manha = ganchos.aoAmanhecer!({ ...comPrazo, rodada: 1 }, rng);
-    expect(vozes(manha)).toMatch(/Restam \d+ noites|Resta UMA noite/);
+    expect(vozes(manha)).toMatch(/Faltam \d+ noites|Falta 1 noite/);
   });
 });
 
@@ -333,7 +333,9 @@ describe('Incorporação', () => {
     );
     // Decisão do usuário em 2026-09-28: incorporar é absorver, não ressuscitar.
     expect(quem(n2.estado, id('vidente')).status).toBe('morto');
-    expect(quem(n2.estado, id('necromante')).marcas.poderDe).toBe('vidente');
+    const necro = quem(n2.estado, id('necromante'));
+    expect(necro.roleId).toBe('vidente');
+    expect(necro.marcas.viraCarta?.paraRoleId).toBe('vidente');
 
     const n3 = prepararNoite(n2.estado);
     const p = perg(n3, id('necromante'));

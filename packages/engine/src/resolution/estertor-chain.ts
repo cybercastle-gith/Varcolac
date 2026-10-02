@@ -175,9 +175,9 @@ export function dispararEstertores(
           estado = gravar(estado, id, { mortoVivo: true, semPoder: true });
           estado = anunciar(
             estado,
-            `${morto.nome} caiu — e levantou. Continua entre vocês, calado no que importa.`,
+            `${morto.nome} morreu, mas continua no jogo como morto-vivo: pode falar, mas não vota nem usa poder.`,
             'role',
-            { rotulo: 'Não terminou' },
+            { rotulo: 'Morto-vivo' },
           );
           registros.push({
             mensagem: `${morto.nome} virou morto-vivo.`,
@@ -191,7 +191,7 @@ export function dispararEstertores(
         }
 
         estado = gravar(estado, id, { mortoVivo: true });
-        estado = anunciar(estado, `${morto.nome} caiu de novo. Desta vez ficou.`, 'role');
+        estado = anunciar(estado, `${morto.nome} morreu de novo e saiu do jogo.`, 'role');
         registros.push({
           mensagem: `${morto.nome} virou morto-vivo.`,
           motivo: 'Variante Morto-Vivo: fala à mesa, mas não mata, não vota e não age.',
@@ -327,7 +327,7 @@ export function dispararEstertores(
           });
           estado = anunciar(
             estado,
-            'Amanhã à noite, a vila não terá forças. Quase ninguém.',
+            'A Anciã morreu: na próxima noite, ninguém da vila usa poder, exceto uma pessoa.',
             'role',
           );
           registros.push({
@@ -351,7 +351,7 @@ export function dispararEstertores(
           estado = agendar(estado, { kind: 'poderes-suspensos', naRodada: amanha, todos: true });
           estado = anunciar(
             estado,
-            'Amanhã à noite ninguém terá forças. Nem a vila, nem o que caça nela.',
+            'A Anciã morreu: na próxima noite, ninguém usa poder, nem os lobos.',
             'role',
           );
           registros.push({
@@ -390,12 +390,12 @@ export function dispararEstertores(
           estado = escolhido
             ? anunciar(
                 estado,
-                `A Anciã levou o poder de ${nomeDe(estado, escolhido)} com ela. ` +
+                `A Anciã morreu e tirou o poder de ${nomeDe(estado, escolhido)}. ` +
                   `${nomeDe(estado, escolhido)} é um Aldeão comum a partir de agora.`,
                 'role',
-                { rotulo: 'Uma carta virou cinza' },
+                { rotulo: 'Perdeu a função' },
               )
-            : anunciar(estado, 'A Anciã se foi sem levar ninguém com ela.', 'role');
+            : anunciar(estado, 'A Anciã morreu sem escolher ninguém.', 'role');
           registros.push({
             mensagem: escolhido
               ? `${estado.players.find((x) => x.id === escolhido)?.nome ?? '?'} virou Aldeão para sempre.`
@@ -409,7 +409,7 @@ export function dispararEstertores(
 
         default:
           estado = agendar(estado, { kind: 'poderes-suspensos', naRodada: amanha });
-          estado = anunciar(estado, 'Amanhã à noite, a vila não terá forças.', 'role');
+          estado = anunciar(estado, 'A Anciã morreu: na próxima noite, ninguém da vila usa poder.', 'role');
           registros.push({
             mensagem: `${morto.nome} era a Anciã — a vila perde todos os poderes por uma noite.`,
             motivo: 'Vale para morte por qualquer causa, inclusive linchamento.',

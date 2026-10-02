@@ -2195,8 +2195,247 @@ carta foi reescrita junto.
 **Estado final:** `pnpm -r typecheck` limpo · **259 testes do engine + 15 do
 app**.
 
+### 2026-10-02 — MELHORIAS V5: depois de uma mesa de verdade
+
+#### O modo Traição: a conversão acontecia e o convertido não agia
+
+O relato foi "não converte ninguém, problema grave de engine". A conversão
+funcionava — o gancho `aoAmanhecer` marca `'convertido'` certinho, e há teste
+provando isso tanto no engine quanto pelo caminho do app.
+
+**O defeito era no roteiro.** `perguntarA` devolve toque falso logo no começo
+para quem não tem etapa noturna, e a checagem do convertido vinha DEPOIS desse
+corte. O modo sorteia qualquer um da vila: quando caía num Médico ou numa
+Vidente, ele chegava ao bloco de escolha dupla e caçava; quando caía num Aldeão
+— o recheio de todo baralho — batia no corte e recebia toque falso. Nas noites
+em que o sorteio pegava um desses, a matilha secreta simplesmente não mordia.
+
+> **Ordem importa em `perguntarA`.** Qualquer regra que DÊ uma ação a quem não
+> tem etapa própria precisa vir antes do `if (!etapa) return toqueFalso`.
+
+#### Lobo Sombra: duas variantes miravam alguém e a opção não pedia alvo
+
+`Sombra de Alguém` veste o papel de um vivo e `Nome Roubado` veste o nome de um
+morto — as duas leem `acao.alvos[0]` na etapa 5, e a opção `esconder` tinha
+`pedeAlvo: false` para as três variantes. O alvo chegava vazio, as duas caíam no
+ramo genérico e viravam o Lobo Sombra base.
+
+#### A carta mostra a FUNÇÃO primeiro
+
+Relatado: a pessoa lê "Boca Calada" e não faz ideia do que aquilo é. A variante
+é um AJUSTE sobre uma função, e ler o ajuste antes da coisa ajustada é ler a
+frase de trás para frente. A carta agora traz o nome da função grande, a
+variante abaixo, e as DUAS descrições — o que a função faz e o que a variante
+muda.
+
+`nomeDaCarta` passou a devolver **"Xerife Boca Calada"**, com uma guarda para
+não produzir "Vidente Vidente dos Ossos" quando o nome da variante já começa com
+o da função.
+
+#### Votação simultânea: placar em vez de entrevista
+
+A tela perguntava, pessoa por pessoa, em quem ela tinha apontado — oito
+perguntas para transcrever uma votação que levou três segundos na mesa. Virou um
+`− N +` por jogador.
+
+`resolverDia` passou a aceitar dois formatos (`Apuracao`): `nominal` (quem
+apontou para quem, usado na votação secreta) e `contagem` (só o placar). **O que
+a contagem perde** é a identidade do votante, e com ela o voto duplo do Uivo
+Comprado e a anulação mútua do Bobo Acusado — o engine registra isso no log em
+vez de fingir que aplicou.
+
+Quem não pode votar aparece em DESTAQUE nesta tela, e não em nota de rodapé: na
+votação simultânea a informação é pública por necessidade, senão alguém vota sem
+poder e o host conta um dedo a mais.
+
+#### Outras
+
+- **Eventos vêm desligados por padrão** (decisão do usuário). Voltam quando
+  forem revistos — três deles ainda são anunciados sem fazer nada.
+- **Detetive Obsessivo**: a terceira leitura mostra o que o alvo FEZ na noite
+  passada, e não em quem ele votou. Voto é público; pagar três noites de
+  vigilância para saber o que a mesa inteira viu é não ter terceira leitura.
+
+**Estado final:** `pnpm -r typecheck` limpo · **273 testes do engine + 16 do
+app**.
+
+---
+
+## PRÓXIMOS PASSOS, declarados pelo usuário em 2026-10-02
+
+Não comece nenhum destes sem falar com ele. Estão aqui para não se perderem.
+
+1. **Modo história.** Um RPG curto em que o mestre é o próprio celular.
+   Possivelmente integrado a uma IA. É o próximo passo grande.
+2. **Acabar com o tempo morto.** Hoje um joga e oito esperam sem fazer nada —
+   e, como o jogo é novo, cada passagem demora. A mesa se distrai e perde a
+   imersão. Precisa de um modo em que quem espera tenha o que fazer.
+3. **Um nome melhor.** "Vârcolac" é difícil de ler e de dizer; "Werewolf" já
+   existe. Decisão pendente.
+
 <!--
   PRÓXIMA SESSÃO: acrescente seu bloco aqui embaixo, no mesmo formato.
   Não apague nada acima. Se algo virou mentira, escreva "SUPERADO em <data>:" na
   linha antiga e a verdade nova logo abaixo.
 -->
+
+### 2026-10-02 (II) — revisão de português e clareza de todas as funções
+
+#### O pedido, e a correção de rumo no meio
+
+"Uma pessoa deve ler a função e entender claramente como ela funciona." Propus
+uma frase de clima misteriosa em cima de cada regra. **O usuário recusou:**
+*"use você, mas não precisa de frase de efeito não, seja direto e reto, isso até
+nos eventos que acontecem de manhã — ao invés de 'tal pessoa levantou da cova',
+falar que ela ressuscitou e voltou ao jogo"*.
+
+> **Regra de texto do projeto, a partir de agora:** segunda pessoa ("você"),
+> direto, sem metáfora, sem frase de efeito. O texto diz o que acontece no jogo.
+> "Função", nunca "role" ou "papel". "Embriagar", não "embebedar". Anúncio
+> público nunca presume gênero de quem joga ("Ana saiu da prisão: é lobo", e
+> não "Ele é lobo").
+
+#### O que mudou
+
+- **As 24 funções e as 72 variantes** (`data/roles/*.ts`) reescritas.
+  `descricaoCurta` = uma frase que basta sozinha (aparece no setup e na
+  pergunta da noite). `descricaoLonga` = a regra inteira, com as exceções que
+  importam na mesa (aparece na Biblioteca e no lembrete da passagem).
+  `descricao` de variante = o que ela muda, legível sem a base, porque a
+  pergunta da noite mostra só ela.
+- **Os anúncios da manhã** (etapas 3, 4, 5, 7, 8, 10, 11, `_mortes`,
+  `night-pipeline`, `estertor-chain`, `voting`, `modes`) e os **rótulos** em
+  destaque ("Uma carta virou cinza" → "Perdeu a função", "Alguém voltou" →
+  "Ressurreição"...).
+- **Eventos** (`data/events/`): a `narracao` agora diz o efeito ("Lua cheia: os
+  lobos matam duas pessoas na próxima noite"), a `descricao` dá o detalhe.
+- **Bug de texto**: Delação e o pesadelo do fantasma imprimiam
+  `${role.faccao}` cru — saía "Fulano é lobos" / "é solitario". Agora mapeia
+  para "lobo" / "da vila" / "solitário".
+- **Biblioteca**: removida a linha "Age na etapa: informacao" — jargão interno
+  na tela do jogador. A regra escrita já diz quando a função age.
+- `Ninguém morreu. / Isso é pior do que parece.` e `A corda ficou vazia.`
+  viraram frases diretas.
+
+#### Textos que MENTIAM sobre o engine (achados ao conferir regra por regra)
+
+Cada texto foi escrito lendo o código da etapa, não a descrição antiga. Os que
+estavam errados:
+
+- **Alfa**: dizia "o convertido mantém a própria role". Desde 2026-09-28 ele
+  vira **Lobo comum** (`07-ataque.ts`).
+- **Lobo Sombra**: dizia "na noite seguinte, a matilha não mata". **Esse custo
+  não existe no engine** — não há efeito agendado nenhum. Removido do texto.
+  *Se o usuário quiser o custo, é mecânica nova, não texto.*
+- **Caçador Armadilha**: dizia "o tiro só dispara se ele morrer". Na verdade
+  ele **não morre** quando atacado à noite; quem morre é o nome armado
+  (`08-resolucao-mortes.ts`, regra do usuário de 2026-09-26).
+- **Caçador e Carniçal base**: o alvo é **marcado à noite, em vida**, e não
+  escolhido ao morrer. Se não marcou ninguém, vai o primeiro vivo da lista
+  (`candidatos[0]`) — o texto diz "o app escolhe por você".
+- **Necromante base**: alcança qualquer morto de rodadas anteriores
+  (`mortoNaRodada < rodada`), não "só a noite anterior". A Última Vela alcança
+  inclusive quem morreu na mesma noite.
+- **Herdeiro**: herda a carta inteira, **inclusive o lado** — o texto antigo
+  não avisava que herdar um lobo morto faz de você lobo.
+- **Delegado**: revela a facção em público, com um uso a cada 4 jogadores. O
+  texto dizia "se tem poder, mas não a facção" (regra de antes de 09-27).
+- **Obsessivo**: a 3ª leitura é o que o alvo fez, não em quem votou (V5).
+- **Poção Compartilhada**: ela escolhe UM alvo; o segundo é sorteado. O texto
+  dizia que os dois eram às cegas.
+- **Sangue Derramado**: não leva ninguém junto (o ramo faz `continue`).
+- **Anciã base × Luto da Vila** tinham a mesma descrição. Base: só a vila perde
+  os poderes. Luto da Vila e Herança Amarga: **todos**, inclusive os lobos
+  (`todos: true`).
+
+#### O que ficou para trás
+
+- **As perguntas da noite** (`enunciado` em `turn/roteiro.ts`) e os rótulos das
+  opções não foram revisados, exceto "Quem você embebeda?". Estão razoavelmente
+  diretos, mas não passaram pelo mesmo crivo.
+- **Eventos com descrição ambígua**: Motim ("os aldeões" = cartas de Aldeão ou
+  a vila toda?) e Caça às Bruxas. Mantive o sentido sem conferir o código —
+  os eventos estão desligados por padrão e três deles não fazem nada (V5).
+- `Pequeno` com "peso N" na Biblioteca continua — é informação de balanceamento
+  para o host, decidi não mexer sem perguntar.
+- O agravamento `frio` da Vila Amaldiçoada não tem efeito; o texto agora diz
+  "Nada mudou esta noite." em vez de fingir que algo aconteceu.
+
+**Estado final:** `pnpm -r typecheck` limpo · **273 testes do engine + 16 do
+app**. Dez asserções de teste comparavam os textos antigos palavra por palavra e
+foram atualizadas para os novos — nenhuma lógica mudou. Conferido na
+Biblioteca pelo `dev:web`.
+
+### 2026-10-02 (III) — toda transformação troca a CARTA, e o contraste do texto
+
+#### Regra do usuário: quem se transforma vira a carta nova
+
+*"Ao virar da matilha no modo Traição, você vira a role de lobo — isso acontece
+com todas as roles de transformação. O ícone e a descrição mudam, e tem uma
+tela especial para isso que deve ser usada."*
+
+A tela especial é a de "sua carta mudou" (`etapa === 'trocou'` na
+`PassagemScreen`), disparada pela marca `viraCarta`. **Só `trocarCarta`
+(`turn/troca-de-carta.ts`) grava essa marca.** Varri todo lugar que muda a
+carta de alguém; não passavam por ele:
+
+| Mecânica | Antes | Agora |
+|---|---|---|
+| Modo Traição (conversão) | só a marca `'convertido'`; a carta continuava "Médico" | vira **Lobo** via `trocarCarta` |
+| Necromante Incorporação | `marcas.poderDe`; carta de Necromante na mão | vira a carta do morto, **com o lado dela** |
+| Padre Exorcista (errou) | só `virouAldeao` | vira Aldeão via `trocarCarta` |
+| Bobo da Forca (ninguém votou) | só `virouAldeao` | idem |
+| Coringa Missão Sem Volta | só `virouAldeao` | idem |
+| Sangue Novo (prazo venceu) | montava `viraCarta` à mão | `trocarCarta` |
+
+Já estavam certos: Alfa, Herdeiro, Cova Aberta, Herança Amarga, Ladrão (as
+três formas de estado inicial), Troca com Mortos, Bobo Desesperado.
+
+> **Regra:** mudar `roleId` de alguém no meio da partida É `trocarCarta`. Uma
+> marca sozinha (`virouAldeao`, `poderDe`) deixa a carta antiga na mão e o
+> jogador sem aviso. `virouAldeao` continua sendo gravada JUNTO, porque a
+> checagem de vitória e o `semPoder` a leem.
+
+**Exceções que ficaram de propósito:**
+- **Sombra de Alguém** usa `poderDe` por UMA noite. É vestir, não virar.
+- O `aoCriarPartida` do Traição troca lobo por Aldeão **antes** da partida, e
+  a pessoa já recebe a carta certa na distribuição.
+
+**Mudança de regra embutida:** a Incorporação mudava só o poder e mantinha a
+facção (decisão de 2026-09-28). Agora, como a carta inteira muda, incorporar um
+lobo faz o Necromante virar lobo. O texto da carta foi atualizado para dizer
+isso. *Se o usuário quiser manter o lado, precisa de uma marca de facção à
+parte, e não de voltar ao `poderDe`.*
+
+O convertido do Traição continua com a marca `'convertido'` em
+`objetivosSecretos`: é ela que o modo usa para contar e parar de converter.
+
+`night-pipeline.ts`: os prazos vencidos (Sangue Novo, Missão Sem Volta) eram
+aplicados dentro de um `players.map`, onde não dá para chamar `trocarCarta`.
+Viraram um laço sobre um `GameState` temporário.
+
+#### Contraste do texto
+
+*"Faça a cor dos textos coloridos terem contraste com o fundo, às vezes nem dá
+pra ver."* Medido contra a fuligem `#14100D` e o fundo de cartão `#2A221C`:
+nogueira 2,9:1, garança 3,3:1, sangue seco 1,4:1, índigo 1,3:1. O mínimo é
+4,5:1.
+
+Criados em `theme/colors.ts` os tons de texto `nogueiraTexto`,
+`garancaTexto`, `sangueSecoTexto` e `indigoTexto`: mesmo matiz, só mais
+claros, todos acima de 4,8:1 nos dois fundos. Trocados os 35 usos diretos de
+texto (`color:` e `cor=` em `Pequeno`/`Rotulo`/`Titulo`) e os indiretos
+(ternários e o `acento` da Passagem e o índice da Revisão, que agora têm uma
+versão `...Texto`).
+
+> **Regra:** em TEXTO, nunca use `nogueira`, `garanca`, `sangueSeco` ou
+> `indigo` direto. Use o tom `...Texto`. As cores originais continuam para
+> borda, fundo e ícone.
+
+Não verificado: o texto dos botões sobre fundo garança e sangue seco (`ui.tsx`,
+`tom`). A cor do texto do botão é outra coisa; vale medir.
+
+**Estado final:** typecheck limpo · **274 testes do engine + 16 do app**. Três
+testes procuravam o jogador pela carta antiga (`quem(estado, 'padre')`) e
+passaram a procurar pelo id, conferindo também a carta nova. Um teste novo
+garante que o convertido do Traição vira Lobo e recebe a tela.

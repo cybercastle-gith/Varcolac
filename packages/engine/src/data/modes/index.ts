@@ -4,6 +4,7 @@ import { vivos } from '../../types/game-state';
 import type { Rng } from '../../utils/rng';
 import { role } from '../roles/index';
 import { anunciar } from '../../resolution/steps/_helpers';
+import { trocarCarta } from '../../turn/troca-de-carta';
 
 /**
  * Modos mudam REGRAS, não composição — composição é assunto do baralho.
@@ -28,11 +29,11 @@ export interface ModeHooks {
 
 /** Agravamentos da Vila Amaldiçoada, sorteados um por noite. */
 export const AGRAVAMENTOS: readonly { id: string; texto: string }[] = [
-  { id: 'poder-perdido', texto: 'Um poder da vila apagou esta noite.' },
-  { id: 'ataque-extra', texto: 'A matilha ganhou um ataque.' },
-  { id: 'tempo-curto', texto: 'O tempo de discussão encolheu.' },
-  { id: 'silencio', texto: 'Alguém amanheceu sem voz.' },
-  { id: 'frio', texto: 'O frio chegou cedo. Ninguém dorme direito.' },
+  { id: 'poder-perdido', texto: 'Um poder da vila não funcionou esta noite.' },
+  { id: 'ataque-extra', texto: 'A matilha ganhou um ataque a mais.' },
+  { id: 'tempo-curto', texto: 'O tempo de discussão ficou menor.' },
+  { id: 'silencio', texto: 'Uma pessoa não pode falar hoje.' },
+  { id: 'frio', texto: 'Nada mudou esta noite.' },
 ];
 
 const classico: ModeHooks = {
@@ -74,8 +75,14 @@ const traicao: ModeHooks = {
   }),
 
   aoAmanhecer: (estado, rng) => {
-    // O convertido MANTÉM a própria role: um Médico convertido continua curando.
-    // Por isso a conversão mexe na facção, não na habilidade.
+    /*
+     * O convertido VIRA a carta de Lobo — ícone, descrição e tudo.
+     *
+     * Antes ele mantinha a própria carta e só mudava de lado por uma marca: na
+     * tela continuava "Médico", e a tela de "sua carta mudou" nunca aparecia.
+     * Decisão do usuário em 2026-10-02: toda transformação troca a carta, como
+     * a do Alfa, e passa por `trocarCarta` para o jogador ver a tela especial.
+     */
     const jaConvertidos = Object.values(estado.objetivosSecretos).filter(
       (o) => o === 'convertido',
     ).length;
@@ -88,12 +95,17 @@ const traicao: ModeHooks = {
       return estado;
     }
     const convertido = rng.pick(candidatos);
+    const virado = trocarCarta(estado, convertido.id, {
+      roleId: 'lobo',
+      usos: Infinity,
+      motivo: 'A matilha secreta pegou você esta noite. Agora você é Lobo e caça com ela.',
+    });
     return anunciar(
       {
-        ...estado,
-        objetivosSecretos: { ...estado.objetivosSecretos, [convertido.id]: 'convertido' },
+        ...virado,
+        objetivosSecretos: { ...virado.objetivosSecretos, [convertido.id]: 'convertido' },
       },
-      'Alguém virou esta noite. Ninguém sabe quem.',
+      'Alguém da vila foi convertido em lobo esta noite. Ninguém sabe quem.',
       'modo',
     );
   },
@@ -121,8 +133,8 @@ const vilaAmaldicoada: ModeHooks = {
     const prazo = noitesDaMaldicao(estado.players.length);
     return anunciar(
       { ...estado, prazoDaMaldicao: prazo },
-      `A maldição tem prazo: ${prazo} noites. Se os lobos continuarem de pé depois da ` +
-        `noite ${prazo}, a vila inteira se perde.`,
+      `A maldição tem prazo de ${prazo} noites. Se ainda houver lobos vivos depois da ` +
+        `noite ${prazo}, a vila perde.`,
       'modo',
       { rotulo: 'O prazo da maldição' },
     );
@@ -144,14 +156,14 @@ const vilaAmaldicoada: ModeHooks = {
       const faltam = prazo - estado.rodada;
       e =
         faltam <= 0
-          ? anunciar(e, 'Esta é a última noite. Depois dela não há vila.', 'modo', {
-              rotulo: 'A última noite',
+          ? anunciar(e, 'Esta é a última noite do prazo: se os lobos sobreviverem a ela, a vila perde.', 'modo', {
+              rotulo: 'Última noite',
             })
           : anunciar(
               e,
               faltam === 1
-                ? 'Resta UMA noite antes de a maldição se fechar.'
-                : `Restam ${faltam} noites antes de a maldição se fechar.`,
+                ? 'Falta 1 noite para o fim do prazo da maldição.'
+                : `Faltam ${faltam} noites para o fim do prazo da maldição.`,
               'modo',
             );
     }

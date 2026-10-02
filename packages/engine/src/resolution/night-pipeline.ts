@@ -7,6 +7,7 @@ import { ETAPAS } from './steps/index';
 import { retomarRng, type Rng } from '../utils/rng';
 import { leituraDeFaccao } from '../turn/leitura';
 import { MISSOES_POR_ID, prazoEmRodadas } from '../data/missions';
+import { trocarCarta } from '../turn/troca-de-carta';
 
 /**
  * Contexto que atravessa as 12 etapas. Cada etapa recebe o contexto, devolve um
@@ -181,34 +182,33 @@ export function prepararNoite(estado: GameState): GameState {
    * vitória consulta.
    */
   const totalDeJogadores = estado.players.length;
-  players = players.map((p) => {
+  /*
+   * As duas trocas passam por `trocarCarta`, o caminho único: é ele que grava
+   * `viraCarta` e faz o jogador ver a tela de "sua carta mudou". O Sangue Novo
+   * montava a marca à mão, e a Missão Sem Volta só gravava `virouAldeao` — a
+   * pessoa perdia o poder com a carta antiga na mão e sem aviso nenhum.
+   */
+  let comPrazos: GameState = { ...estado, players };
+  for (const p of players) {
     if (p.marcas.conservaPoderAte !== undefined && rodada > p.marcas.conservaPoderAte) {
-      /*
-       * Sangue Novo: venceu o prazo, ele vira Lobo comum.
-       *
-       * Antes isto punha `semPoder` e deixava a carta antiga na mão — o mesmo
-       * defeito do poder emprestado que já foi corrigido em outras três cartas.
-       * A troca acontece aqui e não na etapa 7 porque é aqui que o prazo vence.
-       */
-      const { conservaPoderAte: _c, ...semPrazo } = p.marcas;
-      const { varianteId: _v, ...semVariante } = p;
-      return {
-        ...semVariante,
+      // Sangue Novo: venceu o prazo, ele vira Lobo comum.
+      comPrazos = trocarCarta(comPrazos, p.id, {
         roleId: 'lobo',
-        usosRestantes: Infinity,
-        marcas: {
-          ...semPrazo,
-          viraCarta: {
-            deRoleId: p.roleId,
-            ...(p.varianteId ? { deVarianteId: p.varianteId } : {}),
-            paraRoleId: 'lobo',
-            motivo: 'O que você era acabou. Agora é lobo, como os outros.',
-          },
-        },
+        usos: Infinity,
+        motivo: 'Sua noite com o poder antigo acabou. Agora você é Lobo comum.',
+      });
+      comPrazos = {
+        ...comPrazos,
+        players: comPrazos.players.map((x) => {
+          if (x.id !== p.id) return x;
+          const { conservaPoderAte: _c, ...semPrazo } = x.marcas;
+          return { ...x, marcas: semPrazo };
+        }),
       };
+      continue;
     }
-    if (p.roleId !== 'coringa' || p.varianteId !== 'missao-sem-volta') return p;
-    if (p.marcas.virouAldeao) return p;
+    if (p.roleId !== 'coringa' || p.varianteId !== 'missao-sem-volta') continue;
+    if (p.marcas.virouAldeao) continue;
 
     /*
      * O prazo sai da MISSÃO e do tamanho da mesa, não de uma constante.
@@ -218,10 +218,21 @@ export function prepararNoite(estado: GameState): GameState {
      * se tivessem a mesma urgência. Ver `prazoEmRodadas`.
      */
     const missao = MISSOES_POR_ID.get(estado.objetivosSecretos[p.id] ?? '');
-    if (!missao) return p;
-    if (rodada <= prazoEmRodadas(missao, totalDeJogadores)) return p;
-    return { ...p, marcas: { ...p.marcas, virouAldeao: true } };
-  });
+    if (!missao) continue;
+    if (rodada <= prazoEmRodadas(missao, totalDeJogadores)) continue;
+    comPrazos = trocarCarta(comPrazos, p.id, {
+      roleId: 'aldeao',
+      usos: Infinity,
+      motivo: 'O prazo da sua missão acabou. Agora você é Aldeão comum.',
+    });
+    comPrazos = {
+      ...comPrazos,
+      players: comPrazos.players.map((x) =>
+        x.id === p.id ? { ...x, marcas: { ...x.marcas, virouAldeao: true } } : x,
+      ),
+    };
+  }
+  players = [...comPrazos.players] as typeof players;
 
   /**
    * `expira`: a morte que foi só adiada.
@@ -247,12 +258,12 @@ export function prepararNoite(estado: GameState): GameState {
       ...anuncios,
       {
         rodada,
-        texto: `${alvo.nome} não resistiu ao que trouxe da noite passada.`,
+        texto: `${alvo.nome} morreu: a morte adiada da noite passada chegou agora.`,
         origem: 'morte' as const,
         // Acontece na virada da noite, antes de o aparelho circular.
         fase: 'noite' as const,
         destaque: true,
-        rotulo: 'A conta chegou',
+        rotulo: 'Morte adiada',
       },
     ];
   }
@@ -272,7 +283,7 @@ export function prepararNoite(estado: GameState): GameState {
       ...anuncios,
       {
         rodada,
-        texto: `A cela se abriu. ${alvo.nome} é ${ehLobo ? 'LOBO' : 'da vila'}.`,
+        texto: `${alvo.nome} saiu da prisão: é ${ehLobo ? 'lobo' : 'da vila'}.`,
         origem: 'role' as const,
         fase: 'noite' as const,
         destaque: true,

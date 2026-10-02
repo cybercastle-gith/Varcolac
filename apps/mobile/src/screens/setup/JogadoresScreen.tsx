@@ -34,7 +34,7 @@ export function JogadoresScreen({ navigation }: Props) {
       <Rolagem>
         <Titulo>Quem irá jogar?</Titulo>
         <Pequeno>{jogadores.length} de 16 · mínimo 5 jogadores</Pequeno>
-        <Pequeno cor={cores.nogueira}>
+        <Pequeno cor={cores.nogueiraTexto}>
           Arraste pelo ≡ para pôr na ordem em que vocês estão sentados — é a ordem em que o celular
           vai circular.
         </Pequeno>
@@ -107,7 +107,7 @@ export function JogadoresScreen({ navigation }: Props) {
 
       <View style={{ padding: espaco.lg, gap: espaco.sm }}>
         {!podeSeguir && (
-          <Pequeno cor={cores.garanca}>São necessários pelo menos 5 jogadores.</Pequeno>
+          <Pequeno cor={cores.garancaTexto}>São necessários pelo menos 5 jogadores.</Pequeno>
         )}
         <Botao desabilitado={!podeSeguir} onPress={() => navigation.navigate('Modo')}>
           Continuar

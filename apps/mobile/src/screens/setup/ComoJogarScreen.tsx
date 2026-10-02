@@ -52,7 +52,7 @@ export function ComoJogarScreen() {
             key={p.titulo}
             style={{ flexDirection: 'row', gap: espaco.md, marginTop: espaco.sm }}
           >
-            <Text style={[tipografia.numero, { color: cores.nogueira, fontSize: 22, width: 28 }]}>
+            <Text style={[tipografia.numero, { color: cores.nogueiraTexto, fontSize: 22, width: 28 }]}>
               {i + 1}
             </Text>
             <View style={{ flex: 1, gap: 4 }}>

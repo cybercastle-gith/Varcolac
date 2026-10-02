@@ -104,7 +104,7 @@ export function ListaArrastavel<T>({
             }}
             accessibilityLabel="Arraste para reordenar"
           >
-            <Text style={{ color: emArrasto ? cores.cera : cores.nogueira, fontSize: 18 }}>≡</Text>
+            <Text style={{ color: emArrasto ? cores.cera : cores.nogueiraTexto, fontSize: 18 }}>≡</Text>
           </View>
         );
 

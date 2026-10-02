@@ -64,7 +64,7 @@ export function HomeScreen({ navigation }: Props) {
                 },
               ]}
             >
-              O perigo aguarda a espreita, você está pronto para sobreviver?
+              O perigo aguarda à espreita. Você está pronto para sobreviver?
             </Text>
           </View>
         </Aparicao>

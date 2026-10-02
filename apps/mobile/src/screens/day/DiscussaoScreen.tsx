@@ -64,7 +64,7 @@ export function DiscussaoScreen({ navigation }: Props) {
         <Text
           style={[
             tipografia.numero,
-            { color: acabando ? cores.garanca : cores.linhoCru, marginVertical: espaco.sm },
+            { color: acabando ? cores.garancaTexto : cores.linhoCru, marginVertical: espaco.sm },
           ]}
         >
           {minutos}:{String(segundos).padStart(2, '0')}
